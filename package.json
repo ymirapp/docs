@@ -1,0 +1,17 @@
+{
+  "name": "ymir",
+  "description": "Ymir Documentation",
+  "authors": {
+    "name": "Carl Alexander",
+    "email": "support@ymirapp.com"
+  },
+  "repository": "ymirapp/docs",
+  "scripts": {
+    "dev": "vuepress dev docs",
+    "build": "vuepress build docs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.5.3"
+  }
+}

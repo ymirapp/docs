@@ -112,6 +112,10 @@ The possible values are:
  * `assets` only caches assets
  * `disabled` disables CloudFront distribution caching
 
+ ::: warning Provisioning delay
+ Switching the `caching` value to `enabled` can cause your WordPress site to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
+ :::
+
 #### cookies_whitelist
 
 **type**: `array` **default**: `['comment_*', 'wordpress_*', 'wp-settings-*']`

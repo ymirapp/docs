@@ -15,7 +15,7 @@ The `init` command will also ask you to fill in configuration details for your p
 Once the `init` command complete, you'll have a `ymir.yml` file at the root of your project. This is the configuration file for your Ymir project. It contains everything that Ymir needs to deploy your project, but also configure your project environments.
 
 ::: tip Configuration reference
-The `ymir.yml` has dozens of configuration options. You can learn more about them in [configuration reference][1].
+The `ymir.yml` has dozens of configuration options. You can learn more about them in the [configuration reference][1].
 :::
 
 ## Deleting a project

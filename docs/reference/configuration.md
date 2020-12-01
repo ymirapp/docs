@@ -12,7 +12,9 @@ name: project-name
 type: wordpress
 environments:
   environment-name:
-    build: []
+    build:
+      commands: []
+      include: []
     cdn:
       caching: enabled
       cookies_whitelist: ['comment_*', 'wordpress_*', 'wp-settings-*']
@@ -78,7 +80,19 @@ Each key under the `environments` option is the name of the environment. Everyth
 
 **type**: `array`
 
+This is the array of values to configure the environment build. If the database value is a simple array, it'll be used as the `commands` value.
+
+#### commands
+
+**type**: `array`
+
 This is an array of build commands that the Ymir CLI will run when building your project. These commands are executed on the computer performing the build and not on the Ymir platform. If your build commands generate files, they'll get packaged along with the rest of your project files during deployment.
+
+#### include
+
+**type**: `array`
+
+This is an array of paths that you want to include in the environment build artifact. By default, Ymir will only add `.mo` and `.php` files to the build artifact to ensure a small build artifact. This lets you specify additional files or folders to add the build artifact besides the defaults.
 
 ### cdn
 

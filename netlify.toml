@@ -5,6 +5,12 @@
 
 [[redirects]]
   from = "/"
-  to = "/getting-started/"
+  to = "/getting-started"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/projects"
+  to = "/projects/manage"
   status = 302
   force = true

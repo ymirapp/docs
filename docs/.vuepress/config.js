@@ -42,6 +42,7 @@ module.exports = {
         children: [
           '/team-resources/database-servers',
           '/team-resources/dns',
+          '/team-resources/email',
           '/team-resources/networks',
           '/team-resources/ssl-certificates',
         ]

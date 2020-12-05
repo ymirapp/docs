@@ -32,8 +32,6 @@ A **Contributor** is someone who is an active participant on a team, but doesn't
 
 If you'd like to give a specific set of permissions to someone, you can choose the **Custom** option. This will bring up all the permissions you can give to someone. You can then pick the ones you want to assign to them.
 
-[talk about command]
-
 You can change someone's permissions at anytime. But you can only do it through the team management page.
 
 ## Your active team

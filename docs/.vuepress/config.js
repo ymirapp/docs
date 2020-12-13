@@ -48,8 +48,13 @@ module.exports = {
         ]
       },
       {
+        title: 'Guides',
+        children: [
+          '/guides/automated-deployment'
+        ]
+      },
+      {
         title: 'Reference',
-        collapsable: false,
         children: [
           '/reference/configuration'
         ]

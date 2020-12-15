@@ -9,6 +9,8 @@ Ymir has the following requirements:
 
 While WordPress still supports older versions of PHP, Ymir is a platform for modern PHP. The composer requirement is only for installing the Ymir CLI tool. Your WordPress project doesn't need to use composer for Ymir to deploy it.
 
+While not a strict requirement, it's **highly** recommended to have [WP-CLI][7] installed. The Ymir CLI tool has advanced functionality available if WP-CLI is present on the local machine.
+
 ## Installing the Ymir CLI
 
 Most of your interactions with Ymir will be through the [Ymir CLI][3] tool. You cannot deploy your WordPress projects without it. You can install it globally (preferred) or in each project that you want to deploy using Ymir.
@@ -62,3 +64,4 @@ After attaching the policy, you can skip to the end and create the user. You'll 
 [4]: https://ymirapp.com/team/manage
 [5]: https://portal.aws.amazon.com/billing/signup#/start
 [6]: https://console.aws.amazon.com/iam/home
+[7]: https://wp-cli.org/

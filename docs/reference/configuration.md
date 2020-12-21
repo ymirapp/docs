@@ -116,6 +116,10 @@ The possible values are:
  Switching the `caching` value to `enabled` can cause your WordPress site to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
  :::
 
+ ::: warning Full CloudFront caching disabled with REST API
+If you have the `caching` set to `enabled` and the `gateway` option set to `rest`, the caching level will be downgraded to `assets` automatically. That's because REST APIs already have CloudFront page caching by default.
+ :::
+
 #### cookies_whitelist
 
 **type**: `array` **default**: `['comment_*', 'wordpress_*', 'wp-settings-*']`
@@ -192,6 +196,20 @@ The list of domain names mapped to the environment.
 
 ::: warning Domain name requirement
 All domains names must either be managed by a DNS zone or have an issued certificate in the project region.
+:::
+
+### gateway
+
+**type**: `string`
+
+The gateway type used by the environment. Allowed values are `http` for HTTP APIs and `rest` for REST APIs.
+
+::: danger DNS changes when switching gateway types
+Whenever you switch gateway types, the DNS records pointing to your environment will change. If Ymir manages the DNS zone used by your environment, it'll update your DNS records automatically. Otherwise, you will have to do it yourself. That said, even with a managed DNS zone, your environment will be briefly unavailable while the DNS changes propagate.
+:::
+
+::: warning CloudFront page caching disabled with REST API.
+When using a REST API, it isn't possible to use CloudFront for page caching. That's because the REST API already caches response using CloudFront. If your CloudFront caching is set to `enabled`, it'll get downgraded to `assets` automatically.
 :::
 
 ### log_retention_period

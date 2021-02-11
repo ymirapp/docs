@@ -11,6 +11,10 @@ While WordPress still supports older versions of PHP, Ymir is a platform for mod
 
 While not a strict requirement, it's **highly** recommended to have [WP-CLI][7] installed. The Ymir CLI tool has advanced functionality available if WP-CLI is present on the local machine.
 
+::: warning ext-zip required
+The Ymir CLI needs PHP compiled with the zip extension. If Composer gives you an error about the extension missing, you'll need to reinstall PHP. If you're using a Mac, you can reinstall it using [Homebrew][8] using the procedure [here][9].
+:::
+
 ## Installing the Ymir CLI
 
 Most of your interactions with Ymir will be through the [Ymir CLI][3] tool. You cannot deploy your WordPress projects without it. You can install it globally (preferred) or in each project that you want to deploy using Ymir.
@@ -65,3 +69,5 @@ After attaching the policy, you can skip to the end and create the user. You'll 
 [5]: https://portal.aws.amazon.com/billing/signup#/start
 [6]: https://console.aws.amazon.com/iam/home
 [7]: https://wp-cli.org/
+[8]: https://brew.sh/
+[9]: https://stackoverflow.com/questions/58290566/install-ext-zip-for-mac

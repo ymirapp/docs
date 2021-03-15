@@ -50,7 +50,8 @@ module.exports = {
       {
         title: 'Guides',
         children: [
-          '/guides/automated-deployment'
+          '/guides/automated-deployment',
+          '/guides/object-cache'
         ]
       },
       {

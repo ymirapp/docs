@@ -58,13 +58,10 @@ module.exports = {
       {
         title: 'Reference',
         children: [
-          '/reference/configuration'
+          '/reference/configuration',
+          '/reference/ymir-cli'
         ]
       }
     ]
-  },
-  plugins: [
-    '@vuepress/plugin-back-to-top',
-    '@vuepress/plugin-medium-zoom',
-  ]
+  }
 }

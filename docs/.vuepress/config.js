@@ -52,7 +52,8 @@ module.exports = {
         children: [
           '/guides/automated-deployment',
           '/guides/cloudflare',
-          '/guides/object-cache'
+          '/guides/object-cache',
+          '/guides/sage-10'
         ]
       },
       {

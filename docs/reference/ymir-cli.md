@@ -135,6 +135,10 @@ Commands to manage your databases and database servers.
 
 Create a new database on a database server.
 
+::: warning Only useable with public database servers
+You can only use the `database:create` command to create a database on a publicly accessible database server.
+:::
+
 #### Arguments
 
 ##### `database` (optional)
@@ -166,6 +170,10 @@ The name of the new database.
 
 Delete a database on a database server.
 
+::: warning Only useable with public database servers
+You can only use the `database:delete` command to delete a database on a publicly accessible database server.
+:::
+
 #### Arguments
 
 ##### `database` (optional)
@@ -196,6 +204,10 @@ The name of the database to delete.
 </pre>
 
 List all the databases on a database server.
+
+::: warning Only useable with public database servers
+You can only use the `database:list` command to list databases on a publicly accessible database server.
+:::
 
 #### Arguments
 
@@ -371,6 +383,10 @@ The database server type.
 
 Create a new database on a database server.
 
+::: warning Only useable with public database servers
+You can only use the `database:user:create` command to create a database user on a publicly accessible database server.
+:::
+
 #### Arguments
 
 ##### `database` (optional)
@@ -401,6 +417,10 @@ The username of the new database user.
 </pre>
 
 Delete a user on a database.
+
+::: warning Only useable with public database servers
+You can only use the `database:user:delete` command to delete a database user on a publicly accessible database server.
+:::
 
 #### Arguments
 

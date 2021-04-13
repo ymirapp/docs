@@ -33,3 +33,15 @@ Activating object caching on your WordPress site only takes a few seconds. If yo
 ::: warning Deployment needed
 You cannot activate the Ymir object cache on Ymir directly. You have to install the object cache locally and then deploy your project using the `deploy` command.
 :::
+
+## Choosing an object cache types
+
+The Ymir object cache has drivers for different persistent object caches.
+
+### DynamoDB
+
+DynamoDB offers a very low-cost object cache option since it doesn't require a network with a NAT gateway or a Redis cluster. Ymir will automatically create a DynamoDB table for all your projects. A DynamoDB table doesn't cost you anything until you turn on the DynamoDB object cache.
+
+That said, [extensive testing showed that DynamoDB had a very mediocre performance as an object cache][1]. This makes it a poor choice for sites that require a high performance object cache. **In fact, at this time, you should only consider using the DynamoDB object cache to reduce the load on a database.**
+
+[1]: https://twitter.com/twigpress/status/1380264808486858752

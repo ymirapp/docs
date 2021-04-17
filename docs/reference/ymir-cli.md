@@ -517,7 +517,7 @@ The value of the DNS record.
 <code>$ <span class="token builtin">ymir</span> dns:record:change example.com a subdomain 192.168.1.1</code>
 
 <code><span class="token comment"># Change the MX records of "example.com"</span></code>
-<code>$ <span class="token builtin">ymir</span> dns:record:change example.com MX foo "10 mail.example.com,20 mail2.example.com"</code>
+<code>$ <span class="token builtin">ymir</span> dns:record:change example.com MX @ "10 mail.example.com,20 mail2.example.com"</code>
 </pre>
 
 ### dns:record:delete

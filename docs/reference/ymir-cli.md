@@ -986,10 +986,10 @@ The name of the environment to download environment variables from.
 #### Usage
 
 <pre class="language-bash">
-<code><span class="token comment"># Download environment variables from the "staging" environment</span></code>
+<code><span class="token comment"># Download environment variables from the "staging" environment to the ".env.staging" file</span></code>
 <code>$ <span class="token builtin">ymir</span> environment:variables:download</code>
 
-<code><span class="token comment"># Download environment variables from the "testing" environment</span></code>
+<code><span class="token comment"># Download environment variables from the "testing" environment to the ".env.testing" file</span></code>
 <code>$ <span class="token builtin">ymir</span> environment:variables:download testing</code>
 </pre>
 

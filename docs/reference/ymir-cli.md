@@ -781,4 +781,246 @@ List the email identities that belong to the currently active team.
 <code>$ <span class="token builtin">ymir</span> email:identity:list</code>
 </pre>
 
+## Environment
+
+### environment:create
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:create [&lt;environment&gt;]</code>
+</pre>
+
+Create a new environment.
+
+#### Arguments
+
+##### `environment` (optional)
+
+The name of the environment to create.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a new environment with prompt to choose the name</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:create</code>
+
+<code><span class="token comment"># Create the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:create testing</code>
+</pre>
+
+### environment:delete
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:delete [&lt;environment&gt;]</code>
+</pre>
+
+Delete an environment.
+
+#### Arguments
+
+##### `environment` (optional)
+
+The name of the environment to delete.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete an environment with prompt to choose the environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:delete</code>
+
+<code><span class="token comment"># Delete the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:delete testing</code>
+</pre>
+
+### environment:info
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:info [&lt;environment&gt;]</code>
+</pre>
+
+Get information on the project environment(s).
+
+#### Arguments
+
+##### `environment` (optional)
+
+The name of the environment to get information on.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get information on all environments found in ymir.yml file</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:info</code>
+
+<code><span class="token comment"># Get information on the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:info testing</code>
+</pre>
+
+### environment:invalidate-cache
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache [&lt;environment&gt;]</code>
+</pre>
+
+Invalidate the environment's content delivery network cache.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to invalidate the cache of.
+
+#### Options
+
+##### `--path=PATH` (default: *)
+
+The path(s) to invalidate on the content delivery network.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Invalidate the "staging" environment's content delivery network cache</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache</code>
+
+<code><span class="token comment"># Invalidate the "testing" environment's content delivery network cache</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache testing</code>
+
+<code><span class="token comment"># Invalidate everything under "/uploads" on the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache --path="/uploads"</code>
+</pre>
+
+### environment:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:list</code>
+</pre>
+
+List the project's environments.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List environments</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:list</code>
+</pre>
+
+### environment:url
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:url [&lt;environment&gt;]</code>
+</pre>
+
+Get the environment URL and copy it to the clipboard.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get the URL of.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get the URL to the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:url</code>
+
+<code><span class="token comment"># Get the URL to the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:url testing</code>
+</pre>
+
+### environment:variables:change
+
+Change an environment variable.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:variables:change [&lt;environment&gt; [&lt;name&gt; [&lt;value&gt;]]]</code>
+</pre>
+
+::: tip Upsert command
+The `environment:variables:change` command behaves like an [upsert][2]. It'll create environment variable if it doesn't exist. Otherwise, it'll replace the existing environment variable with the given `name` with the given `value`.
+:::
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment where the environment variable is.
+
+##### `name` (optional)
+
+The name of the environment variable.
+
+##### `value` (optional)
+
+The value of the environment variable.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Change an environment variable on the "staging" environment with a prompt for the name and value of the environment variable</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:change</code>
+
+<code><span class="token comment"># Change an environment variable on the "testing" environment with a prompt for the name and value of the environment variable</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:change testing</code>
+
+<code><span class="token comment"># Change the "variable" environment variable on the "testing" environment with a prompt for the value</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:change testing variable</code>
+
+<code><span class="token comment"># Change the value of "variable" environment variable to "value" on the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:change testing variable value</code>
+</pre>
+
+### environment:variables:download
+
+Download an environment's environment variables into a `.env` environment file.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:variables:download [&lt;environment&gt;]</code>
+</pre>
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to download environment variables from.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Download environment variables from the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:download</code>
+
+<code><span class="token comment"># Download environment variables from the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:download testing</code>
+</pre>
+
+### environment:variables:upload
+
+Upload the environment variables in a `.env` environment file to an environment.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:variables:upload [&lt;environment&gt;]</code>
+</pre>
+
+::: warning Replaces all environment variables
+The `environment:variables:upload` command will replace all environment variables in an environment. If you remove environment variables from the `.env` file, they'll be deleted from the environment.
+:::
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to upload environment variables to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Upload the environment variables in the ".env.staging" file to the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:upload</code>
+
+<code><span class="token comment"># Upload the environment variables in the ".env.testing" file to the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:variables:upload testing</code>
+</pre>
+
+
 [1]: https://ymirapp.com/account/manage
+[2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert

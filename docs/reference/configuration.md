@@ -4,7 +4,7 @@
 
 ## Sample configuration file
 
-The sample comofiguration file shows all possible configuration options with their defaults for the `ymir.yml` file:
+The sample configuration file shows all possible configuration options with their defaults for the `ymir.yml` file:
 
 ```yml
 id: 1

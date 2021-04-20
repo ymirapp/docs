@@ -29,6 +29,7 @@ environments:
       user: database-user
     domain: []
     log_retention_period: 7
+    network: network-name
     php: 7.4
     warmup: true
     website:
@@ -217,6 +218,20 @@ When using a REST API, it isn't possible to use CloudFront for page caching. Tha
 **type**: `int` **default**: `7`
 
 Controls the duration (in days) that the environment's logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+### network
+
+**type**: `string`
+
+The network to use with your environment.
+
+::: danger Overrides private database configuration
+If your project environment uses a private database, Ymir will automatically connect your environment Lambda functions to the database's private network. However, setting the `network` option will override this. So if you're using a private database, it's important it be accessible from the configured `network`.
+:::
+
+::: warning Can create a NAT gateway
+If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour.
+:::
 
 ### php
 

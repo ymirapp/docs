@@ -383,8 +383,8 @@ The database server type.
 
 Create a new database on a database server.
 
-::: warning Only useable with public database servers
-You can only use the `database:user:create` command to create a database user on a publicly accessible database server.
+::: warning Need to create user on private database
+With a private database, the `database:user:create` command will only create the database user on the Ymir platform. You'll have to create the user on the database yourself using the credentials returned by the command.
 :::
 
 #### Arguments
@@ -418,8 +418,8 @@ The username of the new database user.
 
 Delete a user on a database.
 
-::: warning Only useable with public database servers
-You can only use the `database:user:delete` command to delete a database user on a publicly accessible database server.
+::: warning Need to delete user on private database
+With a private database, the `database:user:delete` command will only delete the database user on the Ymir platform. You'll have to delete the user on the database yourself to remove the user completly.
 :::
 
 #### Arguments

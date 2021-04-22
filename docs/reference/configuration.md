@@ -139,6 +139,10 @@ The default time (in seconds) that CloudFront will keep something cached.
 
 The list of paths that are ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 
+::: tip Works with uploads directory
+By default, CloudFront caches files in the `/uploads` directory for 24h. But some plugins use the `/uploads` directory to store dynamic files since it's the only writeable directory on a server. You can add these directories to have CloudFront exclude them from the cache.
+:::
+
 ::: tip Tailored to all project types
 The project `type` will change default paths for non-WordPress projects. So you don't need to edit this for `bedrock` projects.
 :::

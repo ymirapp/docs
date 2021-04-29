@@ -38,12 +38,39 @@ The Ymir CLI needs PHP compiled with the zip extension. If Composer gives you an
 
 ## Installing the Ymir CLI
 
-Most of your interactions with Ymir will be through the [Ymir CLI][3] tool. You cannot deploy your WordPress projects without it. You can install it globally (preferred) or in each project that you want to deploy using Ymir.
+Most of your interactions with Ymir will be through the [Ymir CLI][3] tool. You cannot deploy your WordPress projects without it.
 
-```
-$ composer global require ymirapp/cli
-$ composer require ymirapp/cli
-```
+### Globally (preferred)
+
+The preferred way to install the Ymir CLI is globally. You can use the following command to do so:
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">composer</span> global require ymirapp/cli</code>
+</pre>
+
+::: warning Global vendor binaries directory
+For the global installation to work, you must have the global vendor binaries directory in your `$PATH` environment variable. If you see the error `command not found: ymir`, this is the cause. You can add the global vendor binaries directory to your `$PATH` environment variable by following the procedure [here][10].
+:::
+
+After the installation, you can use the Ymir CLI like this:
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> &lt;command&gt;</code>
+</pre>
+
+### Inside your project
+
+You can also install the Ymir CLI in the specific projects that use Ymir. To do so, you just need run the following composer commmand:
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">composer</span> require ymirapp/cli</code>
+</pre>
+
+When installed inside a project, you can find the Ymir CLI in the vendor binaries directory. To run a Ymir CLI command, you then write your commands like this:
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">vendor/bin/ymir</span> &lt;command&gt;</code>
+</pre>
 
 ## Creating an account
 
@@ -92,3 +119,4 @@ After attaching the policy, you can skip to the end and create the user. You'll 
 [7]: https://wp-cli.org/
 [8]: https://brew.sh/
 [9]: https://stackoverflow.com/questions/58290566/install-ext-zip-for-mac
+[10]: https://stackoverflow.com/questions/25373188/how-to-place-the-composer-vendor-bin-directory-in-your-path

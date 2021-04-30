@@ -53,6 +53,7 @@ module.exports = {
           '/guides/automated-deployment',
           '/guides/cloudflare',
           '/guides/object-cache',
+          '/guides/beaver-builder',
           '/guides/sage-10'
         ]
       },

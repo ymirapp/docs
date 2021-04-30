@@ -12,6 +12,6 @@ features:
       details: Get detailed information on how to use Ymir.
     - title: Guides
       details: Learn how to make Ymir part of your development workflow.
-    - title: Configuration reference
-      details: All the configuration options available in your ymir.yml file.
+    - title: References
+      details: Get all the details on the inner workings of Ymir.
 ---

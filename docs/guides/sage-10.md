@@ -1,4 +1,4 @@
-# Setting up a Sage 10 in a project
+# How to set up Sage 10 in a Ymir project
 
 [[toc]]
 

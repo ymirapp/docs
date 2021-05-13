@@ -18,11 +18,7 @@ While Ymir will add a NAT gateway automatically, it won't remove it if you stop 
 
 There are scenarios where you might want to create additional networks within the same region. You can use the `network:create` command to do so. You can also delete existing networks using the `network:delete` command.
 
-### NAT gateway management
-
-If you want to add custom private subnet resources such as ElasticSearch, you can add a NAT gateway to your network using the `network:nat:add` command. To delete that NAT gateway, you can just use the `network:nat:delete` command.
-
-## Connect a network to an environment
+### Connect a network to an environment
 
 For similar reasons, you might want to connect a network to your project environment so that you can access private resources. To do so, add the `network` option to your environment configuration in the `ymir.yml` file. This will tell Ymir to connect that network to your environment during deployment.
 
@@ -39,4 +35,21 @@ environments:
 If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment.
 :::
 
+## Bastion host
+
+If you want to access private subnet resources, you'll need a [bastion host][2] to do so. A bastion host is a small (`t3.nano`) SSH accessible EC2 instance that resides on your public subnet. You connect to it and then from there you can connect to resources on your private subnet.
+
+You can add a bastion host to your network by using the `network:bastion:add` command. Once the bastion host created, the Ymir CLI will return the SSH private key used to connect to it.
+
+If you're not comfortable with SSH, don't worry! The Ymir CLI will also offer to configure SSH for you. Once configured, you'll get the SSH command to connect to your bastion host.
+
+![bastion host ssh configuration](../../images/bastion-host-ssh-configuration.png)
+
+If you're done with your bastion host, you can remove it with the `network:bastion:remove` command.
+
+## NAT gateway
+
+If you want to add custom private subnet resources such as ElasticSearch, you can manually add a NAT gateway to your network using the `network:nat:add` command. If you have no more private subnet resources, you can use the `network:nat:remove` command to remove the network's NAT gateway.
+
 [1]: https://en.wikipedia.org/wiki/Subnetwork
+[2]: https://en.wikipedia.org/wiki/Bastion_host

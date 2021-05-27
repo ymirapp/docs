@@ -21,6 +21,10 @@ environments:
       cookies_whitelist: ['comment_*', 'wordpress_*', 'wp-settings-*']
       default_expiry: 300
       excluded_paths: ['/wp-admin/*', '/wp-login.php']
+      forwarded_headers: ['origin']
+      functions:
+        - name: function-name
+          type: viewer-request
       invalidate_paths: []
     concurrency: 10
     cron: true
@@ -157,6 +161,18 @@ By default, CloudFront caches files in the `/uploads` directory for 24h. But som
 ::: tip Tailored to all project types
 The project `type` will change default paths for non-WordPress projects. So you don't need to edit this for `bedrock` projects.
 :::
+
+#### forwarded_headers
+
+**type**: `array` **default**: `['origin']`
+
+The list of headers that the CloudFront distribution will forward to your WordPress site.
+
+#### functions
+
+**type**: `array` **default**: `[]`
+
+The list of CloudFront functions to associate with the CloudFront distribution. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
 
 #### invalidate_paths
 

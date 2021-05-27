@@ -106,10 +106,6 @@ This is an array of paths that you want to include in the environment build arti
 
 The cache to use with your environment.
 
-::: warning Can create a NAT gateway
-If the configured `cache` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour.
-:::
-
 ### cdn
 
 **type**: `array | string`

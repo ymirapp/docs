@@ -15,6 +15,7 @@ environments:
     build:
       commands: []
       include: []
+    cache: cache-name
     cdn:
       caching: enabled
       cookies_whitelist: ['comment_*', 'wordpress_*', 'wp-settings-*']
@@ -94,6 +95,16 @@ This is an array of build commands that the Ymir CLI will run when building your
 **type**: `array`
 
 This is an array of paths that you want to include in the environment build artifact. By default, Ymir will only add `.mo` and `.php` files to the build artifact to ensure a small build artifact. This lets you specify additional files or folders to add the build artifact besides the defaults.
+
+### cache
+
+**type**: `string`
+
+The cache to use with your environment.
+
+::: warning Can create a NAT gateway
+If the configured `cache` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour.
+:::
 
 ### cdn
 

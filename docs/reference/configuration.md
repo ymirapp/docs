@@ -104,7 +104,7 @@ This is an array of paths that you want to include in the environment build arti
 
 **type**: `string`
 
-The cache to use with your environment.
+The [cache][4] to use with your environment.
 
 ### cdn
 
@@ -307,3 +307,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [1]: https://github.com/roots/bedrock
 [2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved
 [3]: https://developer.wordpress.org/plugins/cron/
+[4]: ../team-resources/caches.md

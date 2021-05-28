@@ -40,6 +40,7 @@ module.exports = {
         title: 'Team Resources',
         collapsable: false,
         children: [
+          '/team-resources/caches',
           '/team-resources/database-servers',
           '/team-resources/dns',
           '/team-resources/email',

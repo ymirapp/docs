@@ -26,7 +26,7 @@ You can delete a project by executing the `delete` command at the root of your W
 
 By default, none of your project's resources will get deleted. If you choose not to delete them, you'll have to do it from the AWS management console yourself. There isn't a way for Ymir to go back and delete these resources.
 
-::: warning You're still playing for these resources
+::: warning You're still paying for these resources
 Most project resources don't cost anything when they aren't in use. So keeping them around after you delete a project won't cost you anything. But some resources like S3 buckets will so beware when deleting a project with a lot of media files.
 :::
 

@@ -113,6 +113,10 @@ List all the cache clusters that the current team has access to.
 
 Create a SSH tunnel to a cache cluster.
 
+::: warning Requires a bastion host
+To create a SSH tunnel to a cache cluster, the network that cache cluster is on must have a [bastion host][3].
+:::
+
 #### Arguments
 
 ##### `cache` (optional)
@@ -500,6 +504,10 @@ The database server type.
 </pre>
 
 Create a SSH tunnel to a database server.
+
+::: warning Requires a bastion host
+To create a SSH tunnel to a database server, the network that database server is on must have a [bastion host][3].
+:::
 
 #### Arguments
 
@@ -1175,3 +1183,4 @@ The name of the environment to upload environment variables to.
 
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
+[3]: ../team-resources/networks.html#bastion-host

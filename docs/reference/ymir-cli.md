@@ -203,7 +203,7 @@ The name of the database to delete.
 <code>$ <span class="token builtin">ymir</span> database:list [&lt;database&gt;]</code>
 </pre>
 
-List all the databases on a database server.
+List all the databases on a public database server.
 
 ::: warning Only useable with public database servers
 You can only use the `database:list` command to list databases on a publicly accessible database server.
@@ -335,9 +335,9 @@ List all the database servers that the current team has access to.
 <code><span class="token comment"># List all databases servers</span></code>
 <code>$ <span class="token builtin">ymir</span> database:server:list</code>
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
- Id   Name      Status      Provider   Network        Region      Type          Storage
+ Id   Name      Provider   Network        Region      Status      Type          Storage
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
- 42   ymir-db   available   AWS        ymir-network   us-east-1   db.t3.micro   50GB
+ 42   ymir-db   AWS        ymir-network   us-east-1   available   db.t3.micro   50GB
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
 </pre>
 

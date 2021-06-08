@@ -493,6 +493,39 @@ The database server type.
 <code>$ <span class="token builtin">ymir</span> database:server:modify database-server</code>
 </pre>
 
+### database:server:tunnel
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:server:tunnel [options] [&lt;database&gt;]</code>
+</pre>
+
+Create a SSH tunnel to a database server.
+
+#### Arguments
+
+##### `database` (optional)
+
+The ID or name of the database server to create a SSH tunnel to.
+
+#### Options
+
+##### `--port=PORT` (default: 3305)
+
+The local port to use to connect to the database server.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a SSH tunnel to a database server with prompt for the database server</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:tunnel</code>
+
+<code><span class="token comment"># Create a SSH tunnel to the database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:tunnel database-server</code>
+
+<code><span class="token comment"># Create a SSH tunnel to the database server named "database-server" on port "1234"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:tunnel --port=1234 database-server</code>
+</pre>
+
 ### database:user:create
 
 <pre class="language-bash">

@@ -89,7 +89,7 @@ List the SSL certificates that belong to the currently active team.
 ### certificate:request
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> certificate:request [&lt;domain&gt;] [options]</code>
+<code>$ <span class="token builtin">ymir</span> certificate:request [options] [&lt;domain&gt;]</code>
 </pre>
 
 Request a new SSL certificate from the cloud provider.
@@ -228,7 +228,7 @@ The ID or name of the database server to list databases from.
 ### database:server:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:create [&lt;name&gt;] [options]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:create [options] [&lt;name&gt;]</code>
 </pre>
 
 Create a new database server.
@@ -344,7 +344,7 @@ List all the database servers that the current team has access to.
 ### database:server:modify
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:modify [&lt;database&gt;] [options]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:modify [options] [&lt;database&gt;]</code>
 </pre>
 
 Modify a database server.

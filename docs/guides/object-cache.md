@@ -1,10 +1,10 @@
-# Setting up the Ymir object cache
+# How to set up object caching in a Ymir project
 
 [[toc]]
 
 ## When to use an object cache with Ymir?
 
-By default, Ymir doesn't configure your WordPress site to use an object cache. This is an intentional decision since you'll often get excellent performance from your database server while DynamoDB adds additional costs. So when does it make sense to add object caching to your Ymir-powered WordPress site?
+By default, Ymir doesn't configure your WordPress site to use an [object cache][1]. This is an intentional decision since you'll often get excellent performance from your database server while DynamoDB adds additional costs. So when does it make sense to add object caching to your Ymir-powered WordPress site?
 
 ### Database query heavy sites
 
@@ -42,6 +42,50 @@ The Ymir object cache has drivers for different persistent object caches.
 
 DynamoDB offers a very low-cost object cache option since it doesn't require a network with a NAT gateway or a Redis cluster. Ymir will automatically create a DynamoDB table for all your projects. A DynamoDB table doesn't cost you anything until you turn on the DynamoDB object cache.
 
-That said, [extensive testing showed that DynamoDB had a very mediocre performance as an object cache][1]. This makes it a poor choice for sites that require a high performance object cache. **In fact, at this time, you should only consider using the DynamoDB object cache to reduce the load on a database.**
+That said, [extensive testing showed that DynamoDB had a very mediocre performance as an object cache][2]. This makes it a poor choice for sites that require a high performance object cache. **In fact, at this time, you should only consider using the DynamoDB object cache to reduce the load on a database.**
 
-[1]: https://twitter.com/twigpress/status/1380264808486858752
+### Redis
+
+You can also attach a Redis [cache cluster][3] to your WordPress project. The Ymir plugin will automatically select it as your persistent object cache. Unlike DynamoDB, Redis is an extremely performant object caching option. Load tests have shown that a small `t3.micro` cluster can [handle over a thousand concurrent requests][4].
+
+#### Other plugins
+
+While Ymir comes with a Redis object cache, you're free to use any Redis object cache plugin you want. Below you'll find the configuration to use with popular Redis plugins.
+
+##### Object Cache Pro
+
+```php
+define('WP_REDIS_CONFIG', [
+    'host' => getenv('YMIR_REDIS_ENDPOINT'),
+    'port' => 6379,
+    'database' => 0,
+    'timeout' => 1.0,
+    'read_timeout' => 1.0,
+    'async_flush' => true,
+    'compression' => 'zstd',
+    'serializer' => 'igbinary',
+    'split_alloptions' => true,
+    'prefetch' => true,
+    'debug' => false,
+    'save_commands' => false,
+]);
+```
+
+##### Redis Object Cache for WordPress
+
+```php
+define('WP_REDIS_HOST', getenv('YMIR_REDIS_ENDPOINT'));
+```
+
+::: warning Less performant
+This plugin isn't ideal for sites that receive high amounts of traffic. You should use either the Ymir object cache or Object Cache Pro which support [`igbinary`][5] serialization and [`zstd`][6] compression as well as [`alloptions` race condition][7] prevention.
+:::
+
+
+[1]: https://developer.wordpress.org/reference/classes/wp_object_cache/
+[2]: https://twitter.com/twigpress/status/1380264808486858752
+[3]: ../team-resources/caches.html
+[4]: https://twitter.com/twigpress/status/1395774378080604162
+[5]: https://github.com/igbinary/igbinary
+[6]: https://github.com/facebook/zstd
+[7]: https://core.trac.wordpress.org/ticket/31245

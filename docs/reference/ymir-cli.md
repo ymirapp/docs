@@ -20,6 +20,124 @@ The Ymir CLI also lets you authenticate by storing an API token in the `YMIR_API
 All the Ymir CLI configuration options (including authentication token) are stored in `~/.ymir/config.json`.
 :::
 
+## Cache
+
+Commands to manage cache clusters with the Ymir platform.
+
+### cache:create
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> cache:create [options] [&lt;name&gt;]</code>
+</pre>
+
+Create a new cache cluster.
+
+#### Arguments
+
+##### `name` (optional)
+
+The name of the cache cluster.
+
+#### Options
+
+##### `--network=NETWORK`
+
+The ID or name of the network on which the cache cluster will be created.
+
+##### `--type=TYPE`
+
+The cache cluster type to create on the cloud provider.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a new cache cluster with prompt for the name, network and type</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:create</code>
+
+<code><span class="token comment"># Create a new cache cluster named "cluster" with prompt network and type</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:create cluster</code>
+</pre>
+
+### cache:delete
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> cache:delete [&lt;cache&gt;]</code>
+</pre>
+
+Delete a cache cluster.
+
+#### Arguments
+
+##### `cache` (optional)
+
+The ID or name of the cache cluster to delete.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete the cache cluster with prompt for cache cluster</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:delete</code>
+
+<code><span class="token comment"># Delete the cache cluster named "cluster"</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:delete cluster</code>
+
+<code><span class="token comment"># Delete the cache cluster with ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:delete 42</code>
+</pre>
+
+### cache:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> cache:list</code>
+</pre>
+
+List all the cache clusters that the current team has access to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List all cache clusters</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:list</code>
+---- --------- ----------- ---------- -------------- ----------- ----------------
+ Id   Name      Provider   Network        Region      Status      Type
+---- --------- ----------- ---------- -------------- ----------- ----------------
+ 42   cluster   AWS        ymir        us-east-1      available   cache.t3.micro
+---- --------- ----------- ---------- -------------- ----------- ----------------
+</pre>
+
+### cache:tunnel
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> cache:create [options] [&lt;cache&gt;]</code>
+</pre>
+
+Create a SSH tunnel to a cache cluster.
+
+#### Arguments
+
+##### `cache` (optional)
+
+The ID or name of the cache cluster to create a SSH tunnel to.
+
+#### Options
+
+##### `--port=PORT` (default: 6378)
+
+The local port to use to connect to the cache cluster.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a SSH tunnel to a cache cluster with prompt for the cache cluster</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:tunnel</code>
+
+<code><span class="token comment"># Create a SSH tunnel to the cache cluster named "cluster"</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:tunnel cluster</code>
+
+<code><span class="token comment"># Create a SSH tunnel to the cache cluster named "cluster" on port "1234"</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:tunnel --port=1234 cluster</code>
+</pre>
+
 ## Certificate
 
 Commands to manage SSL certificates with the Ymir platform.
@@ -277,7 +395,7 @@ Delete a database server.
 
 #### Arguments
 
-##### `database`
+##### `database` (optional)
 
 The ID or name of the database server to delete.
 
@@ -304,7 +422,7 @@ Get information on a database server.
 
 #### Arguments
 
-##### `database`
+##### `database` (optional)
 
 The ID or name of the database server to fetch the information of.
 
@@ -337,7 +455,7 @@ List all the database servers that the current team has access to.
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
  Id   Name      Provider   Network        Region      Status      Type          Storage
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
- 42   ymir-db   AWS        ymir-network   us-east-1   available   db.t3.micro   50GB
+ 42   ymir-db   AWS        ymir        us-east-1      available   db.t3.micro   50GB
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
 </pre>
 

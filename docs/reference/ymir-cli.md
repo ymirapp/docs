@@ -734,7 +734,7 @@ The ID or name of the DNS zone to list DNS records from.
 ### dns:zone:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> dns:zone:create [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> dns:zone:create [options] [&lt;name&gt;]</code>
 </pre>
 
 Create a new DNS zone.
@@ -839,7 +839,7 @@ Commands to manage email.
 ### email:identity:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> email:identity:create [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> email:identity:create [options] [&lt;name&gt;]</code>
 </pre>
 
 Create a new email identity.
@@ -1017,7 +1017,7 @@ The name of the environment to get information on.
 ### environment:invalidate-cache
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache [options] [&lt;environment&gt;]</code>
 </pre>
 
 Invalidate the environment's content delivery network cache.

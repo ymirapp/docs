@@ -75,6 +75,14 @@ We have `server` where you put the name of the server. `name` is the database na
 
 Now when Ymir deploys your project, it'll convert these values into the proper environment variables. For the database user, it'll also inject its password for you. So no need to worry about that either!
 
+## Connecting to a private database server
+
+Because a private database server resides on your network's private subnet, it's not publicly accessible. To connect to it, you'll need to use the [`database:server:tunnel`][11] command. This command will create a [SSH tunnel][12] to your [bastion host][13] which allow you to connect to your database server.
+
+Once the tunnel created, you can connect to the database server locally. Below is an example of how to connect using [TablePlus][14].
+
+![TablePlus MySQL tunnel](../../images/tableplus-mysql-tunnel.png)
+
 [1]: ../reference/ymir-cli.html#database-server-create
 [2]: ../reference/ymir-cli.html#database-server-modify
 [3]: ../reference/ymir-cli.html#database-server-delete
@@ -85,3 +93,7 @@ Now when Ymir deploys your project, it'll convert these values into the proper e
 [8]: https://en.wikipedia.org/wiki/Principle_of_least_privilege
 [9]: ../reference/ymir-cli.html#database-user-list
 [10]: ../reference/ymir-cli.html#database-user-delete
+[11]: ../reference/ymir-cli.html#database-server-tunnel
+[12]: https://en.wikipedia.org/wiki/Ssh_tunnel
+[13]: ../team-resources/networks.html#bastion-host
+[14]: https://tableplus.com

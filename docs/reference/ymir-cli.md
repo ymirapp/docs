@@ -1182,6 +1182,224 @@ The name of the environment to upload environment variables to.
 <code>$ <span class="token builtin">ymir</span> environment:variables:upload testing</code>
 </pre>
 
+## Import
+
+Commands to import data into Ymir.
+
+### import:uploads
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> import:uploads [options] &lt;path&gt;</code>
+</pre>
+
+Import files to the environment uploads directory.
+
+#### Arguments
+
+##### `path`
+
+The path to the files to import.
+
+#### Options
+
+##### `--environment=ENVIRONMENT` (default: staging)
+
+The environment to upload files to.
+
+##### `--size=SIZE` (default: 20)
+
+The number of files to process at a time.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Import files to "staging" environment using a file path</span></code>
+<code>$ <span class="token builtin">ymir</span> import:uploads /path/to/uploads</code>
+
+<code><span class="token comment"># Import files to "production" environment using a SFTP URL</span></code>
+<code>$ <span class="token builtin">ymir</span> import:uploads --environment=production sftp://myserver.com/path/to/uploads</code>
+</pre>
+
+## Network
+
+Commands to manage team networks.
+
+### network:bastion:add
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:bastion:add [&lt;network&gt;]</code>
+</pre>
+
+Add a bastion host to the network.
+
+#### Arguments
+
+##### `network` (optional)
+
+The ID or name of the network to add a bastion host to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Add a bastion host to a network with prompt for the network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:bastion:add</code>
+
+<code><span class="token comment"># Add a bastion host to the "my-network" network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:bastion:add my-network</code>
+</pre>
+
+### network:bastion:remove
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:bastion:remove [&lt;network&gt;]</code>
+</pre>
+
+Remove bastion host from a network.
+
+#### Arguments
+
+##### `network` (optional)
+
+The ID or name of the network to add a bastion host to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Remove a bastion host from a network with prompt for the network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:bastion:remove</code>
+
+<code><span class="token comment"># Remove the bastion host from the "my-network" network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:bastion:remove my-network</code>
+</pre>
+
+### network:create
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:create [options] [&lt;name&gt;]</code>
+</pre>
+
+Create a new network.
+
+#### Arguments
+
+##### `name` (optional)
+
+The name of the network.
+
+#### Options
+
+##### `--provider=PROVIDER`
+
+The cloud provider region where the network will created.
+
+##### `--region=REGION`
+
+The cloud provider region where the network will be located.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a network with a prompt for the network name</span></code>
+<code>$ <span class="token builtin">ymir</span> network:create</code>
+
+<code><span class="token comment"># Create a network with the name "my-network"</span></code>
+<code>$ <span class="token builtin">ymir</span> network:create my-network</code>
+</pre>
+
+### network:delete
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:delete [&lt;network&gt;]</code>
+</pre>
+
+Delete a network.
+
+#### Arguments
+
+##### `network` (optional)
+
+The ID or name of the network to delete.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete a network with a prompt for the network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:delete</code>
+
+<code><span class="token comment"># Delete the network with the name "my-network"</span></code>
+<code>$ <span class="token builtin">ymir</span> network:delete my-network</code>
+
+<code><span class="token comment"># Delete network with the ID "42"</span></code>
+<code>$ <span class="token builtin">ymir</span> network:delete 42</code>
+</pre>
+
+### network:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:list</code>
+</pre>
+
+List the networks that belong to the currently active team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List all networks</span></code>
+<code>$ <span class="token builtin">ymir</span> network:list</code>
+---- ------ -------------- ----------- ----------- -------------
+ Id   Name   Provider       Region      Status      NAT Gateway
+---- ------ -------------- ----------- ----------- -------------
+ 42   ymir   Personal AWS   us-east-1   available   no
+---- ------ -------------- ----------- ----------- -------------
+</pre>
+
+### network:nat:add
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:nat:add [&lt;network&gt;]</code>
+</pre>
+
+Add a NAT gateway to a network's private subnet.
+
+#### Arguments
+
+##### `network` (optional)
+
+The ID or name of the network to add a NAT gateway to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Add a NAT gateway to a network with prompt for the network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:nat:add</code>
+
+<code><span class="token comment"># Add a NAT gateway to the "my-network" network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:nat:addmy-network</code>
+</pre>
+
+### network:nat:remove
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> network:nat:remove [&lt;network&gt;]</code>
+</pre>
+
+Remove a NAT gateway from a network's private subnet.
+
+#### Arguments
+
+##### `network` (optional)
+
+The ID or name of the network to remove the NAT gateway from.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Remove a NAT gateway from a network with prompt for the network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:nat:remove</code>
+
+<code><span class="token comment"># Remove the NAT gateway from the "my-network" network</span></code>
+<code>$ <span class="token builtin">ymir</span> network:nat:remove my-network</code>
+</pre>
 
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert

@@ -35,5 +35,17 @@ environments:
 
 You'll also need to install an object cache in your WordPress project. You can learn how to do that with [this guide][2].
 
+## Connecting to a cache cluster
+
+Because a cache cluster resides on your network's private subnet, it's not publicly accessible. To connect to it, you'll need to use the [`cache:tunnel`][3] command. This command will create a [SSH tunnel][4] to your [bastion host][5] which allow you to connect to your cache cluster.
+
+Once the tunnel created, you can connect to the cache cluster locally. Below is an example of how to connect using [TablePlus][6].
+
+![TablePlus Redis tunnel](../../images/tableplus-redis-tunnel.png)
+
 [1]: https://developer.wordpress.org/reference/classes/wp_object_cache/
 [2]: ../guides/object-cache.md
+[3]: ../reference/ymir-cli.html#cache-tunnel
+[4]: https://en.wikipedia.org/wiki/Ssh_tunnel
+[5]: ../team-resources/networks.html#bastion-host
+[6]: https://tableplus.com

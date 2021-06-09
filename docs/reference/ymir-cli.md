@@ -942,6 +942,8 @@ List the email identities that belong to the currently active team.
 
 ## Environment
 
+Commands to manage your project environments.
+
 ### environment:create
 
 <pre class="language-bash">

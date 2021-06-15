@@ -260,6 +260,10 @@ If your project environment uses a private database, Ymir will automatically con
 If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour.
 :::
 
+::: warning Slow deployment
+Whenever you connect or disconnect a `network`, the next deployment will take between 5 and 10 minutes to modify your Lambda functions configuration.
+:::
+
 ### php
 
 **type**: `string` **default**: `7.4`

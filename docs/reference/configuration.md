@@ -216,6 +216,16 @@ The name of the database used by the WordPress site.
 
 The user used by the WordPress site to connect to the database server.
 
+### deployment
+
+**type**: `string` **default**: `zip`
+
+The deployment method to use for the project environment. Allowed values are `image` or `zip`.
+
+::: danger Cannot rollback after changing deployment method
+Once you deploy a project environment with a new deployment method, you won't be able to rollback to a deployment prior to the change in deployment method. Prior deployments will still be visible so you can see your deployment history. But trying to rollback to them will cause an error.
+:::
+
 ### domain
 
 **type**: `array`
@@ -269,6 +279,10 @@ Whenever you connect or disconnect a `network`, the next deployment will take be
 **type**: `string` **default**: `7.4`
 
 The PHP version used by the environment. The supported versions are `7.2`, `7.3` and `7.4`.
+
+::: warning Ignored with container image deployment
+Ymir will ignore this configuration option if `deployment` is set to `image`. Instead, you should specifiy the PHP version to use in your project environment's `Dockerfile`.
+:::
 
 ### warmup
 

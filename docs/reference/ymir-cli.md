@@ -947,14 +947,14 @@ Commands to manage your project environments.
 ### environment:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> environment:create [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> environment:create [&lt;name&gt;]</code>
 </pre>
 
 Create a new environment.
 
 #### Arguments
 
-##### `environment` (optional)
+##### `name` (optional)
 
 The name of the environment to create.
 

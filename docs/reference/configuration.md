@@ -166,7 +166,7 @@ The list of headers that the CloudFront distribution will forward to your WordPr
 
 #### functions
 
-**type**: `array` **default**: `[]`
+**type**: `array`
 
 The list of CloudFront functions to associate with the CloudFront distribution. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
 

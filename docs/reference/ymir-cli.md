@@ -832,6 +832,34 @@ List the DNS zones that belong to the currently active team.
 <code>$ <span class="token builtin">ymir</span> dns:zone:list</code>
 </pre>
 
+## Docker
+
+Commands to manage your project's Docker configuration.
+
+### docker:create
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> docker:create [&lt;environment&gt;]</code>
+</pre>
+
+Create a new Dockerfile.
+
+#### Arguments
+
+##### `environment` (optional)
+
+The name of the environment to create the Dockerfile for.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a project-wide Dockerfile</span></code>
+<code>$ <span class="token builtin">ymir</span> docker:create</code>
+
+<code><span class="token comment"># Create a Dockerfile for the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> docker:create staging</code>
+</pre>
+
 ## Email
 
 Commands to manage email.

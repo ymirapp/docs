@@ -226,6 +226,10 @@ The deployment method to use for the project environment. Allowed values are `im
 Once you deploy a project environment with a new deployment method, you won't be able to rollback to a deployment prior to the change in deployment method. Prior deployments will still be visible so you can see your deployment history. But trying to rollback to them will cause an error.
 :::
 
+::: tip Check out the guide
+Looking for more information on how to deploy using container images, check out this [guide][5].
+:::
+
 ### domain
 
 **type**: `array`
@@ -326,3 +330,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved
 [3]: https://developer.wordpress.org/plugins/cron/
 [4]: ../team-resources/caches.md
+[5]: ../guides/container-image-deployment.html

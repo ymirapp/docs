@@ -51,6 +51,7 @@ module.exports = {
       {
         title: 'Guides',
         children: [
+          '/guides/container-image-deployment',
           '/guides/automated-deployment',
           '/guides/cloudflare',
           '/guides/object-cache',

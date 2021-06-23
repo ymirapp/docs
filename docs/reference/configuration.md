@@ -254,6 +254,16 @@ Whenever you switch gateway types, the DNS records pointing to your environment 
 When using a REST API, it isn't possible to use CloudFront for page caching. That's because the REST API already caches response using CloudFront. If your CloudFront caching is set to `enabled`, it'll get downgraded to `assets` automatically.
 :::
 
+### layers
+
+**type**: `array`
+
+List of [Lambda layers][6] ARN to use for your Lambda function. You cannot use more than 5 layers per Lambda function.
+
+::: warning Ignored with container image deployment
+Ymir will ignore this configuration option if `deployment` is set to `image`.
+:::
+
 ### log_retention_period
 
 **type**: `int` **default**: `7`
@@ -331,3 +341,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [3]: https://developer.wordpress.org/plugins/cron/
 [4]: ../team-resources/caches.md
 [5]: ../guides/container-image-deployment.html
+[6]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html

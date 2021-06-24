@@ -1429,6 +1429,58 @@ The ID or name of the network to remove the NAT gateway from.
 <code>$ <span class="token builtin">ymir</span> network:nat:remove my-network</code>
 </pre>
 
+## PHP
+
+Commands to get information about PHP.
+
+### php:info
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> php:info [&lt;environment&gt;]</code>
+</pre>
+
+Get information about PHP on the cloud provider.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get PHP information about.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get PHP information about the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> php:info</code>
+
+<code><span class="token comment"># Get PHP information about the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> php:info production</code>
+</pre>
+
+### php:version
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> php:version [&lt;environment&gt;]</code>
+</pre>
+
+Get the PHP version information on the cloud provider.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get the PHP version of.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get the PHP version on the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> php:version</code>
+
+<code><span class="token comment"># Get the PHP version on the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> php:version production</code>
+</pre>
+
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
 [3]: ../team-resources/networks.html#bastion-host

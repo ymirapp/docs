@@ -1,4 +1,18 @@
+const { removePlugin, PLUGINS } = require('@vuepress/markdown');
+
+function formatHeading(content) {
+  return content;
+}
+
 module.exports = {
+  markdown: {
+    chainMarkdown(config) {
+      removePlugin(config, PLUGINS.EMOJI)
+    },
+    toc: {
+      format: formatHeading
+    }
+  },
   sidebar: true,
   head: [
     ['link', { rel: 'apple-touch-icon', sizes:'180x180', href: '/apple-touch-icon.png' }],

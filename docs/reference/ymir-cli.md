@@ -1092,6 +1092,106 @@ List the project's environments.
 <code>$ <span class="token builtin">ymir</span> environment:list</code>
 </pre>
 
+### environment:secret:change
+
+Change an environment's secret.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:secret:change [&lt;environment&gt; [&lt;name&gt; [&lt;value&gt;]]]</code>
+</pre>
+
+::: tip Upsert command
+The `environment:secret:change` command behaves like an [upsert][2]. It'll create a secret if it doesn't exist. Otherwise, it'll replace the existing secret with the given `name` with the given `value`.
+:::
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment where the secret is.
+
+##### `name` (optional)
+
+The name of the secret.
+
+##### `value` (optional)
+
+The value of the secret.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Change a secret on the "staging" environment with a prompt for the name and value of the environment variable</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:change</code>
+
+<code><span class="token comment"># Change a secret on the "testing" environment with a prompt for the name and value of the environment variable</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:change testing</code>
+
+<code><span class="token comment"># Change the "secret" secret on the "testing" environment with a prompt for the value</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:change testing secret</code>
+
+<code><span class="token comment"># Change the value of "secret" secret to "value" on the "testing" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:change testing secret value</code>
+</pre>
+
+### environment:secret:delete
+
+Delete an environment's secret.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:secret:delete [&lt;environment&gt; [&lt;secret&gt;]]</code>
+</pre>
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment where the secret is.
+
+##### `secret` (optional)
+
+The ID or name of the secret.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete a secret on the "staging" environment with prompt for the secret</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:delete</code>
+
+<code><span class="token comment"># Delete a secret on the "production" environment with prompt for the secret</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:delete production</code>
+
+<code><span class="token comment"># Delete a secret on the "production" environment with the name "secret"</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:delete production secret</code>
+
+<code><span class="token comment"># Delete a secret on the "production" environment with the ID "42"</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:delete production 42</code>
+</pre>
+
+### environment:secret:list
+
+List an environment's secrets.
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:secret:list [&lt;environment&gt;]</code>
+</pre>
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to list secrets of.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List the secrets used by the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:list</code>
+
+<code><span class="token comment"># List the secrets used by the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:secret:list production</code>
+</pre>
+
 ### environment:url
 
 <pre class="language-bash">

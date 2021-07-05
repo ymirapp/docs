@@ -312,9 +312,9 @@ This is the array of values to configure the environment's Lambda functions. The
 
 #### memory
 
-**type**: `int` **default**: `256` for `website` and `1024` for `console`
+**type**: `int` **default**: `512` for `website` and `1024` for `console`
 
-The amount of memory used by the Lambda function. The `website` function has lower memory needs by default because most memory heavy tasks are handled by the `console` function. Both default memory values are the lowest amount possible. If you lower them more, there might be issues during your function execution.
+The amount of memory used by the Lambda function. The `website` function has lower memory needs by default because most memory heavy tasks are handled by the `console` function. Both default memory values are the lowest amount possible without impact to performance. If you lower them more, there might be issues during your function execution.
 
 ::: warning Low memory termination
 If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure to give it enough memory to execute the worst case scenarios.

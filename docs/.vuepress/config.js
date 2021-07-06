@@ -69,8 +69,14 @@ module.exports = {
           '/guides/automated-deployment',
           '/guides/cloudflare',
           '/guides/object-cache',
-          '/guides/beaver-builder',
           '/guides/sage-10'
+        ]
+      },
+      {
+        title: 'Compatibility',
+        children: [
+          ['/compatibility/beaver-builder', 'Beaver Builder'],
+          ['/compatibility/elementor', 'Elementor']
         ]
       },
       {

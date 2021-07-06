@@ -1,20 +1,18 @@
 # How to set up Beaver Builder in a Ymir project
 
-[[toc]]
-
 [Beaver Builder][1] is a popular WordPress page builder that you can use to build beautiful WordPress sites. Ymir makes it easy to support Beaver Builder in your serverless WordPress project. This guide will cover the changes that you need to make.
 
 # Project configuration changes
 
-Below is a sample environment configuration for Beaver Builder. You need to replace the `environment` with the correct environment name. You'll also need to replace the `path/to` placeholders with the paths to your uploads directory as well as the Beaver builder plugin and theme.
+Below is a sample environment configuration for Beaver Builder. You need to replace the `environment` with the correct environment name. You'll also need to replace the `path/to` placeholders with the paths to your Beaver builder plugin and theme.
 
 ```yml
 environments:
   environment:
     cdn:
       excluded_paths:
-        - path/to/uploads/bb-theme
-        - path/to/uploads/bb-plugin
+        - /uploads/bb-theme/*
+        - /uploads/bb-plugin/*
     build:
       include:
         - path/to/plugins/bb-plugin/fonts

@@ -138,6 +138,10 @@ If you have the `caching` set to `enabled` and the `gateway` option set to `rest
 
 The list of cookies that are ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 
+::: tip Default cookies always added
+The default cookies to whitelist will always be added to your project configuration during deployment. So if you need to customize the `cookies_whitelist` option, you can omit them.
+:::
+
 #### default_expiry
 
 **type**: `int` **default**: `300`
@@ -149,6 +153,10 @@ The default time (in seconds) that CloudFront will keep something cached.
 **type**: `array` **default**: `['/wp-admin/*', '/wp-login.php']`
 
 The list of paths that are ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
+
+::: tip Default paths always added
+The default paths to exclude will always be added to your project configuration during deployment. So if you need to customize the `excluded_paths` option, you can omit them.
+:::
 
 ::: tip Works with uploads directory
 By default, CloudFront caches files in the `/uploads` directory for 24h. But some plugins use the `/uploads` directory to store dynamic files since it's the only writeable directory on a server. You can add these directories to have CloudFront exclude them from the cache.

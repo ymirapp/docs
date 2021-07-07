@@ -76,7 +76,8 @@ module.exports = {
         title: 'Compatibility',
         children: [
           ['/compatibility/beaver-builder', 'Beaver Builder'],
-          ['/compatibility/elementor', 'Elementor']
+          ['/compatibility/elementor', 'Elementor'],
+          ['/compatibility/woocommerce', 'WooCommerce']
         ]
       },
       {

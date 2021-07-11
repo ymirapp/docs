@@ -78,6 +78,7 @@ module.exports = {
         children: [
           ['/compatibility/beaver-builder', 'Beaver Builder'],
           ['/compatibility/elementor', 'Elementor'],
+          ['/compatibility/oxygen', 'Oxygen'],
           ['/compatibility/woocommerce', 'WooCommerce']
         ]
       },

@@ -24,7 +24,7 @@ Once you switch to using container image deployment, you won't be able to rollba
 
 First, you'll need to create a `Dockerfile` to use for your project. You can create one using the [`docker:create`][2] command.
 
-Next, you'll need to edit your `ymir.yml` container file. In it, you'll want to add the [`deployment`][3] option and set it to `image`. Below is an example of an `ymir.yml` file where the `staging` environment is configured to use container image deployment.
+Next, you'll need to edit your `ymir.yml` configuration file. In it, you'll want to add the [`deployment`][3] option and set it to `image`. Below is an example of an `ymir.yml` file where the `staging` environment is configured to use container image deployment.
 
 ```yml
 id: 42

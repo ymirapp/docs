@@ -136,7 +136,7 @@ If you have the `caching` set to `enabled` and the `gateway` option set to `rest
 
 **type**: `array` **default**: `['comment_*', 'wordpress_*', 'wp-settings-*']`
 
-The list of cookies that are ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
+The list of cookies ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 
 ::: tip Default cookies always added
 The default cookies to whitelist will always be added to your project configuration during deployment. So if you need to customize the `cookies_whitelist` option, you can omit them.
@@ -152,7 +152,7 @@ The default time (in seconds) that CloudFront will keep something cached.
 
 **type**: `array` **default**: `['/wp-admin/*', '/wp-login.php']`
 
-The list of paths that are ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
+The list of paths ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 
 ::: tip Default paths always added
 The default paths to exclude will always be added to your project configuration during deployment. So if you need to customize the `excluded_paths` option, you can omit them.
@@ -182,7 +182,7 @@ The list of CloudFront functions to associate with the CloudFront distribution. 
 
 **type**: `array`
 
-The list of paths that are cleared from the CloudFront distribution cache during the project deployment. Supports `*` wildcard character.
+The list of paths cleared from the CloudFront distribution cache during the project deployment. Supports `*` wildcard character.
 
 ### concurrency
 

@@ -206,17 +206,17 @@ The interval (in minutes) that [WP-Cron][3] gets called by CloudWatch. Also cont
 
 This is the array of values to configure the environment's database. If the `database` value is a string, it'll be used as the `server` value.
 
-#### server
-
-**type**: `string`
-
-The database server used by the WordPress site. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
-
 #### name
 
 **type**: `string` **default**: `wordpress`
 
 The name of the database used by the WordPress site.
+
+#### server
+
+**type**: `string`
+
+The database server used by the WordPress site. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
 
 #### user
 

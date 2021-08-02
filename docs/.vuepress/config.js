@@ -70,7 +70,6 @@ module.exports = {
           '/guides/automated-deployment',
           '/guides/cloudflare',
           '/guides/object-cache',
-          '/guides/sage-10'
         ]
       },
       {
@@ -79,6 +78,7 @@ module.exports = {
           ['/compatibility/beaver-builder', 'Beaver Builder'],
           ['/compatibility/elementor', 'Elementor'],
           ['/compatibility/oxygen', 'Oxygen'],
+          ['/compatibility/sage-10', 'Sage 10'],
           ['/compatibility/woocommerce', 'WooCommerce']
         ]
       },

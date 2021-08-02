@@ -248,6 +248,72 @@ The list of domain names mapped to the environment.
 All domains names must either be managed by a DNS zone or have an issued certificate in the project region.
 :::
 
+### firewall
+
+**type**: `array | bool`
+
+This is the array of values to configure the environment's firewall. If the `firewall` value is a boolean, it'll be used as the `managed_rules` value.
+
+::: tip Check out the guide
+Looking for more information on how to configure a firewall, check out this [guide][9].
+:::
+
+::: warning Requires CloudFront caching
+To protect your environment with a firewall, you must have CloudFront caching set to `enabled`.
+:::
+
+::: warning Additional cost
+Enabling a firewall on your environment isn't free. There's a fixed cost per month as well as a charge of $0.60 per 1 million requests. You can read more on the [AWS WAF pricing page][7].
+:::
+
+#### bots
+
+**type**: `array | bool`
+
+The list of bot categories that you want the firewall to protect against. Below is the list of available categories you may use. If you want to enable all bot categories, you may use `true` instead of listing all categories.
+
+| Category | Description |
+| --- | --- |
+| CategoryAdvertising | Bots used for advertising purposes |
+| CategoryArchiver | Bots used for archiving purposes |
+| CategoryContentFetcher | Bots fetching content on behalf of an end-user |
+| CategoryHttpLibrary | HTTP libraries often used by bots |
+| CategoryLinkChecker | Bots that check for broken links |
+| CategoryMiscellaneous | Miscellaneous bots |
+| CategoryMonitoring | Bots used for monitoring purposes |
+| CategoryScrapingFramework | Web scraping frameworks |
+| CategorySecurity | Security\-related bots |
+| CategorySeo | Bots used for search engine optimization |
+| CategorySocialMedia | Bots used by social media platforms to provide content summaries (Verified social media bots are not blocked) |
+| CategorySearchEngine | Search engine bots (Verified search engines are not blocked) |
+| SignalAutomatedBrowser | Automated web browser |
+| SignalKnownBotDataCenter | Data centers typically used by bots |
+| SignalNonBrowserUserAgent | User-agent strings that don't seem to be from a web browser |
+
+::: warning Additional cost
+AWS WAF bot protection is an additional cost on top of your existing AWS WAF bill. It costs $10/month and $1.00 per 1 million requests. You can read more on the [AWS WAF pricing page][7].
+:::
+
+#### managed_rules
+
+**type**: `bool`
+
+Flag that determines whether the firewall will be configured with some default AWS managed firewall rules. Below, you'll find the list of managed rules that Ymir will configure if you set this to `true`. If set to `false`, no managed rules will get configured and you can configure some yourself. You can read more about them [here][8].
+
+| Managed Rule | Description |
+| --- | --- |
+| AWSManagedRulesAmazonIpReputationList | Amazon IP reputation list rule group contains rules that are based on Amazon internal threat intelligence |
+| AWSManagedRulesKnownBadInputsRuleSet | Known bad inputs rule group contains rules to block request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities |
+| AWSManagedRulesPHPRuleSet | PHP application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to the use of the PHP programming language, including injection of unsafe PHP functions |
+| AWSManagedRulesSQLiRuleSet | SQL database rule group contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks |
+| AWSManagedRulesWordPressRuleSet | WordPress application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to WordPress sites |
+
+#### rate_limit
+
+**type**: `int`
+
+Enables a rate limit rule that blocks requests from IPs that have made more than the configured amount of requests in a 5 minute time span. You may set a value between 100 and 20,000,000.
+
 ### gateway
 
 **type**: `string`
@@ -350,3 +416,6 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [4]: ../team-resources/caches.md
 [5]: ../guides/container-image-deployment.html
 [6]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html
+[7]: https://aws.amazon.com/waf/pricing/
+[8]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
+[9]: ../guides/firewall.md

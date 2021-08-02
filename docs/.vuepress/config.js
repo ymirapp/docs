@@ -69,6 +69,7 @@ module.exports = {
           '/guides/container-image-deployment',
           '/guides/automated-deployment',
           '/guides/cloudflare',
+          '/guides/firewall',
           '/guides/object-cache',
         ]
       },

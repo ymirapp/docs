@@ -1581,6 +1581,193 @@ The name of the environment to get the PHP version of.
 <code>$ <span class="token builtin">ymir</span> php:version production</code>
 </pre>
 
+## Project
+
+Commands to manage a team's projects.
+
+::: tip Aliases
+All project commands have an alias without their `project:` prefix.
+:::
+
+### project:build [build]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:build [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> build [&lt;environment&gt;]</code>
+</pre>
+
+Build the project for deployment.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to build.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Build project for deployment to the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> build</code>
+
+<code><span class="token comment"># Build project for deployment to the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> build production</code>
+</pre>
+
+### project:delete [delete]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:delete</code>
+<code>$ <span class="token builtin">ymir</span> delete</code>
+</pre>
+
+Delete the project.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete project</span></code>
+<code>$ <span class="token builtin">ymir</span> delete</code>
+</pre>
+
+### project:deploy [deploy]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:deploy [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> deploy [&lt;environment&gt;]</code>
+</pre>
+
+Deploy project to an environment.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to deploy to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Deploy project to the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> deploy</code>
+
+<code><span class="token comment"># Deploy project to the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> deploy production</code>
+</pre>
+
+### project:info [info]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:info</code>
+<code>$ <span class="token builtin">ymir</span> info</code>
+</pre>
+
+Get information on the project.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get information on the project</span></code>
+<code>$ <span class="token builtin">ymir</span> info</code>
+</pre>
+
+### project:init [init]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:init</code>
+<code>$ <span class="token builtin">ymir</span> init</code>
+</pre>
+
+Initialize a new project.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Initialize a new project</span></code>
+<code>$ <span class="token builtin">ymir</span> init</code>
+</pre>
+
+### project:redeploy [redeploy]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:redeploy [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> redeploy [&lt;environment&gt;]</code>
+</pre>
+
+Redeploy project to an environment.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to redeploy.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Redeploy the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> redeploy</code>
+
+<code><span class="token comment"># Redeploy the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> redeploy production</code>
+</pre>
+
+### project:rollback [rollback]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:rollback [options] [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> rollback [options] [&lt;environment&gt;]</code>
+</pre>
+
+Rollback project environment to a previous deployment.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to rollback.
+
+#### Options
+
+##### `--select`
+
+Select the deployment to rollback to.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Rollback the "staging" environment to the last successful deployment</span></code>
+<code>$ <span class="token builtin">ymir</span> rollback</code>
+
+<code><span class="token comment"># Rollback the "staging" environment with a prompt to select the deployment to rollback to</span></code>
+<code>$ <span class="token builtin">ymir</span> rollback --select</code>
+
+<code><span class="token comment"># Rollback the "production" environment to the last successful deployment</span></code>
+<code>$ <span class="token builtin">ymir</span> rollback production</code>
+</pre>
+
+### project:validate [validate]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:validate [&lt;environments&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> validate [&lt;environments&gt;]</code>
+</pre>
+
+Validates the project's ymir.yml file.
+
+#### Arguments
+
+##### `environments`
+
+The names of the environments to validate.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Validates the project's ymir.yml file</span></code>
+<code>$ <span class="token builtin">ymir</span> validate</code>
+</pre>
+
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
 [3]: ../team-resources/networks.html#bastion-host

@@ -212,17 +212,29 @@ This is the array of values to configure the environment's database. If the `dat
 
 The name of the database used by the WordPress site.
 
+::: warning Overwrites <code>DB_NAME</code> environment variable
+If you configured the `DB_NAME` environment variable, be aware that Ymir will overwrite it with the `name` value.
+:::
+
 #### server
 
 **type**: `string`
 
 The database server used by the WordPress site. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
 
+::: warning Overwrites <code>DB_HOST</code> environment variable
+If you configured the `DB_HOST` environment variable, be aware that Ymir will overwrite it with the `server` value.
+:::
+
 #### user
 
 **type**: `string`
 
 The user used by the WordPress site to connect to the database server.
+
+::: warning Overwrites <code>DB_USER</code> environment variable
+If you configured the `DB_USER` environment variable, be aware that Ymir will overwrite it with the `user` value.
+:::
 
 ### deployment
 
@@ -355,7 +367,7 @@ If your project environment uses a private database, Ymir will automatically con
 :::
 
 ::: warning Can create a NAT gateway
-If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour.
+If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway costs about $32/month billed by the hour and also has data transfer fees.
 :::
 
 ::: warning Slow deployment
@@ -414,7 +426,7 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved
 [3]: https://developer.wordpress.org/plugins/cron/
 [4]: ../team-resources/caches.md
-[5]: ../guides/container-image-deployment.html
+[5]: ../guides/container-image-deployment.md
 [6]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html
 [7]: https://aws.amazon.com/waf/pricing/
 [8]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html

@@ -4,12 +4,15 @@
 
 # Project configuration changes
 
-Below is a sample environment configuration for WooCommerce. You need to replace the `environment` with the correct environment name.
+Below is a sample environment configuration for WooCommerce. You need to replace the `environment` with the correct environment name. If you're using container image deployment, you can omit the `build` section.
 
 ```yml
 environments:
   environment:
     cdn:
+      build:
+        include:
+          - path/to/plugins/woocommerce
       cookies_whitelist:
         - woocommerce_cart_hash
         - woocommerce_items_in_cart

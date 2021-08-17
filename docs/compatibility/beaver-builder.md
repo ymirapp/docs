@@ -9,10 +9,6 @@ Below is a sample environment configuration for Beaver Builder. You need to repl
 ```yml
 environments:
   environment:
-    cdn:
-      excluded_paths:
-        - /uploads/bb-theme/*
-        - /uploads/bb-plugin/*
     build:
       include:
         - path/to/plugins/bb-plugin/fonts
@@ -22,6 +18,10 @@ environments:
         - path/to/themes/bb-theme/css
         - path/to/themes/bb-theme/json
         - path/to/themes/bb-theme/less
+    cdn:
+      excluded_paths:
+        - /uploads/bb-theme/*
+        - /uploads/bb-plugin/*
 ```
 
 [1]: https://www.wpbeaverbuilder.com/

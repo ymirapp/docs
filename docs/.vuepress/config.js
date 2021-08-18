@@ -67,6 +67,7 @@ module.exports = {
         title: 'Guides',
         children: [
           '/guides/container-image-deployment',
+          '/guides/domain-mapping',
           '/guides/automated-deployment',
           '/guides/cloudflare',
           '/guides/firewall',

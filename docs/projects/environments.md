@@ -139,7 +139,7 @@ name: project-name
 type: wordpress
 environments:
   environment-name:
-        domain: domain.co.uk
+    domain: domain.co.uk
 ```
 
 ::: tip No www subdomain needed
@@ -152,7 +152,12 @@ For the above domain mapping to work, Ymir must be able to assign a SSL certific
 
 If Ymir doesn't manage the `domain.co.uk` domain, you can still map a domain to your environment. You'll need to request a certificate for the `domain.co.uk` using the `certificate:request` command before deploying your environment. Once the environment deployed, the Ymir CLI will display DNS records for your environment that you'll need to manually add to your DNS server.
 
+::: tip Check out the guide
+Looking for more detailed walkthrough on how to map a domain to your project environment, check out this [guide][5].
+:::
+
 [1]: ../reference/configuration.md#environments
 [2]: https://en.wikipedia.org/wiki/Environment_variable
 [3]: ./deploy.md#build-process
 [4]: ../reference/configuration.md#domain
+[5]: ../guides/domain-mapping.md

@@ -1617,17 +1617,38 @@ The name of the environment to build.
 ### project:delete [delete]
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> project:delete</code>
-<code>$ <span class="token builtin">ymir</span> delete</code>
+<code>$ <span class="token builtin">ymir</span> project:delete [&lt;project&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> delete [&lt;project&gt;]</code>
 </pre>
 
-Delete the project.
+Delete a project.
+
+#### Arguments
+
+##### `project`
+
+The ID or name of the project to delete.
+
+::: warning Only usable outside project directories
+The `project` argument only works when calling the `project:delete` command outside of a Ymir project directory.
+:::
 
 #### Usage
 
 <pre class="language-bash">
-<code><span class="token comment"># Delete project</span></code>
+<code><span class="token property">[Inside a Ymir project directory]</span></code>
+<code><span class="token comment"># Delete the project</span></code>
 <code>$ <span class="token builtin">ymir</span> delete</code>
+
+<code><span class="token property">[Outside a Ymir project directory]</span></code>
+<code><span class="token comment"># Delete a project with a prompt to select the project</span></code>
+<code>$ <span class="token builtin">ymir</span> delete</code>
+
+<code><span class="token comment"># Delete a project with the name "ymir-project"</span></code>
+<code>$ <span class="token builtin">ymir</span> delete ymir-project</code>
+
+<code><span class="token comment"># Delete a project with the ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> delete 42</code>
 </pre>
 
 ### project:deploy [deploy]

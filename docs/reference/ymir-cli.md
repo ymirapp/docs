@@ -1092,6 +1092,39 @@ List the project's environments.
 <code>$ <span class="token builtin">ymir</span> environment:list</code>
 </pre>
 
+### environment:metrics
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:metrics [options] [&lt;environment&gt;]</code>
+</pre>
+
+Get cost and usage metrics of the environment.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get the metrics of.
+
+#### Options
+
+##### `--period=PERIOD` (default: 1d)
+
+The period to gather metrics for. (1m, 5m, 30m, 1h, 8h, 1d, 3d, 7d, 1mo)
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get cost and usage metrics for the "staging" environment over the last 24h</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:metrics</code>
+
+<code><span class="token comment"># Get cost and usage metrics for the "staging" environment over the last month</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:metrics --period=1mo</code>
+
+<code><span class="token comment"># Get cost and usage metrics for the "production" environment over the last week</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:metrics production --period=7d</code>
+</pre>
+
 ### environment:secret:change
 
 Change an environment's secret.

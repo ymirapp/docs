@@ -1026,7 +1026,7 @@ The name of the environment to delete.
 <code>$ <span class="token builtin">ymir</span> environment:info [&lt;environment&gt;]</code>
 </pre>
 
-Get information on the project environment(s).
+Get information on the environment(s).
 
 #### Arguments
 
@@ -1719,7 +1719,7 @@ The name of the environment to redeploy.
 <code>$ <span class="token builtin">ymir</span> rollback [options] [&lt;environment&gt;]</code>
 </pre>
 
-Rollback project environment to a previous deployment.
+Rollback environment to a previous deployment.
 
 #### Arguments
 

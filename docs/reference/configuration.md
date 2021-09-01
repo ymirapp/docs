@@ -190,6 +190,10 @@ The list of paths cleared from the CloudFront distribution cache during the proj
 
 This option controls the maximum number of `website` Lambda functions that can exist at the same time. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
 
+::: tip Check out the guide
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+:::
+
 ::: warning Overwhelming your database server
 If your `concurrency` value is too high or disabled, your database server could get overwhelmed when a traffic spike hits your WordPress site. If this happens, you'll want to increase the capacity of your database server.
 :::
@@ -431,3 +435,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [7]: https://aws.amazon.com/waf/pricing/
 [8]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
 [9]: ../guides/firewall.md
+[10]: ../guides/scaling.md

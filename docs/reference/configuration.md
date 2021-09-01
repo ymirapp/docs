@@ -32,13 +32,16 @@ environments:
       server: database-server
       name: database-name
       user: database-user
+    deployment: zip
     domain: []
+    firewall: false
+    gateway: http
     log_retention_period: 7
     network: network-name
     php: 7.4
     warmup: true
     website:
-      memory: 256
+      memory: 512
       timeout: 30
     console:
       memory: 1028
@@ -332,7 +335,7 @@ Enables a rate limit rule that blocks requests from IPs that have made more than
 
 ### gateway
 
-**type**: `string`
+**type**: `string` **default**: `http`
 
 The gateway type used by the environment. Allowed values are `http` for HTTP APIs and `rest` for REST APIs.
 

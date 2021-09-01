@@ -247,7 +247,7 @@ Once you deploy a project environment with a new deployment method, you won't be
 :::
 
 ::: tip Check out the guide
-Looking for more information on how to deploy using container images, check out this [guide][5].
+Looking for more information on how to deploy using container images? Check out this [guide][5].
 :::
 
 ### domain
@@ -267,7 +267,7 @@ All domains names must either be managed by a DNS zone or have an issued certifi
 This is the array of values to configure the environment's firewall. If the `firewall` value is a boolean, it'll be used as the `managed_rules` value.
 
 ::: tip Check out the guide
-Looking for more information on how to configure a firewall, check out this [guide][9].
+Looking for more information on how to configure a firewall? Check out this [guide][9].
 :::
 
 ::: warning Requires CloudFront caching

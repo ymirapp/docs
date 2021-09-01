@@ -1822,6 +1822,95 @@ The names of the environments to validate.
 <code>$ <span class="token builtin">ymir</span> validate</code>
 </pre>
 
+## Provider
+
+Commands to manage cloud providers.
+
+### provider:connect
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> provider:connect</code>
+</pre>
+
+Connect a cloud provider to the currently active team.
+
+::: tip Imports AWS credentials file
+The `provider:connect` command can also import AWS credentials from the AWS credentials file found in `~/.aws/credentials`.
+:::
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Connect a cloud provider</span></code>
+<code>$ <span class="token builtin">ymir</span> provider:connect</code>
+</pre>
+
+### provider:delete
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> provider:delete &lt;provider&gt;</code>
+</pre>
+
+Delete a cloud provider.
+
+#### Arguments
+
+##### `provider`
+
+The ID of the cloud provider to delete.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete cloud provider with ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> provider:delete 42</code>
+</pre>
+
+### provider:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> provider:list</code>
+</pre>
+
+List the cloud provider accounts connected to the currently active team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List all cloud providers</span></code>
+<code>$ <span class="token builtin">ymir</span> provider:list</code>
+ ---- ------
+  Id   Name
+ ---- ------
+  42   ymir
+ ---- ------
+</pre>
+
+### provider:update
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> provider:update &lt;provider&gt;</code>
+</pre>
+
+Update a cloud provider.
+
+::: tip Imports AWS credentials file
+The `provider:update` command can also import AWS credentials from the AWS credentials file found in `~/.aws/credentials`.
+:::
+
+#### Arguments
+
+##### `provider`
+
+The ID of the cloud provider to update.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Update cloud provider with ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> provider:update 42</code>
+</pre>
+
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
 [3]: ../team-resources/networks.html#bastion-host

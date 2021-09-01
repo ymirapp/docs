@@ -200,7 +200,7 @@ List the SSL certificates that belong to the currently active team.
 
 <pre class="language-bash">
 <code><span class="token comment"># List all SSL certificates</span></code>
-<code>$ <span class="token builtin">ymir</span> list</code>
+<code>$ <span class="token builtin">ymir</span> certificate:list</code>
  ---- -------------- ----------- --------------------- -------- --------
   Id   Provider       Region      Domains               Status   In Use
  ---- -------------- ----------- --------------------- -------- --------

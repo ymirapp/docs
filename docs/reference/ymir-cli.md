@@ -1911,6 +1911,100 @@ The ID of the cloud provider to update.
 <code>$ <span class="token builtin">ymir</span> provider:update 42</code>
 </pre>
 
+## Team
+
+Commands to manage teams.
+
+### team:create
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> team:create [&lt;name&gt;]</code>
+</pre>
+
+Create a new team.
+
+#### Arguments
+
+##### `name`
+
+The name of the team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Create a new team with a prompt for the name</span></code>
+<code>$ <span class="token builtin">ymir</span> team:create</code>
+
+<code><span class="token comment"># Create a new team with the name "ymir"</span></code>
+<code>$ <span class="token builtin">ymir</span> team:create ymir</code>
+</pre>
+
+### team:current
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> team:current</code>
+</pre>
+
+Get the details on your currently active team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Get the details on your currently active team</span></code>
+<code>$ <span class="token builtin">ymir</span> team:current</code>
+Your currently active team is:
+ ------- ----------
+  Id      42
+  Name    Personal
+  Owner   You
+ ------- ----------
+</pre>
+
+### team:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> team:list</code>
+</pre>
+
+List all the teams that you're on.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List all the teams that you're on</span></code>
+<code>$ <span class="token builtin">ymir</span> team:list</code>
+You are on the following teams:
+ ---- ---------- -------
+  Id   Name       Owner
+ ---- ---------- -------
+  42   Personal   You
+ ---- ---------- -------
+</pre>
+
+### team:select
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> team:select [&lt;team&gt;]</code>
+</pre>
+
+Select a new currently active team.
+
+#### Arguments
+
+##### `team`
+
+The ID of the team to make your currently active team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Select a new currently active team with prompt for the team</span></code>
+<code>$ <span class="token builtin">ymir</span> team:select</code>
+
+<code><span class="token comment"># Select team with ID 42 as the new currently active team</span></code>
+<code>$ <span class="token builtin">ymir</span> team:select 42</code>
+</pre>
+
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
 [3]: ../team-resources/networks.html#bastion-host

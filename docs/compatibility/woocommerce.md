@@ -9,10 +9,10 @@ Below is a sample environment configuration for WooCommerce. You need to replace
 ```yml
 environments:
   environment:
+    build:
+      include:
+        - path/to/plugins/woocommerce
     cdn:
-      build:
-        include:
-          - path/to/plugins/woocommerce
       cookies_whitelist:
         - woocommerce_cart_hash
         - woocommerce_items_in_cart

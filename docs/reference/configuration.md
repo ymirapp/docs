@@ -261,10 +261,14 @@ Looking for more information on how to deploy using container images? Check out 
 
 **type**: `array`
 
-The list of domain names mapped to the environment.
+The list of domain names mapped to the environment. You cannot have more than 99 domain names mapped per environment.
 
 ::: warning Domain name requirement
 All domains names must either be managed by a DNS zone or have an issued certificate in the project region.
+:::
+
+::: warning AWS quota limit
+By default, you can only have 10 domain names per environment. This means that you can only have 9 domains mapped per environment. You can request a quota increase [here][11]. That said, the maximum limit of domain name per certificate is 100.
 :::
 
 ### firewall
@@ -439,3 +443,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [8]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
 [9]: ../guides/firewall.md
 [10]: ../guides/scaling.md
+[11]: https://console.aws.amazon.com/servicequotas/home/services/acm/quotas/L-FB94F0B0

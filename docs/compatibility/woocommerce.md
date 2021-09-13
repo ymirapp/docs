@@ -1,5 +1,9 @@
 # How to set up WooCommerce in a Ymir project
 
+::: tip Automatic configuration
+You can have Ymir configure your project automatically for you by using the [`configure`][2] command.
+:::
+
 [WooCommerce][1] is a popular open source e-commerce platform for WordPress. Ymir makes it easy to support WooCommerce in your serverless WordPress project. This guide will cover the changes that you need to make.
 
 # Project configuration changes
@@ -26,3 +30,4 @@ environments:
 ```
 
 [1]: https://woocommerce.com/
+[2]: ../reference/ymir-cli.md#project-configure-configure

@@ -497,6 +497,34 @@ The database server type.
 <code>$ <span class="token builtin">ymir</span> database:server:modify database-server</code>
 </pre>
 
+### database:server:rotate-password
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:server:rotate-password [&lt;database&gt;]</code>
+</pre>
+
+Rotate the password of the database server's `ymir` user.
+
+::: warning Redeployment needed
+All projects that use the database server with the default `ymir` user will be unable to connect to the database once the password rotated. You'll have have to redeploy each project using either the [`deploy`][4] or [`redeploy`][5] commands to restore the connection to the database server.
+:::
+
+#### Arguments
+
+##### `database` (optional)
+
+The ID or name of the database server to rotate the password of.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Rotate the password of a database server with prompt for the database server</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:rotate-password</code>
+
+<code><span class="token comment"># Rotate the password of the database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:rotate-password database-server</code>
+</pre>
+
 ### database:server:tunnel
 
 <pre class="language-bash">
@@ -2042,3 +2070,5 @@ The ID of the team to make your currently active team.
 [1]: https://ymirapp.com/account/manage
 [2]: https://en.wikipedia.org/wiki/Merge_(SQL)#upsert
 [3]: ../team-resources/networks.html#bastion-host
+[4]: #project-deploy-deploy
+[5]: #project-redeploy-redeploy

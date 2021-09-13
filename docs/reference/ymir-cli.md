@@ -1667,7 +1667,7 @@ Configure the project by scanning your plugins and themes.
 
 #### Arguments
 
-##### `environment`
+##### `environment` (optional)
 
 The name of the environment to configure.
 

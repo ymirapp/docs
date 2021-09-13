@@ -1,6 +1,6 @@
 # Ymir CLI reference
 
-This reference documents every command available in Ymir’s command-line interface.
+This reference documents every command available in [Ymir’s command-line tool][6].
 
 [[toc]]
 
@@ -2072,3 +2072,4 @@ The ID of the team to make your currently active team.
 [3]: ../team-resources/networks.html#bastion-host
 [4]: #project-deploy-deploy
 [5]: #project-redeploy-redeploy
+[6]: https://github.com/ymirapp/cli

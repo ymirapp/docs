@@ -1656,6 +1656,31 @@ The name of the environment to build.
 <code>$ <span class="token builtin">ymir</span> build production</code>
 </pre>
 
+### project:configure [configure]
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:configure [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> configure [&lt;environment&gt;]</code>
+</pre>
+
+Configure the project by scanning your plugins and themes.
+
+#### Arguments
+
+##### `environment`
+
+The name of the environment to configure.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Scan the project's plugins and themes and configure all environments</span></code>
+<code>$ <span class="token builtin">ymir</span> configure</code>
+
+<code><span class="token comment"># Scan the project's plugins and themes and configure the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> configure production</code>
+</pre>
+
 ### project:delete [delete]
 
 <pre class="language-bash">

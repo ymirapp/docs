@@ -839,7 +839,7 @@ Commands to manage your project's Docker configuration.
 ### docker:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> docker:create [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> docker:create [options] [&lt;environment&gt;]</code>
 </pre>
 
 Create a new Dockerfile.
@@ -850,6 +850,12 @@ Create a new Dockerfile.
 
 The name of the environment to create the Dockerfile for.
 
+#### Options
+
+##### `--configure-project`
+
+Configure project's ymir.yml file.
+
 #### Usage
 
 <pre class="language-bash">
@@ -858,6 +864,9 @@ The name of the environment to create the Dockerfile for.
 
 <code><span class="token comment"># Create a Dockerfile for the "staging" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> docker:create staging</code>
+
+<code><span class="token comment"># Create a Dockerfile for the "staging" environment and add configuration to ymir.yml file</span></code>
+<code>$ <span class="token builtin">ymir</span> docker:create --configure-project staging</code>
 </pre>
 
 ## Email

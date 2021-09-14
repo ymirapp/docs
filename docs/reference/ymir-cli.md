@@ -1693,6 +1693,10 @@ The name of the environment to build.
 
 Configure the project by scanning your plugins and themes.
 
+::: warning WP-CLI required
+The `project:configure` command requires you to have [WP-CLI][7] installed and globally available. This is necessary for the command to scan your project's plugins and themes. You can refer to the [WP-CLI installation instructions][8] to see how to install WP-CLI and make it globally available.
+:::
+
 #### Arguments
 
 ##### `environment` (optional)
@@ -2073,3 +2077,5 @@ The ID of the team to make your currently active team.
 [4]: #project-deploy-deploy
 [5]: #project-redeploy-redeploy
 [6]: https://github.com/ymirapp/cli
+[7]: https://wp-cli.org/
+[8]: https://wp-cli.org/#installing

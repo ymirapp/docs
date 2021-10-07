@@ -59,6 +59,7 @@ define('WP_REDIS_CONFIG', [
     'host' => getenv('YMIR_REDIS_ENDPOINT'),
     'port' => 6379,
     'database' => 0,
+    'prefix' => getenv('YMIR_CACHE_PREFIX'),
     'timeout' => 1.0,
     'read_timeout' => 1.0,
     'async_flush' => true,
@@ -75,6 +76,7 @@ define('WP_REDIS_CONFIG', [
 
 ```php
 define('WP_REDIS_HOST', getenv('YMIR_REDIS_ENDPOINT'));
+define('WP_REDIS_PREFIX', getenv('YMIR_CACHE_PREFIX'));
 ```
 
 ::: warning Less performant

@@ -463,6 +463,33 @@ List all the database servers that the current team has access to.
 ---- --------- ----------- ---------- -------------- ----------- ------------- ---------
 </pre>
 
+### database:server:lock
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;database&gt;]</code>
+</pre>
+
+Lock the database server which prevents it from being deleted.
+
+#### Arguments
+
+##### `database` (optional)
+
+The ID or name of the database server to lock.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Lock a database server with prompt for database server</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:lock</code>
+
+<code><span class="token comment"># Lock a database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:lock database-server</code>
+
+<code><span class="token comment"># Lock a database server with ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:lock 42</code>
+</pre>
+
 ### database:server:modify
 
 <pre class="language-bash">
@@ -560,6 +587,33 @@ The local port to use to connect to the database server.
 
 <code><span class="token comment"># Create a SSH tunnel to the database server named "database-server" on port "1234"</span></code>
 <code>$ <span class="token builtin">ymir</span> database:server:tunnel --port=1234 database-server</code>
+</pre>
+
+### database:server:unlock
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;database&gt;]</code>
+</pre>
+
+Unlock the database server which allows it to be deleted.
+
+#### Arguments
+
+##### `database` (optional)
+
+The ID or name of the database server to unlock.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Unlock a database server with prompt for database server</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:unlock</code>
+
+<code><span class="token comment"># Unlock a database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:unlock database-server</code>
+
+<code><span class="token comment"># Unlock a database server with ID 42</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:unlock 42</code>
 </pre>
 
 ### database:user:create

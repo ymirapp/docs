@@ -75,6 +75,12 @@ We have `server` where you put the name of the server. `name` is the database na
 
 Now when Ymir deploys your project, it'll convert these values into the proper environment variables. For the database user, it'll also inject its password for you. So no need to worry about that either!
 
+## Protecting your database server from accidental deletion
+
+A database server is a critical infrastructure component and deleting it by mistake can have dire consequences. To prevent this, you can use [`database:server:lock`][15] command to lock a database server. This will prevent someone from accidentally deleting it in Ymir or the AWS console.
+
+To delete a locked database server, you must first unlock it using the [`database:server:unlock`][16] command. Afterwards, you'll be able to use the [`database:server:delete`][3] to delete it.
+
 ## Connecting to a private database server
 
 Because a private database server resides on your network's private subnet, it's not publicly accessible. To connect to it, you'll need to use the [`database:server:tunnel`][11] command. This command will create a [SSH tunnel][12] to your [bastion host][13] which allow you to connect to your database server.
@@ -97,3 +103,5 @@ Once the tunnel created, you can connect to the database server locally. Below i
 [12]: https://en.wikipedia.org/wiki/Ssh_tunnel
 [13]: ../team-resources/networks.html#bastion-host
 [14]: https://tableplus.com
+[15]: ../reference/ymir-cli.html#database-server-lock
+[16]: ../reference/ymir-cli.html#database-server-unlock

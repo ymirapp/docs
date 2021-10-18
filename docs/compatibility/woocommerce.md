@@ -21,7 +21,7 @@ environments:
         - woocommerce_cart_hash
         - woocommerce_items_in_cart
         - woocommerce_recently_viewed
-        - wp_woocommerce_session
+        - wp_woocommerce_session_*
       excluded_paths:
         - /addons
         - /cart

@@ -73,7 +73,11 @@ The reserved WordPress environment variables are:
 
 The reserved Ymir environment variables are:
 
+ * `YMIR_ASSETS_PATH`
  * `YMIR_ASSETS_URL`
+ * `YMIR_CACHE_PREFIX`
+ * `YMIR_CACHE_TABLE`
+ * `YMIR_DISTRIBUTION_ID`
  * `YMIR_ENVIRONMENT`
  * `YMIR_PRIMARY_DOMAIN_NAME`
  * `YMIR_PROJECT_TYPE`

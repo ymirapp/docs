@@ -1861,6 +1861,26 @@ Initialize a new project.
 <code>$ <span class="token builtin">ymir</span> init</code>
 </pre>
 
+### project:list
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> project:list</code>
+</pre>
+
+List the projects that belong to the currently active team.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># List all projects</span></code>
+<code>$ <span class="token builtin">ymir</span> project:list</code>
+---- ------ -------------- -----------
+ Id   Name   Provider       Region
+---- ------ -------------- -----------
+ 42   ymir   Personal AWS   us-east-1
+---- ------ -------------- -----------
+</pre>
+
 ### project:redeploy [redeploy]
 
 <pre class="language-bash">

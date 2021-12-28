@@ -39,7 +39,7 @@ environments:
     log_retention_period: 7
     network: network-name
     php: 7.4
-    warmup: true
+    warmup: 1
     website:
       memory: 512
       timeout: 30

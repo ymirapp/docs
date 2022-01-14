@@ -149,7 +149,7 @@ Commands to manage SSL certificates with the Ymir platform.
 ### certificate:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> certificate:request &lt;certificate&gt;</code>
+<code>$ <span class="token builtin">ymir</span> certificate:delete &lt;certificate&gt;</code>
 </pre>
 
 Delete a SSL certificate.

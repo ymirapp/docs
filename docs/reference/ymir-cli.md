@@ -211,7 +211,7 @@ List the SSL certificates that belong to the currently active team.
 ### certificate:request
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> certificate:request [options] [&lt;domain&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> certificate:request [options] [&lt;domains&gt;...]</code>
 </pre>
 
 Request a new SSL certificate from the cloud provider.
@@ -222,9 +222,9 @@ You have one hour to add all necessary DNS records when requesting a new certifi
 
 #### Arguments
 
-##### `domain` (optional)
+##### `domains` (optional)
 
-The domain that the SSL certificate is for.
+Space-separated list of domains that the SSL certificate is for.
 
 #### Options
 
@@ -242,8 +242,11 @@ The cloud provider region where the certificate will be located.
 <code><span class="token comment"># Create a SSL certificate with prompt for domain and region</span></code>
 <code>$ <span class="token builtin">ymir</span> certificate:request</code>
 
-<code><span class="token comment"># Create a SSL certificate for "example.com" with prompt for region</span></code>
+<code><span class="token comment"># Create a SSL certificate for "example.com"</span></code>
 <code>$ <span class="token builtin">ymir</span> certificate:request example.com</code>
+
+<code><span class="token comment"># Create a SSL certificate for "example.com" and "*.example.com"</span></code>
+<code>$ <span class="token builtin">ymir</span> certificate:request example.com '*.example.com'</code>
 
 <code><span class="token comment"># Create a SSL certificate for "example.com" in "us-east-1" region</span></code>
 <code>$ <span class="token builtin">ymir</span> certificate:request example.com --region=us-east-1</code>

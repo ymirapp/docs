@@ -216,6 +216,10 @@ List the SSL certificates that belong to the currently active team.
 
 Request a new SSL certificate from the cloud provider.
 
+::: warning One hour to add DNS records
+You have one hour to add all necessary DNS records when requesting a new certificate for a domain that isn't managed by Ymir.
+:::
+
 #### Arguments
 
 ##### `domain` (optional)

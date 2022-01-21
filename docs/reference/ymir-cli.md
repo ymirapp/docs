@@ -1118,6 +1118,34 @@ The name of the environment to delete.
 <code>$ <span class="token builtin">ymir</span> environment:delete testing</code>
 </pre>
 
+### environment:domain:change
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:domain:change [&lt;environment&gt; [&lt;domain&gt;]]</code>
+</pre>
+
+Change an environment's domain.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to change the domain of.
+
+##### `domain` (optional)
+
+The current environment domain to replace.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Change the "staging" environment's domain with prompt for the old and new domain</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:domain:change</code>
+
+<code><span class="token comment"># Change the "testing" environment's domain with prompt for the old and new domain</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:domain:change testing</code>
+</pre>
+
 ### environment:info
 
 <pre class="language-bash">

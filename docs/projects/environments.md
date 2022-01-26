@@ -82,6 +82,7 @@ The reserved Ymir environment variables are:
  * `YMIR_PRIMARY_DOMAIN_NAME`
  * `YMIR_PROJECT_TYPE`
  * `YMIR_PUBLIC_STORE`
+ * `YMIR_REDIS_ENDPOINT`
  * `YMIR_SECRETS_PATH`
  * `YMIR_UPLOAD_URL`
 

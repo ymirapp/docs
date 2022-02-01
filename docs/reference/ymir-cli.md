@@ -330,6 +330,100 @@ The ID or name of the database server where the database will be deleted.
 <code>$ <span class="token builtin">ymir</span> database:delete database-name --server=database-server</code>
 </pre>
 
+### database:export
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:export [&lt;name&gt;]</code>
+</pre>
+
+Export a database to a local .sql.gz file.
+
+::: warning Database name required for private database servers
+If you want to use the `database:export` command to export a database from a private database server, you must specify the `name` argument.
+:::
+
+#### Arguments
+
+##### `name` (optional)
+
+The name of the database to export.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server to export a database from.
+
+##### `--user=USER`
+
+The user used to connect to the database server.
+
+##### `--password=PASSWORD`
+
+The password of the user connecting to the database server.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Export a database with prompt for database server, database name, database user and password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:export</code>
+
+<code><span class="token comment"># Export a database named "database-name" on the database server named "database-server" with a prompt for database user and password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:export database-name --server=database-server</code>
+
+<code><span class="token comment"># Export a database named "database-name" on the database server named "database-server" with a prompt using the "database-user" database user and "database-user-password" password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:export database-name --server=database-server --user=database-user --password=database-user-password</code>
+</pre>
+
+### database:import
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:import [&lt;name&gt;]</code>
+</pre>
+
+Import a local .sql or .sql.gz file to a database.
+
+::: warning Database name required for private database servers
+If you want to use the `database:import` command to import a database to a private database server, you must specify the `name` argument.
+:::
+
+#### Arguments
+
+##### `file`
+
+The path to the local .sql or .sql.gz file.
+
+##### `name` (optional)
+
+The name of the database to import.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server to import a database to.
+
+##### `--user=USER`
+
+The user used to connect to the database server.
+
+##### `--password=PASSWORD`
+
+The password of the user connecting to the database server.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Import a database with prompt for database server, database name, database user and password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:import backup.sql.gz</code>
+
+<code><span class="token comment"># Import a database named "database-name" on the database server named "database-server" with a prompt for database user and password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:import backup.sql.gz database-name --server=database-server</code>
+
+<code><span class="token comment"># Import a database named "database-name" on the database server named "database-server" with a prompt using the "database-user" database user and "database-user-password" password</span></code>
+<code>$ <span class="token builtin">ymir</span> database:import backup.sql.gz database-name --server=database-server --user=database-user --password=database-user-password</code>
+</pre>
+
 ### database:list
 
 <pre class="language-bash">

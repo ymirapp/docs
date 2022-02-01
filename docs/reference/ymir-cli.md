@@ -1097,6 +1097,30 @@ Configure project's ymir.yml file.
 <code>$ <span class="token builtin">ymir</span> docker:create --configure-project staging</code>
 </pre>
 
+### docker:delete-images
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> docker:delete-images [options]</code>
+</pre>
+
+Delete a project's deployment docker images.
+
+#### Options
+
+##### `--all`
+
+Delete deployment docker images for all projects.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Delete all deployment images of a project</span></code>
+<code>$ <span class="token builtin">ymir</span> docker:delete-images</code>
+
+<code><span class="token comment"># Delete deployment docker images for all projects</span></code>
+<code>$ <span class="token builtin">ymir</span> docker:delete-images --all</code>
+</pre>
+
 ## Email
 
 Commands to manage email.

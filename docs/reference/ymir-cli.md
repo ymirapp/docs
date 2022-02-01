@@ -725,6 +725,43 @@ The ID or name of the database server to list users from.
 <code>$ <span class="token builtin">ymir</span> database:user:list database-server</code>
 </pre>
 
+### database:user:rotate-password
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> database:user:rotate-password [&lt;username&gt;]</code>
+</pre>
+
+Rotate the password of a user on a database server.
+
+::: warning Need to change user's password on private database
+With a private database server, the `database:user:rotate-password` command will only rotate the database user password on the Ymir platform. You'll have to change the user's password on the database server yourself using the credentials returned by the command.
+:::
+
+#### Arguments
+
+##### `username` (optional)
+
+The username of the database user to rotate the password of.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server where the database user is located.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Rotate a database user's password with prompt for database server and username</span></code>
+<code>$ <span class="token builtin">ymir</span> database:user:rotate-password</code>
+
+<code><span class="token comment"># Rotate a database user's password on the database server named "database-server" with prompt for the username</span></code>
+<code>$ <span class="token builtin">ymir</span> database:user:rotate-password --server=database-server</code>
+
+<code><span class="token comment"># Rotate the password of the database user named "database-user" on the database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:rotate-password database-user --server=database-server</code>
+</pre>
+
 ## DNS
 
 Commands to manage your DNS records and zones.

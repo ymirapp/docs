@@ -259,7 +259,7 @@ Commands to manage your databases and database servers.
 ### database:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:create [&lt;database&gt; [&lt;name&gt;]]</code>
+<code>$ <span class="token builtin">ymir</span> database:create [&lt;name&gt;]</code>
 </pre>
 
 Create a new database on a database server.
@@ -270,13 +270,15 @@ You can only use the `database:create` command to create a database on a publicl
 
 #### Arguments
 
-##### `database` (optional)
-
-The ID or name of the database server where the database will be created.
-
 ##### `name` (optional)
 
 The name of the new database.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server where the database will be created.
 
 #### Usage
 
@@ -285,16 +287,16 @@ The name of the new database.
 <code>$ <span class="token builtin">ymir</span> database:create</code>
 
 <code><span class="token comment"># Create a database on the database server named "database-server" with prompt for the database name</span></code>
-<code>$ <span class="token builtin">ymir</span> database:create database-server</code>
+<code>$ <span class="token builtin">ymir</span> database:create --server=database-server</code>
 
 <code><span class="token comment"># Create a database named "database-name" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:create database-server database-name</code>
+<code>$ <span class="token builtin">ymir</span> database:create database-name --server=database-server</code>
 </pre>
 
 ### database:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:delete [&lt;database&gt; [&lt;name&gt;]]</code>
+<code>$ <span class="token builtin">ymir</span> database:delete [&lt;name&gt;]</code>
 </pre>
 
 Delete a database on a database server.
@@ -305,13 +307,15 @@ You can only use the `database:delete` command to delete a database on a publicl
 
 #### Arguments
 
-##### `database` (optional)
-
-The ID or name of the database server where the database will be deleted.
-
 ##### `name` (optional)
 
 The name of the database to delete.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server where the database will be deleted.
 
 #### Usage
 
@@ -320,16 +324,16 @@ The name of the database to delete.
 <code>$ <span class="token builtin">ymir</span> database:delete</code>
 
 <code><span class="token comment"># Delete a database on the database server named "database-server" with prompt for the database name</span></code>
-<code>$ <span class="token builtin">ymir</span> database:delete database-server</code>
+<code>$ <span class="token builtin">ymir</span> database:delete --server=database-server</code>
 
 <code><span class="token comment"># Delete a database named "database-name" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:delete database-server database-name</code>
+<code>$ <span class="token builtin">ymir</span> database:delete database-name --server=database-server</code>
 </pre>
 
 ### database:list
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:list [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:list [&lt;server&gt;]</code>
 </pre>
 
 List all the databases on a public database server.
@@ -340,7 +344,7 @@ You can only use the `database:list` command to list databases on a publicly acc
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to list databases from.
 
@@ -399,14 +403,14 @@ The database server type to create on the cloud provider.
 ### database:server:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:delete [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:delete [&lt;server&gt;]</code>
 </pre>
 
 Delete a database server.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to delete.
 
@@ -426,14 +430,14 @@ The ID or name of the database server to delete.
 ### database:server:info
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:info [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:info [&lt;server&gt;]</code>
 </pre>
 
 Get information on a database server.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to fetch the information of.
 
@@ -473,14 +477,14 @@ List all the database servers that the current team has access to.
 ### database:server:lock
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;server&gt;]</code>
 </pre>
 
 Lock the database server which prevents it from being deleted.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to lock.
 
@@ -500,14 +504,14 @@ The ID or name of the database server to lock.
 ### database:server:modify
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:modify [options] [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:modify [options] [&lt;server&gt;]</code>
 </pre>
 
 Modify a database server.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to modify.
 
@@ -534,7 +538,7 @@ The database server type.
 ### database:server:rotate-password
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:rotate-password [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:rotate-password [&lt;server&gt;]</code>
 </pre>
 
 Rotate the password of the database server's `ymir` user.
@@ -545,7 +549,7 @@ All projects that use the database server with the default `ymir` user will be u
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to rotate the password of.
 
@@ -562,7 +566,7 @@ The ID or name of the database server to rotate the password of.
 ### database:server:tunnel
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:tunnel [options] [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:tunnel [options] [&lt;server&gt;]</code>
 </pre>
 
 Create a SSH tunnel to a database server.
@@ -573,7 +577,7 @@ To create a SSH tunnel to a database server, the network that database server is
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to create a SSH tunnel to.
 
@@ -599,14 +603,14 @@ The local port to use to connect to the database server.
 ### database:server:unlock
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;server&gt;]</code>
 </pre>
 
 Unlock the database server which allows it to be deleted.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to unlock.
 
@@ -626,24 +630,26 @@ The ID or name of the database server to unlock.
 ### database:user:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:user:create [&lt;database&gt; [&lt;username&gt;]]</code>
+<code>$ <span class="token builtin">ymir</span> database:user:create [&lt;username&gt;]</code>
 </pre>
 
 Create a new database on a database server.
 
 ::: warning Need to create user on private database
-With a private database, the `database:user:create` command will only create the database user on the Ymir platform. You'll have to create the user on the database yourself using the credentials returned by the command.
+With a private database server, the `database:user:create` command will only create the database user on the Ymir platform. You'll have to create the user on the database server yourself using the credentials returned by the command.
 :::
 
 #### Arguments
 
-##### `database` (optional)
-
-The ID or name of the database server where the user will be created.
-
 ##### `username` (optional)
 
 The username of the new database user.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server where the user will be created.
 
 #### Usage
 
@@ -652,33 +658,35 @@ The username of the new database user.
 <code>$ <span class="token builtin">ymir</span> database:user:create</code>
 
 <code><span class="token comment"># Create a database user on the database server named "database-server" with prompt for the username</span></code>
-<code>$ <span class="token builtin">ymir</span> database:user:create database-server</code>
+<code>$ <span class="token builtin">ymir</span> database:user:create --server=database-server</code>
 
 <code><span class="token comment"># Create a database user named "database-user" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:create database-server database-user</code>
+<code>$ <span class="token builtin">ymir</span> database:create database-user --server=database-server</code>
 </pre>
 
 ### database:user:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:delete [&lt;database&gt; [&lt;username&gt;]]</code>
+<code>$ <span class="token builtin">ymir</span> database:delete [&lt;username&gt;]</code>
 </pre>
 
 Delete a user on a database.
 
 ::: warning Need to delete user on private database
-With a private database, the `database:user:delete` command will only delete the database user on the Ymir platform. You'll have to delete the user on the database yourself to remove the user completly.
+With a private database server, the `database:user:delete` command will only delete the database user on the Ymir platform. You'll have to delete the user on the database yourself to remove the user completly.
 :::
 
 #### Arguments
 
-##### `database` (optional)
-
-The ID or name of the database server where the database user will be deleted.
-
 ##### `username` (optional)
 
 The username of the database user to delete.
+
+#### Options
+
+##### `--server=SERVER`
+
+The ID or name of the database server where the database user will be deleted.
 
 #### Usage
 
@@ -696,14 +704,14 @@ The username of the database user to delete.
 ### database:user:list
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:user:list [&lt;database&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:user:list [&lt;server&gt;]</code>
 </pre>
 
 List all the managed users on a database server.
 
 #### Arguments
 
-##### `database` (optional)
+##### `server` (optional)
 
 The ID or name of the database server to list users from.
 

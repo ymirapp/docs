@@ -338,6 +338,10 @@ The ID or name of the database server where the database will be deleted.
 
 Export a database to a local .sql.gz file.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=H92ewqQcU_M).
+:::
+
 ::: warning Database name required for private database servers
 If you want to use the `database:export` command to export a database from a private database server, you must specify the `name` argument.
 :::
@@ -382,6 +386,10 @@ The password of the user connecting to the database server.
 </pre>
 
 Import a local .sql or .sql.gz file to a database.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=H92ewqQcU_M).
+:::
 
 ::: warning Database name required for private database servers
 If you want to use the `database:import` command to import a database to a private database server, you must specify the `name` argument.
@@ -637,6 +645,10 @@ The database server type.
 
 Rotate the password of the database server's `ymir` user.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
+:::
+
 ::: warning Redeployment needed
 All projects that use the database server with the default `ymir` user will be unable to connect to the database once the password rotated. You'll have have to redeploy each project using either the [`deploy`][4] or [`redeploy`][5] commands to restore the connection to the database server.
 :::
@@ -729,6 +741,10 @@ The ID or name of the database server to unlock.
 
 Create a new database on a database server.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
+:::
+
 ::: warning Need to create user on private database
 With a private database server, the `database:user:create` command will only create the database user on the Ymir platform. You'll have to create the user on the database server yourself using the credentials returned by the command.
 :::
@@ -765,6 +781,10 @@ The ID or name of the database server where the user will be created.
 </pre>
 
 Delete a user on a database.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
+:::
 
 ::: warning Need to delete user on private database
 With a private database server, the `database:user:delete` command will only delete the database user on the Ymir platform. You'll have to delete the user on the database yourself to remove the user completly.
@@ -803,6 +823,10 @@ The ID or name of the database server where the database user will be deleted.
 
 List all the managed users on a database server.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
+:::
+
 #### Arguments
 
 ##### `server` (optional)
@@ -826,6 +850,10 @@ The ID or name of the database server to list users from.
 </pre>
 
 Rotate the password of a user on a database server.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
+:::
 
 ::: warning Need to change user's password on private database
 With a private database server, the `database:user:rotate-password` command will only rotate the database user password on the Ymir platform. You'll have to change the user's password on the database server yourself using the credentials returned by the command.
@@ -1105,6 +1133,10 @@ Configure project's ymir.yml file.
 
 Delete a project's deployment docker images.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=wDrJbpEgyN8).
+:::
+
 #### Options
 
 ##### `--all`
@@ -1288,6 +1320,10 @@ The name of the environment to delete.
 </pre>
 
 Change an environment's domain.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=_cMBIwJcbB8).
+:::
 
 #### Arguments
 
@@ -2011,6 +2047,10 @@ The `project` argument only works when calling the `project:delete` command outs
 
 Deploy project to an environment.
 
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=3C1SOCP5HRc).
+:::
+
 #### Arguments
 
 ##### `environment` (default: staging)
@@ -2087,6 +2127,10 @@ List the projects that belong to the currently active team.
 </pre>
 
 Redeploy project to an environment.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=3C1SOCP5HRc).
+:::
 
 #### Arguments
 

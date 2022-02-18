@@ -13,7 +13,7 @@ Each environment is self-contained and doesn't share resources with other enviro
 
 ## Default environments
 
-Whenever you initialize a project with the `init` command, Ymir will create two environments: `staging` and `production`. These two environments are just there as defaults. You're going to need a production environment and having a staging environment to preview changes for your client or for testing is always beneficial.
+Whenever you initialize a project with the [`init`][6] command, Ymir will create two environments: `staging` and `production`. These two environments are just there as defaults. You're going to need a production environment and having a staging environment to preview changes for your client or for testing is always beneficial.
 
 ## Creating new environments
 
@@ -166,3 +166,4 @@ Looking for more detailed walkthrough on how to map a domain to your project env
 [3]: ./deploy.md#build-process
 [4]: ../reference/configuration.md#domain
 [5]: ../guides/domain-mapping.md
+[6]: ../reference/ymir-cli.md##project-init-init

@@ -1668,44 +1668,6 @@ The name of the environment to upload environment variables to.
 <code>$ <span class="token builtin">ymir</span> environment:variables:upload testing</code>
 </pre>
 
-## Import
-
-Commands to import data into Ymir.
-
-### import:uploads
-
-<pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> import:uploads [options] &lt;path&gt;</code>
-</pre>
-
-Import files to the environment uploads directory.
-
-#### Arguments
-
-##### `path`
-
-The path to the files to import.
-
-#### Options
-
-##### `--environment=ENVIRONMENT` (default: staging)
-
-The environment to upload files to.
-
-##### `--size=SIZE` (default: 20)
-
-The number of files to process at a time.
-
-#### Usage
-
-<pre class="language-bash">
-<code><span class="token comment"># Import files to "staging" environment using a file path</span></code>
-<code>$ <span class="token builtin">ymir</span> import:uploads /path/to/uploads</code>
-
-<code><span class="token comment"># Import files to "production" environment using a SFTP URL</span></code>
-<code>$ <span class="token builtin">ymir</span> import:uploads --environment=production sftp://myserver.com/path/to/uploads</code>
-</pre>
-
 ## Network
 
 Commands to manage team networks.
@@ -2385,6 +2347,44 @@ The ID of the team to make your currently active team.
 
 <code><span class="token comment"># Select team with ID 42 as the new currently active team</span></code>
 <code>$ <span class="token builtin">ymir</span> team:select 42</code>
+</pre>
+
+## Uploads
+
+Commands to interact with the WordPress uploads directory.
+
+### uploads:import
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> uploads:import [options] &lt;path&gt;</code>
+</pre>
+
+Import files to the environment uploads directory.
+
+#### Arguments
+
+##### `path`
+
+The path to the files to import.
+
+#### Options
+
+##### `--environment=ENVIRONMENT` (default: staging)
+
+The environment to upload files to.
+
+##### `--size=SIZE` (default: 20)
+
+The number of files to process at a time.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Import files to "staging" environment using a file path</span></code>
+<code>$ <span class="token builtin">ymir</span> uploads:import /path/to/uploads</code>
+
+<code><span class="token comment"># Import files to "production" environment using a SFTP URL</span></code>
+<code>$ <span class="token builtin">ymir</span> uploads:import --environment=production sftp://myserver.com/path/to/uploads</code>
 </pre>
 
 [1]: https://ymirapp.com/account/manage

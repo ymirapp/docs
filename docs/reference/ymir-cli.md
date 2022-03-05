@@ -1912,8 +1912,8 @@ All project commands have an alias without their `project:` prefix.
 ### project:build [build]
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> project:build [&lt;environment&gt;]</code>
-<code>$ <span class="token builtin">ymir</span> build [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> project:build [options] [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> build [options] [&lt;environment&gt;]</code>
 </pre>
 
 Build the project for deployment.
@@ -1923,6 +1923,12 @@ Build the project for deployment.
 ##### `environment` (default: staging)
 
 The name of the environment to build.
+
+#### Options
+
+##### `--with-uploads`
+
+Copy the "uploads" directory during the build.
 
 #### Usage
 
@@ -2003,8 +2009,8 @@ The `project` argument only works when calling the `project:delete` command outs
 ### project:deploy [deploy]
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> project:deploy [&lt;environment&gt;]</code>
-<code>$ <span class="token builtin">ymir</span> deploy [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> project:deploy [options] [&lt;environment&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> deploy [options] [&lt;environment&gt;]</code>
 </pre>
 
 Deploy project to an environment.
@@ -2018,6 +2024,12 @@ Check out the [video](https://www.youtube.com/watch?v=3C1SOCP5HRc).
 ##### `environment` (default: staging)
 
 The name of the environment to deploy to.
+
+#### Options
+
+##### `--with-uploads`
+
+Import the "uploads" directory during the deployment.
 
 #### Usage
 

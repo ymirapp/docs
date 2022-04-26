@@ -187,6 +187,12 @@ The list of CloudFront functions to associate with the CloudFront distribution. 
 
 The list of paths cleared from the CloudFront distribution cache during the project deployment. Supports `*` wildcard character.
 
+#### process_images
+
+**type**: `bool` **default**: `false`
+
+Flag whether the CloudFront distribution will be configured with the Lambda@Edge image processing function.
+
 ### concurrency
 
 **type**: `int | false` **default**: `10`

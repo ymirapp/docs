@@ -345,15 +345,19 @@ Enables a rate limit rule that blocks requests from IPs that have made more than
 
 ### gateway
 
-**type**: `string` **default**: `http`
+**type**: `string | false` **default**: `http`
 
-The gateway type used by the environment. Allowed values are `http` for HTTP APIs and `rest` for REST APIs.
+The gateway type used by the environment. Allowed values are `http` for HTTP APIs, `rest` for REST APIs or `false` to use [Lambda function URLs][12] instead of a gateway. 
 
 ::: danger DNS changes when switching gateway types
 Whenever you switch gateway types, the DNS records pointing to your environment will change. If Ymir manages the DNS zone used by your environment, it'll update your DNS records automatically. Otherwise, you will have to do it yourself. That said, even with a managed DNS zone, your environment will be briefly unavailable while the DNS changes propagate.
 :::
 
-::: warning CloudFront page caching disabled with REST API.
+::: warning CloudFront mandatory when using Lambda function URLs
+If your environment doesn't use a gateway (set `gateway` option to `false`), you must enable CloudFront to do all caching for it. This means that any `caching` option other than `enabled` (this is the default value) will cause your project validation to fail.
+:::
+
+::: warning CloudFront page caching disabled with REST API
 When using a REST API, it isn't possible to use CloudFront for page caching. That's because the REST API already caches response using CloudFront. If your CloudFront caching is set to `enabled`, it'll get downgraded to `assets` automatically.
 :::
 
@@ -450,3 +454,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [9]: ../guides/firewall.md
 [10]: ../guides/scaling.md
 [11]: https://console.aws.amazon.com/servicequotas/home/services/acm/quotas/L-FB94F0B0
+[12]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html

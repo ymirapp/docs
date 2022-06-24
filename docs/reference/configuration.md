@@ -18,7 +18,7 @@ environments:
     cache: cache-name
     cdn:
       caching: enabled
-      cookies_whitelist: ['comment_*', 'wordpress_*', 'wp-settings-*']
+      cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
       default_expiry: 300
       excluded_paths: ['/wp-admin/*', '/wp-login.php']
       forwarded_headers: ['origin']
@@ -137,7 +137,7 @@ If you have the `caching` set to `enabled` and the `gateway` option set to `rest
 
 #### cookies_whitelist
 
-**type**: `array` **default**: `['comment_*', 'wordpress_*', 'wp-settings-*']`
+**type**: `array` **default**: `['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']`
 
 The list of cookies ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 

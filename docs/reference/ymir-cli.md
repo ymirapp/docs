@@ -2375,7 +2375,7 @@ Import files to the environment uploads directory.
 
 #### Arguments
 
-##### `path`
+##### `path` (default: `wp-content/uploads` for WordPress projects and `web/app/uploads` for Bedrock projects)
 
 The path to the files to import.
 
@@ -2385,7 +2385,7 @@ The path to the files to import.
 
 The environment to upload files to.
 
-##### `--size=SIZE` (default: 20)
+##### `--size=SIZE` (default: 1000)
 
 The number of files to process at a time.
 

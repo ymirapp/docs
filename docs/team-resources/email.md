@@ -28,6 +28,10 @@ You'll also need to explain why you're sending email. Once that's done and you a
 
 The other aspect of sending emails with SES is email identities. SES will only let you send emails with valid email identities. What is an email identity? It's a domain or email address that SES verified and approved for sending email.
 
+::: danger Administration email
+It's very important that the WordPress administration email (**Settings > General**) use an email address covered by an email identity. Otherwise, WordPress won’t be able to send critical email messages such as forgot password emails.
+:::
+
 Creating email identities is painless with the Ymir CLI. You can use the `email:identity:create` command to create an email identity. You can pass it a domain or an email address and it'll create the correct email identity for you.
 
 ![email:identity:create command](../../images/create-email-identity-cli.png)

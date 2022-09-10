@@ -113,7 +113,7 @@ After attaching the policy, you can skip to the end and create the user. You'll 
 [1]: https://php.net/releases/
 [2]: https://getcomposer.org
 [3]: https://github.com/ymirapp/cli
-[4]: https://ymirapp.com/team/manage
+[4]: https://ymirapp.com/dashboard/team/manage
 [5]: https://portal.aws.amazon.com/billing/signup#/start
 [6]: https://console.aws.amazon.com/iam/home
 [7]: https://wp-cli.org/

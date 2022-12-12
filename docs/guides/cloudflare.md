@@ -6,7 +6,7 @@
 
 While Ymir already comes with CloudFront as a content delivery network, you're not required to use it if you don't want to. You can disable CloudFront using the [`cdn`][1] project configuration option. But you can also use another content delivery network like [Cloudflare][2].
 
-Cloudflare is a popular content delivery network option because of its generous free tier. (CloudFront has no free tier.) It also has advanced features such as [Cloudflare workers][3], which CloudFront doesn't have.
+Cloudflare is a popular content delivery network option because of its generous free tier. It also has advanced features such as [Cloudflare workers][3], which CloudFront doesn't have.
 
 ## Prerequisites
 

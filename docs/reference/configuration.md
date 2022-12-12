@@ -26,6 +26,8 @@ environments:
         - name: function-name
           type: viewer-request
       invalidate_paths: []
+      image_processing_memory: 256
+      process_images: false
     concurrency: 10
     cron: true
     database:
@@ -186,6 +188,12 @@ The list of CloudFront functions to associate with the CloudFront distribution. 
 **type**: `array`
 
 The list of paths cleared from the CloudFront distribution cache during the project deployment. Supports `*` wildcard character.
+
+#### image_processing_memory
+
+**type**: `int` **default**: `256`
+
+The amount of memory used by the Lambda@Edge image processing function.
 
 #### process_images
 

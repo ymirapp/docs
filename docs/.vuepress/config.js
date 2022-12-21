@@ -70,9 +70,10 @@ module.exports = {
           '/guides/domain-mapping',
           '/guides/scaling',
           '/guides/automated-deployment',
-          '/guides/cloudflare',
           '/guides/firewall',
           '/guides/object-cache',
+          '/guides/cloudflare',
+          '/guides/new-relic',
         ]
       },
       {

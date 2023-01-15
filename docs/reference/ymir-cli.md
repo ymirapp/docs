@@ -480,6 +480,14 @@ The name of the database server.
 
 The ID or name of the network on which the database will be created.
 
+##### `--private`
+
+The created database server won't be publicly accessible.
+
+##### `--public`
+
+The created database server will be publicly accessible.
+
 ##### `--storage=STORAGE`
 
 The maximum amount of storage (in GB) allocated to the database server.

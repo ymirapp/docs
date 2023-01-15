@@ -488,6 +488,10 @@ The created database server won't be publicly accessible.
 
 The created database server will be publicly accessible.
 
+##### `--serverless`
+
+Create an Aurora serverless database cluster. (Overrides all other options.)
+
 ##### `--storage=STORAGE`
 
 The maximum amount of storage (in GB) allocated to the database server.
@@ -502,8 +506,8 @@ The database server type to create on the cloud provider.
 <code><span class="token comment"># Create a new database server with prompt for the name, network, storage and type</span></code>
 <code>$ <span class="token builtin">ymir</span> database:server:create</code>
 
-<code><span class="token comment"># Create a development database server with a prompt for the name</span></code>
-<code>$ <span class="token builtin">ymir</span> database:server:create --dev</code>
+<code><span class="token comment"># Create an Aurora serverless database cluster with a prompt for the name</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:create --serverless</code>
 </pre>
 
 ### database:server:delete

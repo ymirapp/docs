@@ -476,10 +476,6 @@ The name of the database server.
 
 #### Options
 
-##### `--dev`
-
-Create a development database server. (Overrides all other options.)
-
 ##### `--network=NETWORK`
 
 The ID or name of the network on which the database will be created.

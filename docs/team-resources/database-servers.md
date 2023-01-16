@@ -4,10 +4,6 @@
 
 Before you can create a database, you'll need a database server. You can do this using the [`database:server:create`][1] command. The command will prompt you to fill in some details about the database server that you're creating.
 
-::: tip Development database server
-You can use the `--dev` option to create a development database server. The option will override all the database server options prompt and create a database server tailored for development.
-:::
-
 ::: warning Can create a NAT gateway
 Ymir will create a NAT gateway if you create a private database server and the network used by the database server doesn't have a NAT gateway already. A NAT gateway costs ~$32/month plus data transfer fees.
 :::

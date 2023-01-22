@@ -56,6 +56,10 @@ To change it, you need to change the [`concurrency`][8] option. You can set it t
 
 ## Configuring your database server
 
+::: tip Aurora Serverless
+If you'd rather not have to have to think about database server connections or database server scaling, you should consider using an [Aurora serverless][10] database cluster. You can create one easily with the [`database:server:create`][11] command.
+:::
+
 The reason you don't want to disable the concurrency limit is because of your database server. A database server can only have a certain number of active database connection if you reach that limit, you will start seeing database connection errors. To prevent this, you want to keep your `concurrency` value below the number of maximum connections allowed by your database server.
 
 The number of database connections that a database server can have depends on the type. Ymir supports a lot of different database types. Below is a list of all `t3` instance types with their maximum number of connections.
@@ -80,3 +84,5 @@ db.t3.2xlarge|2730
 [7]: https://console.aws.amazon.com/systems-manager/parameters/?tab=Settings
 [8]: ../reference/configuration.md#concurrency
 [9]: https://sysadminxpert.com/aws-rds-max-connections-limit/
+[10]: https://aws.amazon.com/rds/aurora/serverless/
+[11]: ../reference/ymir-cli.html#database-server-create

@@ -67,8 +67,9 @@ define('WP_REDIS_CONFIG', [
     'async_flush' => true,
     'compression' => 'zstd',
     'serializer' => 'igbinary',
+    'shared' => true,
     'split_alloptions' => true,
-    'prefetch' => true,
+    'prefetch' => false,
     'debug' => false,
     'save_commands' => false,
 ]);

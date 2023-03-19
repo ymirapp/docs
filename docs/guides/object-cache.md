@@ -32,7 +32,7 @@ To use a Redis object cache, you'll need to attach a Redis cache cluster to your
 
 There are multiple Redis object cache plugins. However, because Ymir uses the [Relay][6] PHP extension instead of the regular Redis PHP extension, you can only use one of the two Redis object caching plugins discussed below.
 
-::: warning Deploy with object cache drop-in installed
+::: danger Deploy with object cache drop-in installed
 Because a WordPress project deployed on AWS Lambda is read only, you must install the `object-cache.php` drop-in before deploying your project. The WordPress object cache plugin won't be able to create the drop-in if you try to do it once you deployed the project with Ymir.
 :::
 

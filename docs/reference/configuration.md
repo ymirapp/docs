@@ -177,6 +177,10 @@ The project `type` will change default paths for non-WordPress projects. So you 
 
 The list of headers that the CloudFront distribution will forward to your WordPress site.
 
+::: warning 10 header limit
+CloudFront can only forward 10 headers to your WordPress site.
+:::
+
 #### functions
 
 **type**: `array`

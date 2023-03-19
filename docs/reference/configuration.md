@@ -41,6 +41,7 @@ environments:
     log_retention_period: 7
     network: network-name
     php: 7.4
+    tags: []
     warmup: 1
     website:
       memory: 512
@@ -417,6 +418,12 @@ The PHP version used by the environment. The supported versions are `7.2`, `7.3`
 Ymir will ignore this configuration option if `deployment` is set to `image`. Instead, you should specifiy the PHP version to use in your project environment's `Dockerfile`.
 :::
 
+### tags
+
+**type**: `array`
+
+Associative array of up to 10 custom [tags][13] that will be added to your environment resources on top of the automatic tags added by Ymir.
+
 ### warmup
 
 **type**: `int | false` **default**: `1`
@@ -467,3 +474,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [10]: ../guides/scaling.md
 [11]: https://console.aws.amazon.com/servicequotas/home/services/acm/quotas/L-FB94F0B0
 [12]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
+[13]: https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html

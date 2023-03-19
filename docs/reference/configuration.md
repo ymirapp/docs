@@ -129,13 +129,13 @@ The possible values are:
  * `assets` only caches assets
  * `disabled` disables CloudFront distribution caching
 
- ::: warning Provisioning delay
- Switching the `caching` value to `enabled` can cause your WordPress site to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
- :::
+::: warning Provisioning delay
+Switching the `caching` value to `enabled` can cause your WordPress site to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
+:::
 
- ::: warning Full CloudFront caching disabled with REST API
+::: warning Full CloudFront caching disabled with REST API
 If you have the `caching` set to `enabled` and the `gateway` option set to `rest`, the caching level will be downgraded to `assets` automatically. That's because REST APIs already have CloudFront page caching by default.
- :::
+:::
 
 #### cookies_whitelist
 

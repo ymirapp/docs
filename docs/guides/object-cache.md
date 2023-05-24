@@ -46,7 +46,7 @@ To configure Redis Object Cache to work Ymir, add the following configuration to
 define('WP_REDIS_CLIENT', 'relay');
 define('WP_REDIS_HOST', getenv('YMIR_REDIS_ENDPOINT'));
 define('WP_REDIS_PREFIX', getenv('YMIR_CACHE_PREFIX'));
-define('WP_REDIS_SERIALIZER', 2);
+define('WP_REDIS_IGBINARY', true);
 ```
 
 ### Object Cache Pro (paid)

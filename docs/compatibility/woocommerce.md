@@ -27,6 +27,11 @@ environments:
         - /cart
         - /checkout
         - /my-account
+      forwarded_headers:
+        - origin
+        - authorization
+        - x-http-method-override
+        - x-wp-nonce
 ```
 
 [1]: https://woocommerce.com/

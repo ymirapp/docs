@@ -12,6 +12,7 @@ name: project-name
 type: wordpress
 environments:
   environment-name:
+    architecture: x86_64
     build:
       commands: []
       include: []
@@ -87,6 +88,16 @@ All the project environments. Configuration values for environments are covered 
 ## Environment configuration
 
 Each key under the `environments` option is the name of the environment. Everything under that key is the configuration options for that environment.
+
+### architecture
+
+**type**: `string` **default**: `x86_64`
+
+The CPU architecture used by the Lambda function. Allowed values are `arm64` or `x86_64`.
+
+::: tip Faster and cheaper with Arm64
+Using the `arm64` CPU architecture can make your Lambda function **up to 20% faster** at **20% lower cost**. For backwards compatibility reasons, Ymir defaults to `x86_64`, but there are no downsides to using `arm64` architecture.
+:::
 
 ### build
 

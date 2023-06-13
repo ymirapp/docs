@@ -21,7 +21,7 @@ environments:
       caching: enabled
       cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
       default_expiry: 300
-      excluded_paths: ['/wp-admin/*', '/wp-login.php']
+      excluded_paths: ['/wp-admin/*', '/wp-cron.php', '/wp-login.php']
       forwarded_headers: ['origin']
       functions:
         - name: function-name
@@ -167,7 +167,7 @@ The default time (in seconds) that CloudFront will keep something cached.
 
 #### excluded_paths
 
-**type**: `array` **default**: `['/wp-admin/*', '/wp-login.php']`
+**type**: `array` **default**: `['/wp-admin/*', '/wp-cron.php', '/wp-login.php']`
 
 The list of paths ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
 

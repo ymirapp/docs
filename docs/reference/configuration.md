@@ -435,6 +435,10 @@ Ymir will ignore this configuration option if `deployment` is set to `image`. In
 
 Associative array of up to 10 custom [tags][13] that will be added to your environment resources on top of the automatic tags added by Ymir.
 
+::: danger Not available with personal subscription
+Tagging environment resources isn't available with personal subscriptions. You must upgrade to an agency or enterprise subscription to unlock this feature. Please refer to the [pricing page][14] for details.
+:::
+
 ### warmup
 
 **type**: `int | false` **default**: `1`
@@ -486,3 +490,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [11]: https://console.aws.amazon.com/servicequotas/home/services/acm/quotas/L-FB94F0B0
 [12]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
 [13]: https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html
+[14]: https://ymirapp.com/pricing

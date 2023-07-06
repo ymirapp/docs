@@ -211,6 +211,16 @@ The list of paths cleared from the CloudFront distribution cache during the proj
 
 The amount of memory used by the Lambda@Edge image processing function.
 
+#### origin_shield
+
+**type**: `bool` **default**: `false`
+
+Flag whether the CloudFront distribution will be configured with [Origin Shield][15].
+
+::: warning Additional cost
+Origin Shield isn't free. There's an additional cost for every 10,000 request that hits an origin. You can read more on the [CloudFront pricing page][16].
+:::
+
 #### process_images
 
 **type**: `bool` **default**: `false`
@@ -491,3 +501,5 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [12]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
 [13]: https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html
 [14]: https://ymirapp.com/pricing
+[15]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html
+[16]: https://aws.amazon.com/cloudfront/pricing/

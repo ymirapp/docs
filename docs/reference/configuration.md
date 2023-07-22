@@ -18,6 +18,8 @@ environments:
       include: []
     cache: cache-name
     cdn:
+      cache_policy_assets: assets-cache-policy-name
+      cache_policy_content: content-cache-policy-name
       caching: enabled
       cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
       default_expiry: 300
@@ -128,6 +130,22 @@ The [cache][4] to use with your environment.
 **type**: `array | string`
 
 This is the array of values to configure the environment's CloudFront distribution. If the `cdn` value is a string, it'll be used as the `caching` value.
+
+#### cache_policy_assets
+
+**type**: `string | false`
+
+The custom CloudFront cache policy used for assets and uploads.
+
+#### cache_policy_content
+
+**type**: `string | false`
+
+The custom CloudFront cache policy used for the WordPress site content.
+
+::: warning Overrides CDN options
+If you decide to use a custom CloudFront cache policy for your WordPress site content, the following `cdn` options won't apply anymore: `cookies_whitelist`, `default_expiry` and `forwarded_headers`.
+:::
 
 #### caching
 

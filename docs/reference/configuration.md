@@ -30,6 +30,7 @@ environments:
           type: viewer-request
       invalidate_paths: []
       image_processing_memory: 256
+      origin_shield: false
       process_images: false
     concurrency: 10
     cron: true

@@ -136,13 +136,13 @@ This is the array of values to configure the environment's CloudFront distributi
 
 **type**: `string | false`
 
-The custom CloudFront cache policy used for assets and uploads.
+The custom CloudFront cache policy used for assets and uploads. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
 
 #### cache_policy_content
 
 **type**: `string | false`
 
-The custom CloudFront cache policy used for the WordPress site content.
+The custom CloudFront cache policy used for the WordPress site content. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
 
 ::: warning Overrides CDN options
 If you decide to use a custom CloudFront cache policy for your WordPress site content, the following `cdn` options won't apply anymore: `cookies_whitelist`, `default_expiry` and `forwarded_headers`.

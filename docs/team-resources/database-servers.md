@@ -32,6 +32,10 @@ That said, the Ymir CLI also has commands at your disposal to create databases w
 
 Database users is another important aspect of database servers. By default, Ymir creates every database server with a `ymir` user as its [master user][6]. Ymir will only show the password for the `ymir` user once during the database server creation.
 
+::: warning Make sure to preserve the master password
+If you lose the master database password, you can use `database:server:rotate-password` to get a new master database password. This will break all currently deployed sites using the master database password. You will need to deploy those sites again to update the password.
+:::
+
 It's good security practice to not use the master user for any of your WordPress sites. This is why Ymir makes it easy to create additional users on your database servers. You can just use the [`database:user:create`][7] command to create one.
 
 ![Create a database user](../../images/create-database-user-cli.png)

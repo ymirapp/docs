@@ -18,7 +18,7 @@ environments:
       include: []
     cache: cache-name
     cdn:
-      cache_policy_assets: assets-cache-policy-name
+      cache_policy_assets: ymir-assets-policy
       cache_policy_content: content-cache-policy-name
       caching: enabled
       cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
@@ -134,7 +134,7 @@ This is the array of values to configure the environment's CloudFront distributi
 
 #### cache_policy_assets
 
-**type**: `string | false`
+**type**: `string | false` **default**: `ymir-assets-policy`
 
 The custom CloudFront cache policy used for assets and uploads. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
 

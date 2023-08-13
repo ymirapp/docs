@@ -332,9 +332,9 @@ By default, you can only have 10 domain names per environment. This means that y
 
 ### firewall
 
-**type**: `array | bool`
+**type**: `array | string | bool`
 
-This is the array of values to configure the environment's firewall. If the `firewall` value is a boolean, it'll be used as the `managed_rules` value.
+This is the array of values to configure the environment's firewall. If the `firewall` value is a string, it'll be used as the `acl` value. If the `firewall` value is a boolean, it'll be used as the `managed_rules` value.
 
 ::: tip Check out the guide
 Looking for more information on how to configure a firewall? Check out this [guide][9].
@@ -345,7 +345,17 @@ To protect your environment with a firewall, you must have CloudFront caching se
 :::
 
 ::: warning Additional cost
-Enabling a firewall on your environment isn't free. There's a fixed cost per month as well as a charge of $0.60 per 1 million requests. You can read more on the [AWS WAF pricing page][7].
+Enabling a firewall on your environment isn't free. There's a fixed cost per month as well as a charge of $0.60 per 1 million requests. You can read more on the [AWS WAF pricing page][7]. To save money, you should consider reusing your web ACL using the `acl` option.
+:::
+
+#### acl
+
+**type**: `string`
+
+The [ARN][17] of the custom web ACL used as the environment's firewall.
+
+::: warning Overrides firewall options
+If you decide to use a custom web ACL as your environment's firewall, Ymir will ignore all other `firewall` options.
 :::
 
 #### bots
@@ -418,7 +428,7 @@ When using a REST API, it isn't possible to use CloudFront for page caching. Tha
 
 **type**: `array`
 
-List of [Lambda layers][6] ARN to use for your Lambda function. You cannot use more than 5 layers per Lambda function.
+List of [Lambda layers][6] [ARN][17] to use for your Lambda function. You cannot use more than 5 layers per Lambda function.
 
 ::: warning Ignored with container image deployment
 Ymir will ignore this configuration option if `deployment` is set to `image`.
@@ -522,3 +532,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [14]: https://ymirapp.com/pricing
 [15]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html
 [16]: https://aws.amazon.com/cloudfront/pricing/
+[17]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html

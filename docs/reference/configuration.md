@@ -19,7 +19,6 @@ environments:
     cache: cache-name
     cdn:
       cache_policy_assets: ymir-assets-policy
-      cache_policy_content: content-cache-policy-name
       caching: enabled
       cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
       default_expiry: 300

@@ -16,7 +16,7 @@ One important consideration when mapping a domain to a project environment is wh
 
 ### Requesting a SSL certificate
 
-Each domain that you want to map needs to have a valid SSL certificate before you're allowed to deploy. You'll need to use the [`certificate:request`][2] command to request one for each registered domain that you want to map to your environment. So, for example, if you want to map your project environment to `domain.co.uk` and `subsite.domain.co.uk`, you only need to request a SSL certificate for `domain.co.uk`.
+Each domain that you want to map needs to have a valid [SSL certificate][4] before you're allowed to deploy. You'll need to use the [`certificate:request`][2] command to request one for each registered domain that you want to map to your environment. So, for example, if you want to map your project environment to `domain.co.uk` and `subsite.domain.co.uk`, you only need to request a SSL certificate for `domain.co.uk`.
 
 ![certificate:request wp-foundation.org](../../images/wp-foundation-certificate-request.png)
 
@@ -67,6 +67,32 @@ environments:
 
 You'll notice that, with this configuration, you need to add the `www.domain.co.uk` domain. Ymir won't automatically handle it for you.
 
+::: warning Mapped domain limit
+You cannot have more than 99 domain names mapped per environment. If you need to map more 99 domains, consider using a wildcard domain or creating additional environments.
+:::
+
+## Wildcard domains
+
+Ymir also supports wildcard domains. For the purpose of the domain mapping limit, a wildcard domain only counts as a single domain mapping even if it could support hundreds of domains. To map a wildcard domain, you can do the following:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+      domain:
+        - domain.co.uk
+        - '*.domain.co.uk'
+```
+
+You'll still need to map the `domain.co.uk` top level domain with a wildcard domain.
+
+::: warning Use single quotes for wildcard domain
+A wildcard domain mapping must be wrapped in single quotes for proper parsing of the YAML file.
+:::
+
 [1]: ../projects/environments.md#vanity-domain-name
 [2]: ../reference/ymir-cli.md#certificate-request
 [3]: ../reference/configuration.md#domain
+[4]: ../team-resources/ssl-certificates.html

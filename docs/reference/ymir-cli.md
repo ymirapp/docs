@@ -1934,6 +1934,10 @@ The name of the environment to build.
 
 #### Options
 
+##### `--debug`
+
+Run the build in debug mode.
+
 ##### `--with-uploads`
 
 Copy the "uploads" directory during the build.
@@ -2034,6 +2038,10 @@ Check out the [video](https://www.youtube.com/watch?v=3C1SOCP5HRc).
 The name of the environment to deploy to.
 
 #### Options
+
+##### `--debug-build`
+
+Run the deployment build in debug mode.
 
 ##### `--with-uploads`
 

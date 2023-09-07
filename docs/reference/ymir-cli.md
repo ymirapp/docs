@@ -2053,6 +2053,9 @@ Import the "uploads" directory during the deployment.
 <code><span class="token comment"># Deploy project to the "staging" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> deploy</code>
 
+<code><span class="token comment"># Deploy project to the "staging" environment and import the "uploads" directory at the same time</span></code>
+<code>$ <span class="token builtin">ymir</span> deploy --with-uploads</code>
+
 <code><span class="token comment"># Deploy project to the "production" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> deploy production</code>
 </pre>

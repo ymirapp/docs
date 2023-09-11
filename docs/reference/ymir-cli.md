@@ -1425,6 +1425,64 @@ List the project's environments.
 <code>$ <span class="token builtin">ymir</span> environment:list</code>
 </pre>
 
+### environment:logs:query
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:logs:query [options] [&lt;environment&gt; [&lt;function&gt;]]</code>
+</pre>
+
+Retrieve logs for an environment function.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get the logs of.
+
+##### `environment` (default: website)
+
+The environment function to get the logs of.
+
+#### Options
+
+##### `--lines=LINES` (default: 10)
+
+The number of log lines to display.
+
+##### `--order=ORDER` (default: asc)
+
+The order to display the logs in.
+
+##### `--period=PERIOD` (default: 1h)
+
+The period of time to get the logs for.
+
+##### `--timezone=TIMEZONE`
+
+The timezone to display the log times in.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Retrive the last 10 logged events from the "website" function of the "staging" environment over the last hour</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query</code>
+
+<code><span class="token comment"># Retrive the last 10 logged events from the "website" function of the "production" environment over the last hour</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query production</code>
+
+<code><span class="token comment"># Retrive the last 10 logged events from the "console" function of the "production" environment over the last hour</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query production console</code>
+
+<code><span class="token comment"># Retrive the last 10 logged events from the "website" function of the "staging" environment over the last minute</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query --period=1m</code>
+
+<code><span class="token comment"># Retrive the last 20 logged events from the "website" function of the "staging" environment over the last hour</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query --lines</code>
+
+<code><span class="token comment"># Retrive the last 10 logged events from the "website" function of the "staging" environment over the last hour with the times displayed in the New York timezone</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:query --timezone=America/New_York</code>
+</pre>
+
 ### environment:metrics
 
 <pre class="language-bash">

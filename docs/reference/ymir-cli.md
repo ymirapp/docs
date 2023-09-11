@@ -1483,6 +1483,53 @@ The timezone to display the log times in.
 <code>$ <span class="token builtin">ymir</span> environment:logs:query --timezone=America/New_York</code>
 </pre>
 
+### environment:logs:watch
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch [options] [&lt;environment&gt; [&lt;function&gt;]]</code>
+</pre>
+
+Continuously monitor and display the most recent logs for an environment function.
+
+#### Arguments
+
+##### `environment` (default: staging)
+
+The name of the environment to get the logs of.
+
+##### `environment` (default: website)
+
+The environment function to get the logs of.
+
+#### Options
+
+##### `--interval=INTERVAL` (default: 30)
+
+Interval (in seconds) to poll for new logs.
+
+##### `--timezone=TIMEZONE`
+
+The timezone to display the log times in.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Continuously monitor and display the most recent logs from the "website" function of the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch</code>
+
+<code><span class="token comment"># Continuously monitor and display the most recent logs from the "website" function of the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch production</code>
+
+<code><span class="token comment"># Continuously monitor and display the most recent logs from the "console" function of the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch console</code>
+
+<code><span class="token comment"># Continuously monitor and display the most recent logs from the "website" function of the "staging" environment while polling every minute</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch --interval=60</code>
+
+<code><span class="token comment"># Continuously monitor and display the most recent logs from the "website" function of the "staging" environment displayed in the New York timezone</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:logs:watch --timezone=America/New_York</code>
+</pre>
+
 ### environment:metrics
 
 <pre class="language-bash">

@@ -68,6 +68,21 @@ You'll then want to add these DNS records to Cloudflare like this:
 
 ![Cloudflare DNS records](../../images/cloudflare-dashboard-dns-records.png)
 
+## Configuring WordPress to have the correct remote address
+
+When using Cloudflare, WordPress will be unable to detect the proper IP address for HTTP requests. `REMOTE_ADDR` will always be pointing to a Cloudflare IP address. This is a problem when tracking IPs for spam, bot detection or any other security scenarios.
+
+To update `REMOTE_ADDR` to have the proper request IP address, add the following to your `wp-config.php`:
+
+```php
+
+if (!empty( $_SERVER['HTTP_CF_CONNECTING_IP'])) {
+    $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+}
+```
+
+This will replace `REMOTE_ADDR` with the IP address that Cloudflare received the request from.
+
 [1]: ../reference/configuration.md#cdn
 [2]: https://cloudflare.com
 [3]: https://workers.cloudflare.com/

@@ -461,7 +461,7 @@ Whenever you connect or disconnect a `network`, the next deployment will take be
 
 **type**: `string` **default**: `7.4`
 
-The PHP version used by the environment. The supported versions are `7.2`, `7.3`, `7.4`, `8.0` and `8.1`.
+The PHP version used by the environment. The supported versions are `7.2`, `7.3`, `7.4`, `8.0`, `8.1` and `8.2`.
 
 ::: warning Ignored with container image deployment
 Ymir will ignore this configuration option if `deployment` is set to `image`. Instead, you should specifiy the PHP version to use in your project environment's `Dockerfile`.

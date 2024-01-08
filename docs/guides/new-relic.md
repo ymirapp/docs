@@ -21,7 +21,7 @@ With this out of the way, we can look at how to configure your Ymir project to s
 Once that's done, you'll to edit your project's `Dockerfile` and replace it with the content below:
 
 ```docker
-FROM ymirapp/php-runtime:php-<PHP_VERSION>
+FROM --platform=linux/x86_64 ymirapp/php-runtime:php-<PHP_VERSION>
 
 # Download and install New Relic agent
 RUN rpm -Uvh http://yum.newrelic.com/pub/newrelic/el5/x86_64/newrelic-repo-5-3.noarch.rpm && \
@@ -49,6 +49,10 @@ RUN chmod +x /var/task/entrypoint.sh
 
 ENTRYPOINT ["/var/task/entrypoint.sh"]
 ```
+
+::: warning x86 architecture only
+Currently, you can only use New Relic with the default `x86_64` architecture.
+:::
 
 You'll then want to replace the following placeholder values:
 

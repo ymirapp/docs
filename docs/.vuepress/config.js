@@ -74,6 +74,7 @@ module.exports = {
           '/guides/object-cache',
           '/guides/cloudflare',
           '/guides/new-relic',
+          '/guides/gd-extension',
         ]
       },
       {

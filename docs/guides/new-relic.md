@@ -14,11 +14,16 @@ Before we look at how to set up New Relic with your Ymir project, it's important
 
 For this reason, it's not a good idea to leave New Relic on all the time in a production environment. You should only use New Relic as a diagnostic tool and turn it off when you don't need it. This isn't ideal, but it's a current limitation with serverless and APM tools.
 
+## Requirements
+
+To install the New Relic in your Ymir project, you'll need to:
+
+ * Use [container image deployment][3]
+ * Use `x86_64` as your [`architecture`][4]
+
 ## Configuring your Ymir project to use New Relic
 
-With this out of the way, we can look at how to configure your Ymir project to send application performance data to New Relic. First, you'll need to switch your project to use container image deployment. If you haven't done so already, you can refer to [this guide][3].
-
-Once that's done, you'll to edit your project's `Dockerfile` and replace it with the content below:
+Once your project satisfies the above requirements, we can look at how to configure your Ymir project to send application performance data to New Relic. You'll need to replace your project's `Dockerfile` with the one below.
 
 ```docker
 FROM --platform=linux/x86_64 ymirapp/php-runtime:php-<PHP_VERSION>
@@ -50,10 +55,6 @@ RUN chmod +x /var/task/entrypoint.sh
 ENTRYPOINT ["/var/task/entrypoint.sh"]
 ```
 
-::: warning x86 architecture only
-Currently, you can only use New Relic with the default `x86_64` architecture.
-:::
-
 You'll then want to replace the following placeholder values:
 
  * `<PHP_VERSION>` should be the PHP version you want to use.
@@ -74,9 +75,10 @@ newrelic-daemon -c /usr/local/etc/newrelic/newrelic.cfg
 newrelic_background_job(false);
 ```
 
-Once that's done, you can deploy your project with the [`ymir deploy`][4] command and you should start receiving performance data from New Relic!
+Once that's done, you can deploy your project with the [`ymir deploy`][5] command and you should start receiving performance data from New Relic!
 
 [1]: https://newrelic.com/
 [2]: https://en.wikipedia.org/wiki/Application_performance_management
 [3]: ./container-image-deployment.md
-[4]: ../reference/ymir-cli.md#project-deploy-deploy
+[4]: ../reference/configuration.md#architecture
+[5]: ../reference/ymir-cli.md#project-deploy-deploy

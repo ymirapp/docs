@@ -32,7 +32,7 @@ environments:
       origin_shield: false
       process_images: false
     concurrency: 10
-    cron: true
+    cron: 1
     database:
       server: database-server
       name: database-name

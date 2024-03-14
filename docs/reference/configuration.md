@@ -41,6 +41,7 @@ environments:
     domain: []
     firewall: disabled
     gateway: http
+    logging: enabled
     log_retention_period: 7
     network: network-name
     php: 7.4
@@ -432,6 +433,12 @@ List of [Lambda layers][6] [ARN][17] to use for your Lambda function. You cannot
 ::: warning Ignored with container image deployment
 Ymir will ignore this configuration option if `deployment` is set to `image`.
 :::
+
+### logging
+
+**type**: `bool | enabled | disabled`
+
+Flag whether the environment's Lambda functions are allowed to write logs to CloudWatch.
 
 ### log_retention_period
 

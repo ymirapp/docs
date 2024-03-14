@@ -29,8 +29,8 @@ environments:
           type: viewer-request
       invalidate_paths: []
       image_processing_memory: 256
-      origin_shield: false
-      process_images: false
+      origin_shield: disabled
+      process_images: disabled
     concurrency: 10
     cron: 1
     database:
@@ -39,7 +39,7 @@ environments:
       user: database-user
     deployment: zip
     domain: []
-    firewall: false
+    firewall: disabled
     gateway: http
     log_retention_period: 7
     network: network-name
@@ -231,7 +231,7 @@ The amount of memory used by the Lambda@Edge image processing function.
 
 #### origin_shield
 
-**type**: `bool` **default**: `false`
+**type**: `bool | enabled | disabled` **default**: `disabled`
 
 Flag whether the CloudFront distribution will be configured with [Origin Shield][15].
 
@@ -241,7 +241,7 @@ Origin Shield isn't free. There's an additional cost for every 10,000 request th
 
 #### process_images
 
-**type**: `bool` **default**: `false`
+**type**: `bool | enabled | disabled` **default**: `disabled`
 
 Flag whether the CloudFront distribution will be configured with the Lambda@Edge image processing function.
 
@@ -333,7 +333,7 @@ By default, you can only have 10 domain names per environment. This means that y
 
 **type**: `array | string | bool`
 
-This is the array of values to configure the environment's firewall. If the `firewall` value is a string, it'll be used as the `acl` value. If the `firewall` value is a boolean, it'll be used as the `managed_rules` value.
+This is the array of values to configure the environment's firewall. If the `firewall` value is a string, it'll be used as the `acl` value. If the `firewall` value is a boolean or `disabled` or `enabled`), it'll be used as the `managed_rules` value.
 
 ::: tip Check out the guide
 Looking for more information on how to configure a firewall? Check out this [guide][9].
@@ -387,7 +387,7 @@ AWS WAF bot protection is an additional cost on top of your existing AWS WAF bil
 
 #### managed_rules
 
-**type**: `bool`
+**type**: `bool | enabled | disabled`
 
 Flag that determines whether the firewall will be configured with some default AWS managed firewall rules. Below, you'll find the list of managed rules that Ymir will configure if you set this to `true`. If set to `false`, no managed rules will get configured and you can configure some yourself. You can read more about them [here][8].
 

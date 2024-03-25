@@ -73,6 +73,7 @@ module.exports = {
           '/guides/firewall',
           '/guides/object-cache',
           '/guides/cloudflare',
+          '/guides/logging-service',
           '/guides/new-relic',
           '/guides/gd-extension',
         ]

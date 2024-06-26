@@ -37,7 +37,7 @@ If the configured `network` doesn't have a NAT gateway, a NAT gateway will be co
 
 ## Bastion host
 
-If you want to access private subnet resources, you'll need a [bastion host][2] to do so. A bastion host is a small (`t3.nano`) SSH accessible EC2 instance that resides on your public subnet. You connect to it and then from there you can connect to resources on your private subnet.
+If you want to access private subnet resources, you'll need a [bastion host][2] to do so. A bastion host is a small (`t4g.nano`) SSH accessible EC2 instance that resides on your public subnet. You connect to it and then from there you can connect to resources on your private subnet.
 
 You can add a bastion host to your network by using the `network:bastion:add` command. Once the bastion host created, the Ymir CLI will return the SSH private key used to connect to it.
 

@@ -26,7 +26,7 @@ That's why WooCommerce sites more than any other type of site rely on object cac
 
 ## Choosing an object cache plugin your WordPress site
 
-At this time, Ymir only supports object caching using [Redis][3]. Redis is an extremely performant object caching option. Load tests have shown that the smallest Redis cluster available (`t3.micro`) can [handle over a thousand concurrent requests][4] with ease.
+At this time, Ymir only supports object caching using [Redis][3]. Redis is an extremely performant object caching option. Load tests have shown that the smallest Redis cluster available (`t4g.micro`) can [handle over a thousand concurrent requests][4] with ease.
 
 To use a Redis object cache, you'll need to attach a Redis cache cluster to your project. You can read more on Redis cache clusters and how to attach one to your project [here][5]. Once that's done, you'll be ready to install a Redis object cache plugin. 
 

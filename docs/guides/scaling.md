@@ -62,18 +62,18 @@ If you'd rather not have to have to think about database server connections or d
 
 The reason you don't want to disable the concurrency limit is because of your database server. A database server can only have a certain number of active database connection if you reach that limit, you will start seeing database connection errors. To prevent this, you want to keep your `concurrency` value below the number of maximum connections allowed by your database server.
 
-The number of database connections that a database server can have depends on the type. Ymir supports a lot of different database types. Below is a list of all `t3` instance types with their maximum number of connections.
+The number of database connections that a database server can have depends on the type. Ymir supports a lot of different database types. Below is a list of all `t4g` instance types with their maximum number of connections.
 
 |Type|Maximum connections|
 ---|:---:
-db.t3.micro|85
-db.t3.small|170
-db.t3.medium|341
-db.t3.large|682
-db.t3.xlarge|1365
-db.t3.2xlarge|2730
+db.t4g.micro|85
+db.t4g.small|170
+db.t4g.medium|341
+db.t4g.large|682
+db.t4g.xlarge|1365
+db.t4g.2xlarge|2730
 
-`t3` databases are ideal for most situations. But if you'd like to use another category of database servers, you can refer to [this article][10] to see all maximum connection numbers for all database server types.
+`t4g` databases are ideal for most situations. But if you'd like to use another category of database servers, you can refer to [this article][10] to see all maximum connection numbers for all database server types.
 
 [1]: ../reference/configuration.md#caching
 [2]: https://woocommerce.com/

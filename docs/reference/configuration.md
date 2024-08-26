@@ -212,11 +212,17 @@ The list of headers that the CloudFront distribution will forward to your WordPr
 CloudFront can only forward 10 headers to your WordPress site.
 :::
 
-#### functions
+#### functions_assets
 
 **type**: `array`
 
-The list of CloudFront functions to associate with the CloudFront distribution. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+The list of CloudFront functions to associate with CloudFront origin used for assets and uploads. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+
+#### functions_content
+
+**type**: `array`
+
+The list of CloudFront functions to associate with CloudFront origin used for the WordPress site content. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
 
 #### invalidate_paths
 

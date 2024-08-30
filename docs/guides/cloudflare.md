@@ -6,7 +6,7 @@
 
 While Ymir already comes with CloudFront as a content delivery network, you're not required to use it if you don't want to. You can disable CloudFront using the [`cdn`][1] project configuration option. But you can also use another content delivery network like [Cloudflare][2].
 
-Cloudflare is a popular content delivery network option because of its generous free tier. It also has advanced features such as [Cloudflare workers][3], which CloudFront doesn't have.
+Cloudflare is a popular content delivery network option because of its generous free tier. It also has advanced features such as [Cloudflare workers][3], which CloudFront doesn't have. Cloudflare also doesn't have any bandwidth costs which can reduce your Cloudfront costs in high traffic scenarios.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ When adding your SSL certificate DNS validation record, make sure to disable the
 
 In Cloudflare, you must ensure to set the encryption level to `Full` for the domain that you'll use.
 
-![Cloudflare SSL encryption](../../images/cloudflare-ssl-encryption.png)
+![Cloudflare SSL encryption](../../images/cloudflare-dashboard-ssl-encryption.png)
 
 ## Configuring your project
 
@@ -68,6 +68,22 @@ You'll then want to add these DNS records to Cloudflare like this:
 
 ![Cloudflare DNS records](../../images/cloudflare-dashboard-dns-records.png)
 
+## Creating Cloudflare caching rule for assets and uploads
+
+If you decide to use Cloudflare as your content delivery network on top of CloudFront, you'll need to configure [cache rules][5] to cache assets and uploads. To do that, you'll need to head to the Cloudflare dashboard and create a cache rule there. (You can read more on how to create a cache rule in the Cloudflare dashboard [here][6].)
+
+Below, you'll find the cache rule to use to cache both your assets and uploads.
+
+![Cloudflare "Assets and Uploads" Cache Rule](../../images/cloudflare-dashboard-assets-uploads-cache-rule.png)
+
+The resulting expression should be:
+
+```
+(http.request.uri.path wildcard "/assets/*") or (http.request.uri.path wildcard "/uploads/*")
+```
+
+You must then select **Eligible for cache** as the caching option. You may use the default values for all the other options.
+
 ## Configuring WordPress to have the correct remote address
 
 When using Cloudflare, WordPress will be unable to detect the proper IP address for HTTP requests. `REMOTE_ADDR` will always be pointing to a Cloudflare IP address. This is a problem when tracking IPs for spam, bot detection or any other security scenarios.
@@ -75,8 +91,7 @@ When using Cloudflare, WordPress will be unable to detect the proper IP address 
 To update `REMOTE_ADDR` to have the proper request IP address, add the following to your `wp-config.php`:
 
 ```php
-
-if (!empty( $_SERVER['HTTP_CF_CONNECTING_IP'])) {
+if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
     $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
 }
 ```
@@ -87,3 +102,5 @@ This will replace `REMOTE_ADDR` with the IP address that Cloudflare received the
 [2]: https://cloudflare.com
 [3]: https://workers.cloudflare.com/
 [4]: http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#VirtualHostingCustomURLs
+[5]: https://developers.cloudflare.com/cache/how-to/cache-rules/
+[6]: https://developers.cloudflare.com/cache/how-to/cache-rules/create-dashboard/

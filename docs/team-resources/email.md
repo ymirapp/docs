@@ -5,7 +5,7 @@
 Because there are no servers to send emails from, all emails sent from your WordPress sites have to go through a transactional email service. The Ymir plugin automatically configures WordPress to send email through [AWS SES][1]. That said, there are a few things you need to do yourself to get up and running.
 
 ::: tip Disabing SES integration
-Ymir doesn't require that you use SES as your transaction email service. If you're already using another service or even another SES plugin, you can disable Ymir's SES integration by defining the constant `YMIR_DISABLE_SES` as `true` in your `wp-config.php` file.
+Ymir doesn't require that you use SES as your transaction email service. If you're already using another service or even another SES plugin, you can disable Ymir's SES integration by defining the constant `YMIR_DISABLE_EMAIL_SENDING` as `true` in your `wp-config.php` file.
 :::
 
 ## Getting your AWS account approved for sending email

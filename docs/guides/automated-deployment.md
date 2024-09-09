@@ -22,7 +22,7 @@ Thew following section explains how to set up a basic automated deployment workf
 
 ### GitHub actions
 
-First, you're going to need to create a secret to store your API token. Secrets are encrypted environment variables that allow you to store sensitive information safely. You can read more about them and how to create them [here][2]
+First, you're going to need to create a secret to store your API token. Secrets are encrypted environment variables that allow you to store sensitive information safely. You can read more about them and how to create them [here][2].
 
 You can name your secret whatever you want. That said, for this example, the secret name will be `YMIR_API_TOKEN` like the environment variable. You can see it in the same workflow below.
 
@@ -54,5 +54,31 @@ jobs:
 
 This sample workflow will deploy your project to `production` whenever a commit gets pushed to the `main` branch. You'll want to use `master` branch if you have an older GitHub repository.
 
+### Bitbucket Pipelines
+
+First, you're going to need to create a secret to store your API token as the `YMIR_API_TOKEN` environment variable. Secrets are encrypted environment variables that allow you to store sensitive information safely. You can read more about them and how to create them [here][3].
+
+```yml
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Deploy to production
+          image: php:7.4.33
+          script:
+            - apt-get update && apt-get install --yes zip unzip libzip-dev
+            - docker-php-ext-install zip
+            - docker-php-ext-enable zip
+            - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+            - composer global require ymirapp/cli
+            - composer install
+            - export PATH="$PATH:$HOME/.composer/vendor/bin"
+            - source ~/.bashrc
+            - ymir deploy production
+```
+
+This sample pipeline will deploy your project to `production` whenever a commit gets pushed to the `main` branch.
+
 [1]: https://ymirapp.com/account/manage
 [2]: https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets
+[3]: https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/

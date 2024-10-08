@@ -40,7 +40,7 @@ You have multiple ways to update environment variables at your disposal. If you'
 If you're looking to modify a lot of environment variables at once, you can use the `environment:variables:download` command. The command will pull down all the environment variables for the given environment into a `.env` environment file. You can then use that `.env` file to edit them.
 
 ```
-$ ymir environment:variable:pull environment-name
+$ ymir environment:variable:download environment-name
 ```
 
 For example, the command above would create the `.env.environment-name` file. If you've never used a `.env` file, it's a simple key-value file that follows the `{KEY}={VALUE}` format. When you're done editing it, you can push your changes back to your project environment using the `environment:variables:upload` command.

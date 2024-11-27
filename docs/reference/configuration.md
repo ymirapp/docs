@@ -24,7 +24,10 @@ environments:
       default_expiry: 300
       excluded_paths: ['/wp-admin/*', '/wp-cron.php', '/wp-login.php']
       forwarded_headers: ['origin']
-      functions:
+      functions_assets:
+        - name: function-name
+          type: viewer-request
+      functions_content:
         - name: function-name
           type: viewer-request
       invalidate_paths: []

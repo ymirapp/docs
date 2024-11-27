@@ -65,6 +65,8 @@ pipelines:
       - step:
           name: Deploy to production
           image: php:7.4.33
+          services:
+            - docker
           script:
             - apt-get update && apt-get install --yes zip unzip libzip-dev
             - docker-php-ext-install zip

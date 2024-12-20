@@ -42,7 +42,7 @@ To install the Axiom Lambda extension in your Ymir project, you'll need to:
 
 #### Configuring your project to use Axiom
 
-To begin, you'll need to go to [Axiom Lambda extension GitHub repository][5]. There, you'll want to find the ARN for the Lambda extension in your project region. As an example, here is the ARN for version 5 of the extension for the `arm64` [architecture][6] in the `us-east-1` region: `arn:aws:lambda:us-east-1:694952825951:layer:axiom-extension-arm64:5`
+To begin, you'll need to go to [Axiom Lambda extension GitHub repository][5]. There, you'll want to find the ARN for the Lambda extension in your project region. As an example, here is the ARN for version 11 of the extension for the `arm64` [architecture][6] in the `us-east-1` region: `arn:aws:lambda:us-east-1:694952825951:layer:axiom-extension-arm64:11`
 
 Once you have the ARN of the extension that you want to install, you'll need to download it using the [AWS CLI][7] using the command below. Please note that `<ARN>` is a placeholder. You should replace the placeholder with the ARN that you found earlier.
 
@@ -50,11 +50,21 @@ Once you have the ARN of the extension that you want to install, you'll need to 
 $ aws lambda get-layer-version-by-arn --arn <ARN> --query 'Content.Location' --output text
 ```
 
-You'll then want to create an `axiom` directory at the root of your project. In it, you'll want to copy the extension file from the zipped archive that you downloaded with the AWS CLI. 
+You'll then want to create an `axiom` directory at the root of your project. In it, you'll want to copy the extension file from the zipped archive that you downloaded with the AWS CLI. Once you copy the extension file over, you project should have a directory structure like this:
+
+```
+axiom/
+├── extensions/
+    └── axiom-lambda-extension
+```
 
 Once that's done, you'll want to edit your project's `Dockerfile` and add the following line:
 
 ```Dockerfile
+COPY . /var/task
+
+RUN rm -rf /var/task/axiom
+
 COPY ./axiom /opt/
 ```
 

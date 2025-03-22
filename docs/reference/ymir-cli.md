@@ -2499,7 +2499,7 @@ Import files to the environment uploads directory.
 
 #### Arguments
 
-##### `path` (default: `wp-content/uploads` for WordPress projects and `web/app/uploads` for Bedrock projects)
+##### `path` (default: `path/to/uploads` for WordPress projects, `web/app/uploads` for Bedrock projects and `public/content/uploads` for Radicle projects)
 
 The path to the files to import.
 

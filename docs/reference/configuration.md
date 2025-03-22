@@ -83,6 +83,7 @@ The project type.
 The possible values are:
 
  * `bedrock` for [Bedrock][1] projects
+ * `radicle` for [Radicle][18] projects
  * `wordpress` for WordPress projects
 
 ### environments
@@ -202,7 +203,7 @@ By default, CloudFront caches files in the `/uploads` directory for 24h. But som
 :::
 
 ::: tip Tailored to all project types
-The project `type` will change default paths for non-WordPress projects. So you don't need to edit this for `bedrock` projects.
+The project `type` will change default paths for non-WordPress projects. So you don't need to edit this for `bedrock` or `radicle` projects.
 :::
 
 #### forwarded_headers
@@ -548,3 +549,4 @@ This can be a significant technical hurdle if your WordPress site has long runni
 [15]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html
 [16]: https://aws.amazon.com/cloudfront/pricing/
 [17]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+[18]: https://roots.io/radicle/

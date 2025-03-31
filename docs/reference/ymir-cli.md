@@ -40,6 +40,10 @@ The name of the cache cluster.
 
 #### Options
 
+##### `--engine=ENGINE` (default: valkey)
+
+The engine used by the cache cluster.
+
 ##### `--network=NETWORK`
 
 The ID or name of the network on which the cache cluster will be created.

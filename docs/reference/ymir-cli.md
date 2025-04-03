@@ -109,6 +109,36 @@ List all the cache clusters that the current team has access to.
 ---- --------- ----------- ---------- -------------- ----------- ----------------
 </pre>
 
+### cache:modify
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> cache:modify [&lt;cache&gt;]</code>
+</pre>
+
+Modify a cache cluster.
+
+#### Arguments
+
+##### `cache` (optional)
+
+The ID or name of the cache cluster to modify.
+
+#### Options
+
+##### `--type=TYPE`
+
+The cache cluster type.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Modify a cache cluster with prompt for cache cluster</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:modify</code>
+
+<code><span class="token comment"># Modify the cache cluster named "cluster"</span></code>
+<code>$ <span class="token builtin">ymir</span> cache:modify cluster</code>
+</pre>
+
 ### cache:tunnel
 
 <pre class="language-bash">

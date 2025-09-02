@@ -52,6 +52,7 @@ environments:
     tags: []
     warmup: 1
     website:
+      concurrency: 10
       memory: 512
       timeout: 30
     console:
@@ -261,18 +262,20 @@ Flag whether the CloudFront distribution will be configured with the Lambda@Edge
 
 **type**: `int | false` **default**: `10`
 
-This option controls the maximum number of `website` Lambda functions that can exist at the same time. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
+The environment-level default concurrency value that is inherited by `website`. This option controls the maximum number of Lambda functions that can exist at the same time for each function type. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
+
+Individual function types can override this default by specifying their own `concurrency` value:
+- `website` functions inherit this value by default
 
 ::: tip Check out the guide
 Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
 :::
 
 ::: warning Overwhelming your database server
-If your `concurrency` value is too high or disabled, your database server could get overwhelmed when a traffic spike hits your WordPress site. If this happens, you'll want to increase the capacity of your database server.
+If your `concurrency` values are too high or disabled, your database server could get overwhelmed when spikes hit your application. If this happens, you'll want to increase the capacity of your database server.
 :::
 
 ### cron
-
 **type**: `int | false` **default**: `1`
 
 The interval (in minutes) that [WP-Cron][3] gets called by CloudWatch. Also controls the `DISABLE_WP_CRON` constant. If set to `false`, it disables the CloudWatch rule and renables the standard WP-Cron behaviour.
@@ -501,37 +504,80 @@ Tagging environment resources isn't available with personal subscriptions. You m
 
 The number of `website` functions that CloudWatch will keep warmed up. If set to `false`, it disables the warming up CloudWatch rule.
 
-### console / website
+### website
 
 **type**: `array`
 
-This is the array of values to configure the environment's Lambda functions. There are two function nodes: `console` and `website`. `console` is the function used when running WP-CLI commands or any other background tasks. `website` is the function connected to the API gateway and that handles all the HTTP traffic.
+Configuration for the Lambda function that handles HTTP traffic from your WordPress site. This function is connected to the API gateway and processes all web requests.
+
+#### concurrency
+
+**type**: `int | false` **default**: inherits from environment-level `concurrency`
+
+The maximum number of `website` Lambda functions that can exist at the same time. (AWS calls this [reserved concurrency][2].) By default, this inherits the value from the environment-level `concurrency` setting. Setting this option to `false` removes the limit and allows unrestricted scaling.
+
+::: tip Check out the guide
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+:::
+
+::: warning Overwhelming your database server
+If your `concurrency` value is too high or disabled, your database server could get overwhelmed when a traffic spike hits your application. If this happens, you'll want to increase the capacity of your database server.
+:::
 
 #### memory
 
-**type**: `int` **default**: `512` for `website` and `1024` for `console`
+**type**: `int` **default**: `512`
 
-The amount of memory used by the Lambda function. The `website` function has lower memory needs by default because most memory heavy tasks are handled by the `console` function. Both default memory values are the lowest amount possible without impact to performance. If you lower them more, there might be issues during your function execution.
+The amount of memory (in MB) used by the `website` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. The `website` function has lower memory needs by default because most memory-heavy tasks are handled by the `console` function.
 
 ::: warning Low memory termination
-If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure to give it enough memory to execute the worst case scenarios.
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
 :::
 
 ::: warning Memory cost
-Lambda charges based on the configured memory used. So more memory, means a higher Lambda bill. This isn't much of a concern for the `console` function since it won't get called a lot by default. But it's something to keep in mind when configuring the amount of memory that the `website` function has.
+Lambda charges based on configured memory. More memory means a higher Lambda bill. This is especially important for the `website` function since it handles all HTTP traffic.
 :::
 
 #### timeout
 
-**type**: `int` **default**: `30` for `website` and `60` for `console`
+**type**: `int` **default**: `30`
 
-The maximum amount of time (in seconds) that the Lambda function can run before Lambda terminates it. The maximum allowed values depend on the function type. `website` cannot have a timeout larger than 30 seconds. `console` can have a maximum timeout of 900 seconds (15 minutes).
+The maximum amount of time (in seconds) that the `website` Lambda function can run before Lambda terminates it. The maximum allowed timeout depends on your gateway configuration:
+
+- **With API Gateway** (`gateway: http` or `gateway: rest`): Maximum 30 seconds
+- **Without API Gateway** (`gateway: false`): Maximum 900 seconds (15 minutes)
 
 ::: warning API gateway timeout
-The 30 second timeout limit for the `website` function is due to a limit with AWS API gateways. An API gateway will terminate a connection after 30 seconds. This isn't modifiable.
+The 30 second timeout limit when using an API gateway is due to AWS API Gateway limits. This cannot be modified.
 
-This can be a significant technical hurdle if your WordPress site has long running operations that take more than 30 seconds to complete. In that scenario, these long operations need to be offloaded to a WP-CLI command or some external service.
+This can be a significant technical hurdle if your WordPress site has long-running operations that take more than 30 seconds to complete. In that scenario, these operations should be offloaded to a WP-CLI command (using the `console` function) or an external service.
 :::
+
+### console
+
+**type**: `array`
+
+Configuration for the Lambda function used for running WP-CLI commands and other background tasks. This function is not connected to web traffic and is optimized for longer-running console commands and background tasks.
+
+#### memory
+
+**type**: `int` **default**: `1024`
+
+The amount of memory (in MB) used by the `console` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. The `console` function has higher memory by default since it typically handles memory-intensive operations like WP-CLI commands.
+
+::: warning Low memory termination
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
+:::
+
+::: tip Lower cost impact
+Memory cost is less of a concern for the `console` function since it's not called frequently compared to the `website` function.
+:::
+
+#### timeout
+
+**type**: `int` **default**: `60`
+
+The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 900 seconds (15 minutes), making it suitable for longer-running console commands and background tasks.
 
 [1]: https://github.com/roots/bedrock
 [2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved

@@ -92,7 +92,7 @@ The possible values are:
 
  * `bedrock` for [Bedrock][1] projects
  * `radicle` for [Radicle][18] projects
- * `wordpress` for WordPress projects
+ * `wordpress` for standard WordPress projects
 
 ### environments
 
@@ -154,10 +154,10 @@ The custom CloudFront cache policy used for assets and uploads. Setting this opt
 
 **type**: `string | false`
 
-The custom CloudFront cache policy used for the WordPress site content. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
+The custom CloudFront cache policy used for the PHP application content. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
 
 ::: warning Overrides CDN options
-If you decide to use a custom CloudFront cache policy for your WordPress site content, the following `cdn` options won't apply anymore: `cookies_whitelist`, `default_expiry` and `forwarded_headers`.
+If you decide to use a custom CloudFront cache policy for your PHP application content, the following `cdn` options won't apply anymore: `cookies_whitelist`, `default_expiry` and `forwarded_headers`.
 :::
 
 #### caching
@@ -173,7 +173,7 @@ The possible values are:
  * `disabled` disables CloudFront distribution caching
 
 ::: warning Provisioning delay
-Switching the `caching` value to `enabled` can cause your WordPress site to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
+Switching the `caching` value to `enabled` can cause your PHP application to not load certain assets while the CloudFront distribution updates. This process can take as long as 40 minutes.
 :::
 
 ::: warning Full CloudFront caching disabled with REST API
@@ -184,7 +184,7 @@ If you have the `caching` set to `enabled` and the `gateway` option set to `rest
 
 **type**: `array` **default**: `['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']`
 
-The list of cookies ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
+The list of cookies ignored by CloudFront and always forwarded to your PHP application. Supports `*` wildcard character.
 
 ::: tip Default cookies always added
 The default cookies to whitelist will always be added to your project configuration during deployment. So if you need to customize the `cookies_whitelist` option, you can omit them.
@@ -200,7 +200,7 @@ The default time (in seconds) that CloudFront will keep something cached.
 
 **type**: `array` **default**: `['/wp-admin/*', '/wp-cron.php', '/wp-login.php']`
 
-The list of paths ignored by CloudFront and always forwarded to your WordPress site. Supports `*` wildcard character.
+The list of paths ignored by CloudFront and always forwarded to your PHP application. Supports `*` wildcard character.
 
 ::: tip Default paths always added
 The default paths to exclude will always be added to your project configuration during deployment. So if you need to customize the `excluded_paths` option, you can omit them.
@@ -211,17 +211,17 @@ By default, CloudFront caches files in the `/uploads` directory for 24h. But som
 :::
 
 ::: tip Tailored to all project types
-The project `type` will change default paths for non-WordPress projects. So you don't need to edit this for `bedrock` or `radicle` projects.
+The project `type` will change default paths for other project types. So you don't need to edit this for `bedrock` or `radicle` projects.
 :::
 
 #### forwarded_headers
 
 **type**: `array` **default**: `['origin']`
 
-The list of headers that the CloudFront distribution will forward to your WordPress site.
+The list of headers that the CloudFront distribution will forward to your PHP application.
 
 ::: warning 10 header limit
-CloudFront can only forward 10 headers to your WordPress site.
+CloudFront can only forward 10 headers to your PHP application.
 :::
 
 #### functions_assets
@@ -234,7 +234,7 @@ The list of CloudFront functions to associate with CloudFront origin used for as
 
 **type**: `array`
 
-The list of CloudFront functions to associate with CloudFront origin used for the WordPress site content. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+The list of CloudFront functions to associate with CloudFront origin used for the PHP application content. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
 
 #### invalidate_paths
 
@@ -279,7 +279,7 @@ Looking for more information on how to configure your environment for high `conc
 :::
 
 ::: warning Overwhelming your database server
-If your `concurrency` values are too high or disabled, your database server could get overwhelmed when spikes hit your application. If this happens, you'll want to increase the capacity of your database server.
+If your `concurrency` values are too high or disabled, your database server could get overwhelmed when spikes hit your PHP application. If this happens, you'll want to increase the capacity of your database server.
 :::
 
 ### cron
@@ -297,7 +297,7 @@ This is the array of values to configure the environment's database. If the `dat
 
 **type**: `string` **default**: `ymir`
 
-The name of the database used by the WordPress site.
+The name of the database used by the PHP application.
 
 ::: warning Overwrites <code>DB_NAME</code> environment variable
 If you configured the `DB_NAME` environment variable, be aware that Ymir will overwrite it with the `name` value.
@@ -307,7 +307,7 @@ If you configured the `DB_NAME` environment variable, be aware that Ymir will ov
 
 **type**: `string`
 
-The database server used by the WordPress site. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
+The database server used by the PHP application. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
 
 ::: warning Overwrites <code>DB_HOST</code> environment variable
 If you configured the `DB_HOST` environment variable, be aware that Ymir will overwrite it with the `server` value.
@@ -317,7 +317,7 @@ If you configured the `DB_HOST` environment variable, be aware that Ymir will ov
 
 **type**: `string`
 
-The user used by the WordPress site to connect to the database server.
+The user used by the PHP application to connect to the database server.
 
 ::: warning Overwrites <code>DB_USER</code> environment variable
 If you configured the `DB_USER` environment variable, be aware that Ymir will overwrite it with the `user` value.
@@ -515,7 +515,7 @@ The number of `website` functions that CloudWatch will keep warmed up. If set to
 
 **type**: `array`
 
-Configuration for the Lambda function that handles HTTP traffic from your WordPress site. This function is connected to the API gateway and processes all web requests.
+Configuration for the Lambda function that handles HTTP traffic from your PHP application. This function is connected to the API gateway and processes all web requests.
 
 #### concurrency
 
@@ -557,7 +557,7 @@ The maximum amount of time (in seconds) that the `website` Lambda function can r
 ::: warning API gateway timeout
 The 30 second timeout limit when using an API gateway is due to AWS API Gateway limits. This cannot be modified.
 
-This can be a significant technical hurdle if your WordPress site has long-running operations that take more than 30 seconds to complete. In that scenario, these operations should be offloaded to a WP-CLI command (using the `console` function) or an external service.
+This can be a significant technical hurdle if your PHP application has long-running operations that take more than 30 seconds to complete. In that scenario, these operations should be offloaded to a WP-CLI command (using the `console` function) or an external service.
 :::
 
 ### console

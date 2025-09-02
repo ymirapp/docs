@@ -285,7 +285,7 @@ This is the array of values to configure the environment's database. If the `dat
 
 #### name
 
-**type**: `string` **default**: `wordpress`
+**type**: `string` **default**: `ymir`
 
 The name of the database used by the WordPress site.
 

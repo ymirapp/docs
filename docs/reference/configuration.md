@@ -58,6 +58,12 @@ environments:
     console:
       memory: 1024
       timeout: 60
+    queues: 
+      default:
+        concurrency: 10
+        memory: 1024
+        timeout: 600
+        type: standard
 ```
 
 ## Project configuration
@@ -262,10 +268,11 @@ Flag whether the CloudFront distribution will be configured with the Lambda@Edge
 
 **type**: `int | false` **default**: `10`
 
-The environment-level default concurrency value that is inherited by `website`. This option controls the maximum number of Lambda functions that can exist at the same time for each function type. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
+The environment-level default concurrency value that is inherited by `website` and `queue` functions. This option controls the maximum number of Lambda functions that can exist at the same time for each function type. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
 
 Individual function types can override this default by specifying their own `concurrency` value:
 - `website` functions inherit this value by default
+- `queue` functions inherit this value by default
 
 ::: tip Check out the guide
 Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
@@ -578,6 +585,87 @@ Memory cost is less of a concern for the `console` function since it's not calle
 **type**: `int` **default**: `60`
 
 The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 900 seconds (15 minutes), making it suitable for longer-running console commands and background tasks.
+
+### queues
+
+**type**: `array`
+
+Configuration for SQS queue-based Lambda functions used for background job processing. Queues allow you to offload time-consuming tasks from your website function to dedicated background processors.
+
+#### Queue Configuration Formats
+
+The `queues` option supports multiple configuration formats for flexibility:
+
+```yaml
+# Boolean format - creates default queue
+queues: true
+
+# Single queue format - creates default queue with specific settings  
+queues:
+  concurrency: 5
+  memory: 2048
+  type: standard
+
+# Multiple named queues format
+queues:
+  email:
+    concurrency: 10
+    memory: 1024
+    timeout: 300
+    type: standard
+  background-jobs:
+    concurrency: 5
+    memory: 2048
+    timeout: 900
+    type: fifo
+```
+
+#### concurrency
+
+**type**: `int | false` **default**: inherits from environment-level `concurrency`
+
+The maximum number of Lambda functions that can process this queue simultaneously. By default, this inherits the value from the environment-level `concurrency` setting. Setting this option to `false` removes the limit and allows unrestricted scaling.
+
+::: tip Check out the guide
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+:::
+
+::: warning Queue processing capacity
+Higher concurrency means more messages can be processed simultaneously, but also increases the load on your database and other resources.
+:::
+
+#### memory
+
+**type**: `int` **default**: `1024`
+
+The amount of memory (in MB) used by the queue Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. Queue functions typically need more memory than website functions since they often handle batch processing or complex background tasks.
+
+::: warning Low memory termination
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for your queue processing needs.
+:::
+
+#### timeout
+
+**type**: `int` **default**: `600`
+
+The maximum amount of time (in seconds) that the queue Lambda function can run before Lambda terminates it. Queue functions can have a maximum timeout of 900 seconds (15 minutes), making them suitable for longer-running background tasks.
+
+::: tip Longer processing time
+Queue functions have much longer timeout capabilities than website functions, making them ideal for tasks like image processing, data imports, or sending bulk emails.
+:::
+
+#### type
+
+**type**: `string` **default**: `standard`
+
+The type of SQS queue to use for this queue function. The possible values are:
+
+* `standard` - Standard SQS queue with high throughput and at-least-once delivery
+* `fifo` - First-In-First-Out queue with exactly-once processing and message ordering
+
+::: tip FIFO vs Standard queues
+FIFO queues guarantee message ordering and exactly-once delivery but have lower throughput. Standard queues offer higher throughput but may deliver messages more than once and in different orders.
+:::
 
 [1]: https://github.com/roots/bedrock
 [2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved

@@ -26,7 +26,7 @@ ENTRYPOINT []
 
 CMD ["/bin/sh", "-c", "/opt/bootstrap"]
 
-RUN LD_LIBRARY_PATH= yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+RUN LD_LIBRARY_PATH= yum install -y https://archives.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm
 RUN LD_LIBRARY_PATH= yum install -y https://rpms.remirepo.net/enterprise/remi-release-7.rpm
 RUN LD_LIBRARY_PATH= yum install -y yum-utils
 RUN LD_LIBRARY_PATH= yum-config-manager --enable remi-php<PHP_VERSION>

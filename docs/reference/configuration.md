@@ -244,7 +244,7 @@ The list of paths cleared from the CloudFront distribution cache during the proj
 
 #### image_processing_memory
 
-**type**: `int` **default**: `256`
+**type**: `int` **default**: `256` **max**: `3008`
 
 The amount of memory (in MB) used by the Lambda@Edge image processing function. Must be between 128 MB and 3,008 MB in 64 MB increments.
 

@@ -58,7 +58,7 @@ environments:
     console:
       memory: 1024
       timeout: 60
-    queues: 
+    queues:
       default:
         concurrency: 10
         memory: 1024
@@ -271,8 +271,9 @@ Flag whether the CloudFront distribution will be configured with the Lambda@Edge
 The environment-level default concurrency value that is inherited by `website` and `queue` functions. This option controls the maximum number of Lambda functions that can exist at the same time for each function type. (AWS calls this [reserved concurrency][2].) Setting this option to `false` removes the limit and allows unrestricted scaling.
 
 Individual function types can override this default by specifying their own `concurrency` value:
-- `website` functions inherit this value by default
-- `queue` functions inherit this value by default
+
+ * `website` functions inherit this value by default
+ * `queue` functions inherit this value by default
 
 ::: tip Check out the guide
 Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
@@ -283,6 +284,7 @@ If your `concurrency` values are too high or disabled, your database server coul
 :::
 
 ### cron
+
 **type**: `int | false` **default**: `1`
 
 The interval (in minutes) that [WP-Cron][3] gets called by CloudWatch. Also controls the `DISABLE_WP_CRON` constant. If set to `false`, it disables the CloudWatch rule and renables the standard WP-Cron behaviour.
@@ -385,23 +387,23 @@ If you decide to use a custom web ACL as your environment's firewall, Ymir will 
 
 The list of bot categories that you want the firewall to protect against. Below is the list of available categories you may use. If you want to enable all bot categories, you may use `true` instead of listing all categories.
 
-| Category | Description |
-| --- | --- |
-| CategoryAdvertising | Bots used for advertising purposes |
-| CategoryArchiver | Bots used for archiving purposes |
-| CategoryContentFetcher | Bots fetching content on behalf of an end-user |
-| CategoryHttpLibrary | HTTP libraries often used by bots |
-| CategoryLinkChecker | Bots that check for broken links |
-| CategoryMiscellaneous | Miscellaneous bots |
-| CategoryMonitoring | Bots used for monitoring purposes |
-| CategoryScrapingFramework | Web scraping frameworks |
-| CategorySecurity | Security\-related bots |
-| CategorySeo | Bots used for search engine optimization |
-| CategorySocialMedia | Bots used by social media platforms to provide content summaries (Verified social media bots are not blocked) |
-| CategorySearchEngine | Search engine bots (Verified search engines are not blocked) |
-| SignalAutomatedBrowser | Automated web browser |
-| SignalKnownBotDataCenter | Data centers typically used by bots |
-| SignalNonBrowserUserAgent | User-agent strings that don't seem to be from a web browser |
+| Category                  | Description                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| CategoryAdvertising       | Bots used for advertising purposes                                                                            |
+| CategoryArchiver          | Bots used for archiving purposes                                                                              |
+| CategoryContentFetcher    | Bots fetching content on behalf of an end-user                                                                |
+| CategoryHttpLibrary       | HTTP libraries often used by bots                                                                             |
+| CategoryLinkChecker       | Bots that check for broken links                                                                              |
+| CategoryMiscellaneous     | Miscellaneous bots                                                                                            |
+| CategoryMonitoring        | Bots used for monitoring purposes                                                                             |
+| CategoryScrapingFramework | Web scraping frameworks                                                                                       |
+| CategorySecurity          | Security\-related bots                                                                                        |
+| CategorySeo               | Bots used for search engine optimization                                                                      |
+| CategorySocialMedia       | Bots used by social media platforms to provide content summaries (Verified social media bots are not blocked) |
+| CategorySearchEngine      | Search engine bots (Verified search engines are not blocked)                                                  |
+| SignalAutomatedBrowser    | Automated web browser                                                                                         |
+| SignalKnownBotDataCenter  | Data centers typically used by bots                                                                           |
+| SignalNonBrowserUserAgent | User-agent strings that don't seem to be from a web browser                                                   |
 
 ::: warning Additional cost
 AWS WAF bot protection is an additional cost on top of your existing AWS WAF bill. It costs $10/month and $1.00 per 1 million requests. You can read more on the [AWS WAF pricing page][7].
@@ -413,13 +415,13 @@ AWS WAF bot protection is an additional cost on top of your existing AWS WAF bil
 
 Flag that determines whether the firewall will be configured with some default AWS managed firewall rules. Below, you'll find the list of managed rules that Ymir will configure if you set this to `true`. If set to `false`, no managed rules will get configured and you can configure some yourself. You can read more about them [here][8].
 
-| Managed Rule | Description |
-| --- | --- |
-| AWSManagedRulesAmazonIpReputationList | Amazon IP reputation list rule group contains rules that are based on Amazon internal threat intelligence |
-| AWSManagedRulesKnownBadInputsRuleSet | Known bad inputs rule group contains rules to block request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities |
-| AWSManagedRulesPHPRuleSet | PHP application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to the use of the PHP programming language, including injection of unsafe PHP functions |
-| AWSManagedRulesSQLiRuleSet | SQL database rule group contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks |
-| AWSManagedRulesWordPressRuleSet | WordPress application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to WordPress sites |
+| Managed Rule                          | Description                                                                                                                                                                                                                |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AWSManagedRulesAmazonIpReputationList | Amazon IP reputation list rule group contains rules that are based on Amazon internal threat intelligence                                                                                                                  |
+| AWSManagedRulesKnownBadInputsRuleSet  | Known bad inputs rule group contains rules to block request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities                                                     |
+| AWSManagedRulesPHPRuleSet             | PHP application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to the use of the PHP programming language, including injection of unsafe PHP functions |
+| AWSManagedRulesSQLiRuleSet            | SQL database rule group contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks                                                                                 |
+| AWSManagedRulesWordPressRuleSet       | WordPress application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to WordPress sites                                                                |
 
 #### rate_limit
 
@@ -431,7 +433,7 @@ Enables a rate limit rule that blocks requests from IPs that have made more than
 
 **type**: `string | false` **default**: `http`
 
-The gateway type used by the environment. Allowed values are `http` for HTTP APIs, `rest` for REST APIs or `false` to use [Lambda function URLs][12] instead of a gateway. 
+The gateway type used by the environment. Allowed values are `http` for HTTP APIs, `rest` for REST APIs or `false` to use [Lambda function URLs][12] instead of a gateway.
 
 ::: danger DNS changes when switching gateway types
 Whenever you switch gateway types, the DNS records pointing to your environment will change. If Ymir manages the DNS zone used by your environment, it'll update your DNS records automatically. Otherwise, you will have to do it yourself. That said, even with a managed DNS zone, your environment will be briefly unavailable while the DNS changes propagate.
@@ -551,8 +553,8 @@ Lambda charges based on configured memory. More memory means a higher Lambda bil
 
 The maximum amount of time (in seconds) that the `website` Lambda function can run before Lambda terminates it. The maximum allowed timeout depends on your gateway configuration:
 
-- **With API Gateway** (`gateway: http` or `gateway: rest`): Maximum 30 seconds
-- **Without API Gateway** (`gateway: false`): Maximum 900 seconds (15 minutes)
+ * **With API Gateway** (`gateway: http` or `gateway: rest`): Maximum 30 seconds
+ * **Without API Gateway** (`gateway: false`): Maximum 900 seconds (15 minutes)
 
 ::: warning API gateway timeout
 The 30 second timeout limit when using an API gateway is due to AWS API Gateway limits. This cannot be modified.
@@ -597,10 +599,10 @@ Configuration for SQS queue-based Lambda functions used for background job proce
 The `queues` option supports multiple configuration formats for flexibility:
 
 ```yaml
-# Boolean format - creates default queue
+# Boolean format - creates "default" queue
 queues: true
 
-# Single queue format - creates default queue with specific settings  
+# Single queue format - creates "default" queue with specific settings
 queues:
   concurrency: 5
   memory: 2048
@@ -660,8 +662,8 @@ Queue functions have much longer timeout capabilities than website functions, ma
 
 The type of SQS queue to use for this queue function. The possible values are:
 
-* `standard` - Standard SQS queue with high throughput and at-least-once delivery
-* `fifo` - First-In-First-Out queue with exactly-once processing and message ordering
+ * `standard` - Standard SQS queue with high throughput and at-least-once delivery
+ * `fifo` - First-In-First-Out queue with exactly-once processing and message ordering
 
 ::: tip FIFO vs Standard queues
 FIFO queues guarantee message ordering and exactly-once delivery but have lower throughput. Standard queues offer higher throughput but may deliver messages more than once and in different orders.

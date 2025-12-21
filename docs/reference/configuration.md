@@ -21,9 +21,9 @@ environments:
       cache_policy_assets: ymir-assets-policy
       cache_policy_content: false
       caching: enabled
-      cookies_whitelist: ['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']
+      cookies_whitelist: []
       default_expiry: 300
-      excluded_paths: ['/wp-admin/*', '/wp-cron.php', '/wp-login.php']
+      excluded_paths: []
       forwarded_headers: ['origin']
       functions_assets:
         - name: function-name
@@ -33,6 +33,10 @@ environments:
           type: viewer-request
       invalidate_paths: []
       image_processing_memory: 256
+      logging:
+        format: w3c
+        retention: 7
+        status: enabled
       origin_shield: disabled
       process_images: disabled
     concurrency: 10
@@ -41,26 +45,41 @@ environments:
       server: database-server
       name: database-name
       user: database-user
-    deployment: zip
+    deployment:
+      type: zip
+      commands: []
     domain: []
-    firewall: disabled
+    firewall:
+      managed_rules: disabled
     gateway: http
-    logging: enabled
+    logging:
+      retention: 7
+      status: enabled
     log_retention_period: 7
+    memory: 1024
     network: network-name
     php: 7.4
     tags: []
     warmup: 1
     website:
       concurrency: 10
-      memory: 512
+      logging:
+        retention: 7
+        status: enabled
+      memory: 1024
       timeout: 30
     console:
+      logging:
+        retention: 7
+        status: enabled
       memory: 1024
       timeout: 60
     queues:
       default:
         concurrency: 10
+        logging:
+          retention: 7
+          status: enabled
         memory: 1024
         timeout: 600
         type: standard
@@ -182,12 +201,18 @@ If you have the `caching` set to `enabled` and the `gateway` option set to `rest
 
 #### cookies_whitelist
 
-**type**: `array` **default**: `['comment_*', 'wp-postpass_*', 'wordpress_*', 'wp-settings-*']`
+**type**: `array` **default**: project specific
 
-The list of cookies ignored by CloudFront and always forwarded to your PHP application. Supports `*` wildcard character.
+The list of cookies that CloudFront will ignore and always forward to your PHP application. Supports `*` wildcard character.
+
+By default, Ymir automatically whitelists the following cookies based on your project type:
+
+| Project Type | Default Whitelisted Cookies |
+| :--- | :--- |
+| wordpress, bedrock, radicle | comment_*, wp-postpass_*, wordpress_*, wp-settings-* |
 
 ::: tip Default cookies always added
-The default cookies to whitelist will always be added to your project configuration during deployment. So if you need to customize the `cookies_whitelist` option, you can omit them.
+Any cookies you add to this list will be appended to the defaults listed above. You do not need to manually include the default cookies for your project type.
 :::
 
 #### default_expiry
@@ -198,20 +223,23 @@ The default time (in seconds) that CloudFront will keep something cached.
 
 #### excluded_paths
 
-**type**: `array` **default**: `['/wp-admin/*', '/wp-cron.php', '/wp-login.php']`
+**type**: `array` **default**: project specific
 
-The list of paths ignored by CloudFront and always forwarded to your PHP application. Supports `*` wildcard character.
+The list of URL paths that CloudFront will never cache, ensuring requests are always forwarded directly to your Lambda function. Supports `*` wildcard character.
+
+By default, Ymir automatically adds default excluded paths depend on your project type:
+
+| Project Type | Default Excluded Paths |
+| :--- | :--- |
+| wordpress | /wp-admin/*, /wp-cron.php, /wp-login.php |
+| bedrock, radicle | /wp/wp-admin/*, /wp/wp-cron.php, /wp/wp-login.php |
 
 ::: tip Default paths always added
-The default paths to exclude will always be added to your project configuration during deployment. So if you need to customize the `excluded_paths` option, you can omit them.
+Any exxcluded paths you add to this list will be appended to the defaults listed above. You do not need to manually include the default excluded paths for your project type.
 :::
 
-::: tip Works with uploads directory
-By default, CloudFront caches files in the `/uploads` directory for 24h. But some plugins use the `/uploads` directory to store dynamic files since it's the only writeable directory on a server. You can add these directories to have CloudFront exclude them from the cache.
-:::
-
-::: tip Tailored to all project types
-The project `type` will change default paths for other project types. So you don't need to edit this for `bedrock` or `radicle` projects.
+::: tip Use with the WordPress uploads directory
+By default, CloudFront caches files in the `/uploads` directory for 24h. However, some plugins use the `/uploads` directory to store dynamic files (like generated PDFs, invoices, or temporary session data) because it's the only "writeable" directory that WordPress allows. You can add these specific sub-directories to `excluded_paths` to ensure CloudFront always fetches the latest version from the origin.
 :::
 
 #### forwarded_headers
@@ -247,6 +275,30 @@ The list of paths cleared from the CloudFront distribution cache during the proj
 **type**: `int` **default**: `256` **max**: `3008`
 
 The amount of memory (in MB) used by the Lambda@Edge image processing function. Must be between 128 MB and 3,008 MB in 64 MB increments.
+
+#### logging
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the CloudFront access logs to S3. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### format
+
+**type**: `string` **default**: `w3c`
+
+The format of the access logs. The allowed values are `json`, `plain`, `w3c`, `raw`, and `parquet`.
+
+##### retention
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the access logs are retained in S3. You can set a value between 1 and 3653.
+
+##### status
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the CloudFront distribution is allowed to write access logs to S3.
 
 #### origin_shield
 
@@ -285,9 +337,9 @@ If your `concurrency` values are too high or disabled, your database server coul
 
 ### cron
 
-**type**: `int | false` **default**: `1`
+**type**: `int | bool | enabled | disabled` **default**: `1`
 
-The interval (in minutes) that [WP-Cron][3] gets called by CloudWatch. Also controls the `DISABLE_WP_CRON` constant. If set to `false`, it disables the CloudWatch rule and renables the standard WP-Cron behaviour.
+The interval (in minutes) that [WP-Cron][3] gets called by CloudWatch. Also controls the `DISABLE_WP_CRON` constant. If set to `disabled`, it disables the CloudWatch rule and renables the standard WP-Cron behaviour.
 
 ### database
 
@@ -327,6 +379,12 @@ If you configured the `DB_USER` environment variable, be aware that Ymir will ov
 
 ### deployment
 
+**type**: `array | string` **default**: `zip`
+
+This is the array of values to configure the environment deployment. If the `deployment` value is a string, it'll be used as the `type` value.
+
+#### type
+
 **type**: `string` **default**: `zip`
 
 The deployment method to use for the project environment. Allowed values are `image` or `zip`.
@@ -338,6 +396,12 @@ Once you deploy a project environment with a new deployment method, you won't be
 ::: tip Check out the guide
 Looking for more information on how to deploy using container images? Check out this [guide][5].
 :::
+
+#### commands
+
+**type**: `array`
+
+The list of commands to run on the project environment during the project deployment.
 
 ### domain
 
@@ -355,9 +419,9 @@ By default, you can only have 10 domain names per environment. This means that y
 
 ### firewall
 
-**type**: `array | string | bool`
+**type**: `array | string | bool | enabled | disabled`
 
-This is the array of values to configure the environment's firewall. If the `firewall` value is a string, it'll be used as the `acl` value. If the `firewall` value is a boolean or `disabled` or `enabled`), it'll be used as the `managed_rules` value.
+This is the array of values to configure the environment's firewall. If the `firewall` value is a string, it'll be used as the `acl` value. If the `firewall` value is a boolean or `enabled`/`disabled`, it'll be used as the `managed_rules` value.
 
 ::: tip Check out the guide
 Looking for more information on how to configure a firewall? Check out this [guide][9].
@@ -383,9 +447,9 @@ If you decide to use a custom web ACL as your environment's firewall, Ymir will 
 
 #### bots
 
-**type**: `array | bool`
+**type**: `array | bool | enabled | disabled`
 
-The list of bot categories that you want the firewall to protect against. Below is the list of available categories you may use. If you want to enable all bot categories, you may use `true` instead of listing all categories.
+The list of bot categories that you want the firewall to protect against. Below is the list of available categories you may use. If you want to enable all bot categories, you can use `enabled` instead of listing all categories. Pass `disabled` or `false` to disable bot protection.
 
 | Category                  | Description                                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -411,9 +475,9 @@ AWS WAF bot protection is an additional cost on top of your existing AWS WAF bil
 
 #### managed_rules
 
-**type**: `bool | enabled | disabled`
+**type**: `bool | enabled | disabled` **default**: `disabled`
 
-Flag that determines whether the firewall will be configured with some default AWS managed firewall rules. Below, you'll find the list of managed rules that Ymir will configure if you set this to `true`. If set to `false`, no managed rules will get configured and you can configure some yourself. You can read more about them [here][8].
+Flag that determines whether the firewall will be configured with default AWS managed firewall rules. If set to `enabled`, Ymir will configure the managed rules listed below. If set to `disabled`, no managed rules will be configured, allowing you to set up your own. You can read more about them [here][8].
 
 | Managed Rule                          | Description                                                                                                                                                                                                                |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -459,15 +523,47 @@ Ymir will ignore this configuration option if `deployment` is set to `image`.
 
 ### logging
 
-**type**: `bool | enabled | disabled`
+**type**: `array | bool | int | enabled | disabled`
 
-Flag whether the environment's Lambda functions are allowed to write logs to CloudWatch.
+This is the array of values to configure the environment logging. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+Environment-level logging settings are inherited by all function types (`website`, `console`, and `queues`) as well as the CloudFront distribution.
+
+#### retention
+
+**type**: `int | false` **default**: `7`
+
+Controls the default duration (in days) that the environment's logs are retained. For Lambda functions, logs are stored in CloudWatch. For CloudFront, access logs are stored in S3.
+
+Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+#### status
+
+**type**: `bool | enabled | disabled` **default**: `enabled`
+
+Flag whether the environment has logs enabled or not. Controls both Lambda function logs sent to CloudWatch and CloudFront access logs sent to S3.
 
 ### log_retention_period
+
+::: danger Deprecated
+The `log_retention_period` option is deprecated. Use `logging.retention` instead.
+:::
 
 **type**: `int` **default**: `7`
 
 Controls the duration (in days) that the environment's logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+### memory
+
+**type**: `int` **default**: `1024`
+
+The amount of memory (in MB) used by the environment's Lambda functions. Must be between 128 MB and 10,240 MB in 64 MB increments.
+
+Individual function types can override this default by specifying their own `memory` value:
+
+ * `website` functions inherit this value by default
+ * `console` functions inherit this value by default
+ * `queue` functions inherit this value by default
 
 ### network
 
@@ -533,11 +629,29 @@ Looking for more information on how to configure your environment for high `conc
 If your `concurrency` value is too high or disabled, your database server could get overwhelmed when a traffic spike hits your application. If this happens, you'll want to increase the capacity of your database server.
 :::
 
+#### logging
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the `website` Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the `website` function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the `website` Lambda function is allowed to write logs to CloudWatch.
+
 #### memory
 
-**type**: `int` **default**: `512`
+**type**: `int` **default**: inherits from environment-level `memory`
 
-The amount of memory (in MB) used by the `website` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. The `website` function has lower memory needs by default because most memory-heavy tasks are handled by the `console` function.
+The amount of memory (in MB) used by the `website` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
 
 ::: warning Low memory termination
 If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
@@ -568,11 +682,29 @@ This can be a significant technical hurdle if your PHP application has long-runn
 
 Configuration for the Lambda function used for running WP-CLI commands and other background tasks. This function is not connected to web traffic and is optimized for longer-running console commands and background tasks.
 
+#### logging
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the `console` Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the `console` function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the `console` Lambda function is allowed to write logs to CloudWatch.
+
 #### memory
 
-**type**: `int` **default**: `1024`
+**type**: `int` **default**: inherits from environment-level `memory`
 
-The amount of memory (in MB) used by the `console` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. The `console` function has higher memory by default since it typically handles memory-intensive operations like WP-CLI commands.
+The amount of memory (in MB) used by the `console` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
 
 ::: warning Low memory termination
 If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
@@ -636,11 +768,29 @@ Looking for more information on how to configure your environment for high `conc
 Higher concurrency means more messages can be processed simultaneously, but also increases the load on your database and other resources.
 :::
 
+#### logging
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the queue Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the queue function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the queue Lambda function is allowed to write logs to CloudWatch.
+
 #### memory
 
-**type**: `int` **default**: `1024`
+**type**: `int` **default**: inherits from environment-level `memory`
 
-The amount of memory (in MB) used by the queue Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments. Queue functions typically need more memory than website functions since they often handle batch processing or complex background tasks.
+The amount of memory (in MB) used by the queue Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
 
 ::: warning Low memory termination
 If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for your queue processing needs.

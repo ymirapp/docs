@@ -142,7 +142,7 @@ The cache cluster type.
 ### cache:tunnel
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> cache:create [options] [&lt;cache&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> cache:tunnel [options] [&lt;cache&gt;]</code>
 </pre>
 
 Create a SSH tunnel to a cache cluster.
@@ -293,10 +293,10 @@ Commands to manage your databases and database servers.
 ### database:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:create [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:create [&lt;database&gt;]</code>
 </pre>
 
-Create a new database on a database server.
+Create a new database on a public database server.
 
 ::: warning Only useable with public database servers
 You can only use the `database:create` command to create a database on a publicly accessible database server.
@@ -304,7 +304,7 @@ You can only use the `database:create` command to create a database on a publicl
 
 #### Arguments
 
-##### `name` (optional)
+##### `database` (optional)
 
 The name of the new database.
 
@@ -330,10 +330,10 @@ The ID or name of the database server where the database will be created.
 ### database:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:delete [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:delete [&lt;database&gt;]</code>
 </pre>
 
-Delete a database on a database server.
+Delete a database on a public database server.
 
 ::: warning Only useable with public database servers
 You can only use the `database:delete` command to delete a database on a publicly accessible database server.
@@ -341,7 +341,7 @@ You can only use the `database:delete` command to delete a database on a publicl
 
 #### Arguments
 
-##### `name` (optional)
+##### `database` (optional)
 
 The name of the database to delete.
 
@@ -367,26 +367,30 @@ The ID or name of the database server where the database will be deleted.
 ### database:export
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:export [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:export [options] [&lt;database&gt;]</code>
 </pre>
 
-Export a database to a local .sql.gz file.
+Export a database to a local SQL file.
 
 ::: tip See it in action
 Check out the [video](https://www.youtube.com/watch?v=H92ewqQcU_M).
 :::
 
 ::: warning Database name required for private database servers
-If you want to use the `database:export` command to export a database from a private database server, you must specify the `name` argument.
+If you want to use the `database:export` command to export a database from a private database server, you must specify the `database` argument.
 :::
 
 #### Arguments
 
-##### `name` (optional)
+##### `database` (optional)
 
 The name of the database to export.
 
 #### Options
+
+##### `--compression=COMPRESSION` (default: gzip)
+
+The compression method to use when exporting the database (gzip or none).
 
 ##### `--server=SERVER`
 
@@ -416,28 +420,28 @@ The password of the user connecting to the database server.
 ### database:import
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:import [&lt;name&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:import [options] &lt;filename&gt; [&lt;database&gt;]</code>
 </pre>
 
-Import a local .sql or .sql.gz file to a database.
+Import a local SQL backup to a database.
 
 ::: tip See it in action
 Check out the [video](https://www.youtube.com/watch?v=H92ewqQcU_M).
 :::
 
 ::: warning Database name required for private database servers
-If you want to use the `database:import` command to import a database to a private database server, you must specify the `name` argument.
+If you want to use the `database:import` command to import a database to a private database server, you must specify the `database` argument.
 :::
 
 #### Arguments
 
-##### `file`
+##### `filename`
 
 The path to the local .sql or .sql.gz file.
 
-##### `name` (optional)
+##### `database` (optional)
 
-The name of the database to import.
+The name of the database to import into.
 
 #### Options
 
@@ -751,7 +755,7 @@ The local port to use to connect to the database server.
 ### database:server:unlock
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:server:lock [&lt;server&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:server:unlock [&lt;server&gt;]</code>
 </pre>
 
 Unlock the database server which allows it to be deleted.
@@ -778,10 +782,10 @@ The ID or name of the database server to unlock.
 ### database:user:create
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:user:create [&lt;username&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:user:create [options] [&lt;user&gt;]</code>
 </pre>
 
-Create a new database on a database server.
+Create a new database user on a database server.
 
 ::: tip See it in action
 Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
@@ -793,7 +797,7 @@ With a private database server, the `database:user:create` command will only cre
 
 #### Arguments
 
-##### `username` (optional)
+##### `user` (optional)
 
 The username of the new database user.
 
@@ -813,16 +817,16 @@ The ID or name of the database server where the user will be created.
 <code>$ <span class="token builtin">ymir</span> database:user:create --server=database-server</code>
 
 <code><span class="token comment"># Create a database user named "database-user" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:create database-user --server=database-server</code>
+<code>$ <span class="token builtin">ymir</span> database:user:create --server=database-server database-user</code>
 </pre>
 
 ### database:user:delete
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:delete [&lt;username&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:user:delete [options] [&lt;user&gt;]</code>
 </pre>
 
-Delete a user on a database.
+Delete a user on a database server.
 
 ::: tip See it in action
 Check out the [video](https://www.youtube.com/watch?v=LgQG8Sb96IY).
@@ -834,7 +838,7 @@ With a private database server, the `database:user:delete` command will only del
 
 #### Arguments
 
-##### `username` (optional)
+##### `user` (optional)
 
 The username of the database user to delete.
 
@@ -850,11 +854,11 @@ The ID or name of the database server where the database user will be deleted.
 <code><span class="token comment"># Delete a database user with prompt for database server and username</span></code>
 <code>$ <span class="token builtin">ymir</span> database:user:delete</code>
 
-<code><span class="token comment"># Delete a database on the database server named "database-server" with prompt for the username</span></code>
-<code>$ <span class="token builtin">ymir</span> database:user:delete database-server</code>
+<code><span class="token comment"># Delete a database user on the database server named "database-server" with prompt for the username</span></code>
+<code>$ <span class="token builtin">ymir</span> database:user:delete --server=database-server</code>
 
 <code><span class="token comment"># Delete a database user named "database-user" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:user:delete database-server database-user</code>
+<code>$ <span class="token builtin">ymir</span> database:user:delete --server=database-server database-user</code>
 </pre>
 
 ### database:user:list
@@ -888,7 +892,7 @@ The ID or name of the database server to list users from.
 ### database:user:rotate-password
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> database:user:rotate-password [&lt;username&gt;]</code>
+<code>$ <span class="token builtin">ymir</span> database:user:rotate-password [options] [&lt;user&gt;]</code>
 </pre>
 
 Rotate the password of a user on a database server.
@@ -903,7 +907,7 @@ With a private database server, the `database:user:rotate-password` command will
 
 #### Arguments
 
-##### `username` (optional)
+##### `user` (optional)
 
 The username of the database user to rotate the password of.
 
@@ -923,7 +927,7 @@ The ID or name of the database server where the database user is located.
 <code>$ <span class="token builtin">ymir</span> database:user:rotate-password --server=database-server</code>
 
 <code><span class="token comment"># Rotate the password of the database user named "database-user" on the database server named "database-server"</span></code>
-<code>$ <span class="token builtin">ymir</span> database:rotate-password database-user --server=database-server</code>
+<code>$ <span class="token builtin">ymir</span> database:user:rotate-password --server=database-server database-user</code>
 </pre>
 
 ## DNS
@@ -1355,38 +1359,6 @@ The name of the environment to delete.
 <code>$ <span class="token builtin">ymir</span> environment:delete testing</code>
 </pre>
 
-### environment:domain:change
-
-<pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> environment:domain:change [&lt;environment&gt; [&lt;domain&gt;]]</code>
-</pre>
-
-Change an environment's domain.
-
-::: tip See it in action
-Check out the [video](https://www.youtube.com/watch?v=_cMBIwJcbB8).
-:::
-
-#### Arguments
-
-##### `environment` (default: staging)
-
-The name of the environment to change the domain of.
-
-##### `domain` (optional)
-
-The current environment domain to replace.
-
-#### Usage
-
-<pre class="language-bash">
-<code><span class="token comment"># Change the "staging" environment's domain with prompt for the old and new domain</span></code>
-<code>$ <span class="token builtin">ymir</span> environment:domain:change</code>
-
-<code><span class="token comment"># Change the "testing" environment's domain with prompt for the old and new domain</span></code>
-<code>$ <span class="token builtin">ymir</span> environment:domain:change testing</code>
-</pre>
-
 ### environment:info
 
 <pre class="language-bash">
@@ -1440,8 +1412,8 @@ The path(s) to invalidate on the content delivery network.
 <code><span class="token comment"># Invalidate the "testing" environment's content delivery network cache</span></code>
 <code>$ <span class="token builtin">ymir</span> environment:invalidate-cache testing</code>
 
-<code><span class="token comment"># Invalidate everything under "/uploads" on the "staging" environment</span></code>
-<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache --path="/uploads"</code>
+<code><span class="token comment"># Invalidate everything under "/media" on the "staging" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> environment:invalidate-cache --path="/media"</code>
 </pre>
 
 ### environment:list
@@ -1815,6 +1787,48 @@ The name of the environment to upload environment variables to.
 <code>$ <span class="token builtin">ymir</span> environment:variables:upload testing</code>
 </pre>
 
+## Media
+
+Commands to interact with the project media directory.
+
+### media:import
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> media:import [options] [&lt;path&gt;]</code>
+</pre>
+
+Import files to the environment media directory.
+
+#### Arguments
+
+##### `path` (default: `wp-content/uploads` for WordPress projects, `web/app/uploads` for Bedrock projects and `public/content/uploads` for Radicle projects)
+
+The path to the files to import.
+
+#### Options
+
+##### `--environment=ENVIRONMENT`
+
+The environment to upload files to.
+
+##### `--force`
+
+Force the import to run.
+
+##### `--size=SIZE` (default: 1000)
+
+The number of files to process at a time.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Import files to "staging" environment using a file path</span></code>
+<code>$ <span class="token builtin">ymir</span> media:import /path/to/media</code>
+
+<code><span class="token comment"># Import files to "production" environment using a SFTP URL</span></code>
+<code>$ <span class="token builtin">ymir</span> media:import --environment=production sftp://myserver.com/path/to/media</code>
+</pre>
+
 ## Network
 
 Commands to manage team networks.
@@ -2077,9 +2091,9 @@ The name of the environment to build.
 
 Run the build in debug mode.
 
-##### `--with-uploads`
+##### `--with-media`
 
-Copy the "uploads" directory during the build.
+Copy the media directory during the build.
 
 #### Usage
 
@@ -2089,35 +2103,6 @@ Copy the "uploads" directory during the build.
 
 <code><span class="token comment"># Build project for deployment to the "production" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> build production</code>
-</pre>
-
-### project:configure [configure]
-
-<pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> project:configure [&lt;environment&gt;]</code>
-<code>$ <span class="token builtin">ymir</span> configure [&lt;environment&gt;]</code>
-</pre>
-
-Configure the project by scanning your plugins and themes.
-
-::: warning WP-CLI required
-The `project:configure` command requires you to have [WP-CLI][7] installed and globally available. This is necessary for the command to scan your project's plugins and themes. You can refer to the [WP-CLI installation instructions][8] to see how to install WP-CLI and make it globally available.
-:::
-
-#### Arguments
-
-##### `environment` (optional)
-
-The name of the environment to configure.
-
-#### Usage
-
-<pre class="language-bash">
-<code><span class="token comment"># Scan the project's plugins and themes and configure all environments</span></code>
-<code>$ <span class="token builtin">ymir</span> configure</code>
-
-<code><span class="token comment"># Scan the project's plugins and themes and configure the "production" environment</span></code>
-<code>$ <span class="token builtin">ymir</span> configure production</code>
 </pre>
 
 ### project:delete [delete]
@@ -2182,9 +2167,9 @@ The name of the environment to deploy to.
 
 Run the deployment build in debug mode.
 
-##### `--with-uploads`
+##### `--with-media`
 
-Import the "uploads" directory during the deployment.
+Import the media directory during the deployment.
 
 #### Usage
 
@@ -2192,8 +2177,8 @@ Import the "uploads" directory during the deployment.
 <code><span class="token comment"># Deploy project to the "staging" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> deploy</code>
 
-<code><span class="token comment"># Deploy project to the "staging" environment and import the "uploads" directory at the same time</span></code>
-<code>$ <span class="token builtin">ymir</span> deploy --with-uploads</code>
+<code><span class="token comment"># Deploy project to the "staging" environment and import the media directory at the same time</span></code>
+<code>$ <span class="token builtin">ymir</span> deploy --with-media</code>
 
 <code><span class="token comment"># Deploy project to the "production" environment</span></code>
 <code>$ <span class="token builtin">ymir</span> deploy production</code>
@@ -2519,42 +2504,105 @@ The ID of the team to make your currently active team.
 <code>$ <span class="token builtin">ymir</span> team:select 42</code>
 </pre>
 
-## Uploads
+## WordPress
 
-Commands to interact with the WordPress uploads directory.
+Commands to manage WordPress projects.
 
-### uploads:import
+### wordpress:change-domain
 
 <pre class="language-bash">
-<code>$ <span class="token builtin">ymir</span> uploads:import [options] &lt;path&gt;</code>
+<code>$ <span class="token builtin">ymir</span> wordpress:change-domain [&lt;environment&gt; [&lt;domain&gt;]]</code>
 </pre>
 
-Import files to the environment uploads directory.
+Change an environment's domain.
+
+::: tip See it in action
+Check out the [video](https://www.youtube.com/watch?v=_cMBIwJcbB8).
+:::
 
 #### Arguments
 
-##### `path` (default: `wp-content/uploads` for WordPress projects, `web/app/uploads` for Bedrock projects and `public/content/uploads` for Radicle projects)
+##### `environment`
 
-The path to the files to import.
+The name of the environment to change the domain of.
 
-#### Options
+##### `domain` (optional)
 
-##### `--environment=ENVIRONMENT` (default: staging)
-
-The environment to upload files to.
-
-##### `--size=SIZE` (default: 1000)
-
-The number of files to process at a time.
+The current environment domain to replace.
 
 #### Usage
 
 <pre class="language-bash">
-<code><span class="token comment"># Import files to "staging" environment using a file path</span></code>
-<code>$ <span class="token builtin">ymir</span> uploads:import /path/to/uploads</code>
+<code><span class="token comment"># Change the "staging" environment's domain with prompt for the old and new domain</span></code>
+<code>$ <span class="token builtin">ymir</span> wordpress:change-domain</code>
 
-<code><span class="token comment"># Import files to "production" environment using a SFTP URL</span></code>
-<code>$ <span class="token builtin">ymir</span> uploads:import --environment=production sftp://myserver.com/path/to/uploads</code>
+<code><span class="token comment"># Change the "testing" environment's domain with prompt for the old and new domain</span></code>
+<code>$ <span class="token builtin">ymir</span> wordpress:change-domain testing</code>
+</pre>
+
+### wordpress:configure
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> wordpress:configure [&lt;environments&gt;...]</code>
+</pre>
+
+Configure a WordPress project by scanning your installed plugins and themes.
+
+::: warning WP-CLI required
+The `wordpress:configure` command requires you to have [WP-CLI][7] installed and globally available. This is necessary for the command to scan your project's plugins and themes. You can refer to the [WP-CLI installation instructions][8] to see how to install WP-CLI and make it globally available.
+:::
+
+#### Arguments
+
+##### `environments` (optional)
+
+Space-separated list of names of the environments to configure.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Scan the project's plugins and themes and configure all environments</span></code>
+<code>$ <span class="token builtin">ymir</span> wordpress:configure</code>
+
+<code><span class="token comment"># Scan the project's plugins and themes and configure the "production" environment</span></code>
+<code>$ <span class="token builtin">ymir</span> wordpress:configure production</code>
+</pre>
+
+### wp
+
+<pre class="language-bash">
+<code>$ <span class="token builtin">ymir</span> wp [options] [&lt;wp-command&gt;...]</code>
+</pre>
+
+Execute a WP-CLI command.
+
+#### Arguments
+
+##### `wp-command` (optional)
+
+The WP-CLI command to execute.
+
+#### Options
+
+##### `--environment=ENVIRONMENT`
+
+The environment name.
+
+##### `--async`
+
+Execute WP-CLI command asynchronously.
+
+#### Usage
+
+<pre class="language-bash">
+<code><span class="token comment"># Run "wp plugin list" on the staging environment</span></code>
+<code>$ <span class="token builtin">ymir</span> wp plugin list</code>
+
+<code><span class="token comment"># Run "wp plugin list" on the production environment</span></code>
+<code>$ <span class="token builtin">ymir</span> wp --environment=production plugin list</code>
+
+<code><span class="token comment"># Run "wp plugin update --all" asynchronously on the production environment</span></code>
+<code>$ <span class="token builtin">ymir</span> wp --environment=production --async plugin update --all</code>
 </pre>
 
 [1]: https://ymirapp.com/account/manage

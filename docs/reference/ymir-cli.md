@@ -514,6 +514,10 @@ The name of the database server.
 
 #### Options
 
+##### `--engine=ENGINE`
+
+The database server engine to create (mysql or postgresql).
+
 ##### `--network=NETWORK`
 
 The ID or name of the network on which the database will be created.
@@ -528,7 +532,9 @@ The created database server will be publicly accessible.
 
 ##### `--serverless`
 
-Create an Aurora serverless database cluster. (Overrides all other options.)
+Create an Aurora serverless database cluster for the selected database engine.
+
+This creates an `aurora-mysql` cluster when `--engine=mysql` is selected and an `aurora-postgresql` cluster when `--engine=postgresql` is selected. Serverless database clusters are private, can't be created using the `--public` option, and don't use the `--storage` option.
 
 ##### `--storage=STORAGE`
 
@@ -541,11 +547,14 @@ The database server type to create on the cloud provider.
 #### Usage
 
 <pre class="language-bash">
-<code><span class="token comment"># Create a new database server with prompt for the name, network, storage and type</span></code>
+<code><span class="token comment"># Create a new database server with prompts for the name, network, database engine, serverless, type, storage and public access</span></code>
 <code>$ <span class="token builtin">ymir</span> database:server:create</code>
 
-<code><span class="token comment"># Create an Aurora serverless database cluster with a prompt for the name</span></code>
-<code>$ <span class="token builtin">ymir</span> database:server:create --serverless</code>
+<code><span class="token comment"># Create a PostgreSQL database server named "database-server"</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:create database-server --engine=postgresql --network=network --type=db.t3.micro --storage=50 --public</code>
+
+<code><span class="token comment"># Create an Aurora Serverless PostgreSQL database cluster with prompts for the name and network</span></code>
+<code>$ <span class="token builtin">ymir</span> database:server:create --engine=postgresql --serverless</code>
 </pre>
 
 ### database:server:delete
@@ -613,13 +622,14 @@ List all the database servers that the current team has access to.
 #### Usage
 
 <pre class="language-bash">
-<code><span class="token comment"># List all databases servers</span></code>
+<code><span class="token comment"># List all database servers</span></code>
 <code>$ <span class="token builtin">ymir</span> database:server:list</code>
----- --------- ----------- ---------- -------------- ----------- ------------- ---------
- Id   Name      Provider   Network        Region      Status      Type          Storage
----- --------- ----------- ---------- -------------- ----------- ------------- ---------
- 42   ymir-db   AWS        ymir        us-east-1      available   db.t3.micro   50GB
----- --------- ----------- ---------- -------------- ----------- ------------- ---------
+---- --------- ---------- --------- ----------- ----------- -------- ------ ------------ ------------- ---------
+ Id   Name      Provider   Network   Region      Status      Locked   Public Database     Type          Storage
+---- --------- ---------- --------- ----------- ----------- -------- ------ ------------ ------------- ---------
+ 42   ymir-db   AWS        ymir      us-east-1   available   no       yes    MySQL        db.t3.micro   50GB
+ 43   pg-db     AWS        ymir      us-east-1   available   no       yes    PostgreSQL   db.t3.micro   50GB
+---- --------- ---------- --------- ----------- ----------- -------- ------ ------------ ------------- ---------
 </pre>
 
 ### database:server:lock
@@ -735,9 +745,11 @@ The ID or name of the database server to create a SSH tunnel to.
 
 #### Options
 
-##### `--port=PORT` (default: 3305)
+##### `--port=PORT`
 
 The local port to use to connect to the database server.
+
+If you don't specify a port, Ymir uses `3305` for MySQL database servers and `5433` for PostgreSQL database servers.
 
 #### Usage
 

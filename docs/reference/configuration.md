@@ -60,6 +60,7 @@ environments:
     network: network-name
     php: 7.4
     tags: []
+    tmp_storage: 512
     warmup: 1
     website:
       concurrency: 10
@@ -68,12 +69,14 @@ environments:
         status: enabled
       memory: 1024
       timeout: 30
+      tmp_storage: 512
     console:
       logging:
         retention: 7
         status: enabled
       memory: 1024
       timeout: 60
+      tmp_storage: 512
     queues:
       default:
         concurrency: 10
@@ -82,6 +85,7 @@ environments:
           status: enabled
         memory: 1024
         timeout: 600
+        tmp_storage: 512
         type: standard
 ```
 
@@ -603,6 +607,22 @@ Associative array of up to 10 custom [tags][13] that will be added to your envir
 Tagging environment resources isn't available with personal subscriptions. You must upgrade to an agency or enterprise subscription to unlock this feature. Please refer to the [pricing page][14] for details.
 :::
 
+### tmp_storage
+
+**type**: `int` **default**: `512`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the environment's Lambda functions. Must be between 512 MB and 10,240 MB.
+
+Individual function types can override this default by specifying their own `tmp_storage` value:
+
+ * `website` functions inherit this value by default
+ * `console` functions inherit this value by default
+ * `queue` functions inherit this value by default
+
+::: warning Additional cost
+AWS includes 512 MB of temporary storage at no additional cost. Any `tmp_storage` value above 512 MB incurs additional charges based on the additional storage and function execution duration. You can learn more on the [AWS Lambda pricing page][19].
+:::
+
 ### warmup
 
 **type**: `int | false` **default**: `1`
@@ -676,6 +696,12 @@ The 30 second timeout limit when using an API gateway is due to AWS API Gateway 
 This can be a significant technical hurdle if your PHP application has long-running operations that take more than 30 seconds to complete. In that scenario, these operations should be offloaded to a WP-CLI command (using the `console` function) or an external service.
 :::
 
+#### tmp_storage
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the `website` Lambda function. Must be between 512 MB and 10,240 MB.
+
 ### console
 
 **type**: `array`
@@ -719,6 +745,12 @@ Memory cost is less of a concern for the `console` function since it's not calle
 **type**: `int` **default**: `60`
 
 The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 900 seconds (15 minutes), making it suitable for longer-running console commands and background tasks.
+
+#### tmp_storage
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the `console` Lambda function. Must be between 512 MB and 10,240 MB.
 
 ### queues
 
@@ -806,6 +838,12 @@ The maximum amount of time (in seconds) that the queue Lambda function can run b
 Queue functions have much longer timeout capabilities than website functions, making them ideal for tasks like image processing, data imports, or sending bulk emails.
 :::
 
+#### tmp_storage
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the queue Lambda function. Must be between 512 MB and 10,240 MB.
+
 #### type
 
 **type**: `string` **default**: `standard`
@@ -837,3 +875,4 @@ FIFO queues guarantee message ordering and exactly-once delivery but have lower 
 [16]: https://aws.amazon.com/cloudfront/pricing/
 [17]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
 [18]: https://roots.io/radicle/
+[19]: https://aws.amazon.com/lambda/pricing/

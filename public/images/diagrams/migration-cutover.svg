@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="780" viewBox="0 0 1100 780" role="img" aria-labelledby="title desc">
+  <title id="title">Which site can change your data during a migration to Ymir</title>
+  <desc id="desc">A left-to-right timeline of the six migration phases, Inventory, Backup, Setup, Rehearsal, Cutover and Fallback, with two lanes: old host and Ymir. The old host is the only live writer during inventory, backup, setup and rehearsal. Ymir doesn't exist yet during inventory and backup, is created on separate resources with no custom domain mapped during setup, though its vanity domain is public, and only runs isolated test data without live credentials during rehearsal. At the cutover, the old host stops accepting live writes and stays paused through the fallback phase, kept with its backups. Inside the cutover, both sites stay paused while you copy the final data, change URLs if your domain changes, check the site, switch your domain and check it again on your domain. Only your planned migration steps change the copied data; visitors, scheduled jobs and integrations stay paused. Only then does Ymir become the only live writer. Switching back is simple only while Ymir has stayed paused, with no live writes or side effects and no use of live credentials. Once Ymir has made live writes or side effects or acted on live credentials, even before the domain switch, keep Ymir paused and reconcile the changes before you reopen the old host. Pointing your domain at a site never decides which site can write; your pauses do.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .panel { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1.25; }
+    .item { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .paused { fill: #f4f1e6; stroke: #071812; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .absent { fill: none; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1; stroke-dasharray: 4 4; }
+    .live { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .caution { fill: #f4f1e6; stroke: #d6a21f; stroke-width: 2; }
+    .phase { fill: #071812; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .subheading { font-size: 16px; font-weight: 700; fill: #40594d; }
+    .title { font-size: 16px; font-weight: 700; }
+    .title-green { font-size: 16px; font-weight: 700; fill: #2f7a54; }
+    .label { font-size: 16px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .note { font-size: 16px; font-style: italic; fill: #40594d; }
+    .note-ink { font-size: 16px; font-style: italic; }
+    .phase-text { font-size: 15px; font-weight: 700; fill: #f4f1e6; }
+  </style>
+
+  <rect width="1100" height="780" fill="#f4f1e6"/>
+
+  <!-- Phases -->
+  <rect class="phase" x="144" y="20" width="118" height="32" rx="16"/>
+  <text class="phase-text" x="203" y="41" text-anchor="middle">1 Inventory</text>
+  <rect class="phase" x="272" y="20" width="118" height="32" rx="16"/>
+  <text class="phase-text" x="331" y="41" text-anchor="middle">2 Backup</text>
+  <rect class="phase" x="400" y="20" width="118" height="32" rx="16"/>
+  <text class="phase-text" x="459" y="41" text-anchor="middle">3 Setup</text>
+  <rect class="phase" x="528" y="20" width="140" height="32" rx="16"/>
+  <text class="phase-text" x="598" y="41" text-anchor="middle">4 Rehearsal</text>
+  <rect class="phase" x="678" y="20" width="200" height="32" rx="16"/>
+  <text class="phase-text" x="778" y="41" text-anchor="middle">5 Cutover</text>
+  <rect class="phase" x="888" y="20" width="192" height="32" rx="16"/>
+  <text class="phase-text" x="984" y="41" text-anchor="middle">6 Fallback</text>
+
+  <!-- Old host lane -->
+  <rect class="area" x="20" y="68" width="1060" height="112" rx="12"/>
+  <text class="heading" x="36" y="120">Old host</text>
+  <rect class="live" x="144" y="84" width="524" height="80" rx="8"/>
+  <text class="title-green" x="406" y="117" text-anchor="middle">Live: the only writer</text>
+  <text class="small" x="406" y="141" text-anchor="middle">Visitors, administrators, jobs and integrations keep running</text>
+  <rect class="paused" x="678" y="84" width="402" height="80" rx="8"/>
+  <text class="title" x="879" y="117" text-anchor="middle">Paused: no live writes</text>
+  <text class="small" x="879" y="141" text-anchor="middle">Kept running with its backups as your fallback</text>
+
+  <!-- Ymir lane -->
+  <rect class="area" x="20" y="192" width="1060" height="112" rx="12"/>
+  <text class="heading" x="36" y="244">Ymir</text>
+  <rect class="absent" x="144" y="208" width="246" height="80" rx="8"/>
+  <text class="note" x="267" y="253" text-anchor="middle">Not created yet</text>
+  <rect class="item" x="400" y="208" width="118" height="80" rx="8"/>
+  <text class="title" x="459" y="236" text-anchor="middle">Created</text>
+  <text class="small" x="459" y="258" text-anchor="middle">no custom</text>
+  <text class="small" x="459" y="277" text-anchor="middle">domain yet</text>
+  <rect class="item" x="528" y="208" width="140" height="80" rx="8"/>
+  <text class="title" x="598" y="236" text-anchor="middle">Test data only</text>
+  <text class="small" x="598" y="258" text-anchor="middle">no live</text>
+  <text class="small" x="598" y="277" text-anchor="middle">credentials</text>
+  <rect class="paused" x="678" y="208" width="200" height="80" rx="8"/>
+  <text class="title" x="778" y="236" text-anchor="middle">Paused</text>
+  <text class="small" x="778" y="258" text-anchor="middle">while you copy</text>
+  <text class="small" x="778" y="277" text-anchor="middle">and check</text>
+  <rect class="live" x="888" y="208" width="192" height="80" rx="8"/>
+  <text class="title-green" x="984" y="241" text-anchor="middle">Live: the only writer</text>
+  <text class="small" x="984" y="265" text-anchor="middle">after the final checks</text>
+
+  <!-- The cutover in detail -->
+  <path d="M678 304 L20 352 M878 304 L1080 352" fill="none" stroke="#40594d" stroke-opacity="0.45" stroke-width="1.25" stroke-dasharray="4 4"/>
+  <rect class="panel" x="20" y="352" width="1060" height="220" rx="12"/>
+  <text class="heading" x="36" y="384">Inside the cutover</text>
+  <text class="note-ink" x="1064" y="384" text-anchor="end">Simple fallback ends here at the latest</text>
+  <path d="M925 394 V434 M925 458 V560" fill="none" stroke="#d6a21f" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <rect class="paused" x="36" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="100" y="432" text-anchor="middle">Pause both</text>
+  <text class="small" x="100" y="455" text-anchor="middle">Ymir first,</text>
+  <text class="small" x="100" y="474" text-anchor="middle">then old host</text>
+  <line x1="164" y1="446" x2="184" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="item" x="186" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="250" y="432" text-anchor="middle">Final copy</text>
+  <text class="small" x="250" y="455" text-anchor="middle">backup, data</text>
+  <text class="small" x="250" y="474" text-anchor="middle">and uploads</text>
+  <line x1="314" y1="446" x2="334" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="item" x="336" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="400" y="432" text-anchor="middle">URL changes</text>
+  <text class="small" x="400" y="455" text-anchor="middle">only if your</text>
+  <text class="small" x="400" y="474" text-anchor="middle">domain changes</text>
+  <line x1="464" y1="446" x2="484" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="item" x="486" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="550" y="432" text-anchor="middle">Checks</text>
+  <text class="small" x="550" y="455" text-anchor="middle">before the</text>
+  <text class="small" x="550" y="474" text-anchor="middle">switch</text>
+  <line x1="614" y1="446" x2="634" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="item" x="636" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="700" y="432" text-anchor="middle">Domain switch</text>
+  <text class="small" x="700" y="455" text-anchor="middle">DNS takes time</text>
+  <text class="small" x="700" y="474" text-anchor="middle">to spread</text>
+  <line x1="764" y1="446" x2="784" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="item" x="786" y="404" width="128" height="84" rx="8"/>
+  <text class="title" x="850" y="432" text-anchor="middle">Final checks</text>
+  <text class="small" x="850" y="455" text-anchor="middle">on your</text>
+  <text class="small" x="850" y="474" text-anchor="middle">domain</text>
+  <line x1="914" y1="446" x2="934" y2="446" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="live" x="936" y="404" width="128" height="84" rx="8"/>
+  <text class="title-green" x="1000" y="432" text-anchor="middle">Ymir is live</text>
+  <text class="small" x="1000" y="455" text-anchor="middle">now the only</text>
+  <text class="small" x="1000" y="474" text-anchor="middle">live writer</text>
+
+  <path d="M36 504 V512 H914 V504" fill="none" stroke="#40594d" stroke-width="1.5"/>
+  <text class="small" x="475" y="534" text-anchor="middle">Both sites paused. Only your planned migration steps change the copied data;</text>
+  <text class="small" x="475" y="554" text-anchor="middle">visitors, scheduled jobs and integrations stay paused on both sites.</text>
+  <path d="M936 504 V512 H1064 V504" fill="none" stroke="#40594d" stroke-width="1.5"/>
+  <text class="small" x="1000" y="534" text-anchor="middle">Old host</text>
+  <text class="small" x="1000" y="554" text-anchor="middle">stays paused</text>
+
+  <!-- Falling back -->
+  <rect class="panel" x="20" y="592" width="520" height="132" rx="12"/>
+  <text class="title" x="36" y="620">While Ymir has stayed paused</text>
+  <text class="label" x="36" y="648">Simple only if Ymir made no live writes or side</text>
+  <text class="label" x="36" y="670">effects and never acted on live credentials. Reopen</text>
+  <text class="label" x="36" y="692">the old host, then point your domain back.</text>
+
+  <rect class="caution" x="560" y="592" width="520" height="132" rx="12"/>
+  <text class="title" x="576" y="620">Once Ymir has made live writes or used live credentials</text>
+  <text class="label" x="576" y="648">Even before the domain switch: keep Ymir paused, then</text>
+  <text class="label" x="576" y="670">compare and reconcile its changes with the old host.</text>
+  <text class="label" x="576" y="692">Only then reopen the old host and point your domain back.</text>
+
+  <text class="note-ink" x="550" y="758" text-anchor="middle">Pointing your domain at a site never decides which site can write. Your pauses do.</text>
+</svg>

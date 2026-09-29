@@ -1,0 +1,184 @@
+---
+title: "How to set up object caching in a Ymir project"
+navTitle: "Object cache"
+description: "When to add a persistent object cache to a WordPress site on Ymir, and how to configure a Valkey or Redis object cache plugin."
+---
+
+## When to use an object cache with Ymir?
+
+By default, Ymir doesn't configure your WordPress site to use a persistent [object cache][1]. A persistent object cache stores the results of repeated work, such as database queries, in a cache cluster so that other requests can reuse them. It isn't the same as page caching: CloudFront caches whole pages at the edge, while the object cache only helps the requests that still reach WordPress.
+
+An object cache adds a cache cluster and a network with a NAT gateway to your costs. Measure your site first, and only add one when repeated database work is actually the problem.
+
+### Database query heavy sites
+
+If your WordPress site runs a lot of repeated database queries, an object cache can serve some of them from memory instead of your database server. It won't fix slow queries on its own: queries that aren't cached, or that WordPress runs before the cache is warm, still hit your database.
+
+<Callout type="info" title="Upgrade your WordPress indexes">
+
+Before adding an object cache, profile your site to find its slow or repeated queries, for example with [Query Monitor][13]. Missing indexes can be the cause. Plugins such as [Index WP MySQL For Speed][2] change your database's indexes, so back up your database and test the change on a staging environment before production. Neither new indexes nor an object cache guarantee better performance, so measure before and after.
+
+</Callout>
+
+### High-traffic websites
+
+With Ymir, your WordPress site can scale to handle a lot of traffic quickly, and every request that CloudFront doesn't serve from its page cache reaches WordPress and your database server. An object cache can reduce the database work done by those requests. Keep page caching enabled for public pages, since it avoids running WordPress at all.
+
+### WooCommerce sites
+
+Ymir's WooCommerce configuration keeps carts, checkouts and account pages out of the page cache. More requests reach WordPress, so WooCommerce sites are often the ones that benefit the most from an object cache. See the [WooCommerce guide][3] for how Ymir handles WooCommerce page caching.
+
+## Choosing an object cache plugin your WordPress site
+
+Ymir doesn't install an object cache for you. To use one, you need two things:
+
+ * A Valkey or Redis [cache cluster][4] attached to your environment.
+ * An object cache plugin with its `object-cache.php` drop-in included in your deployment.
+
+This guide covers two plugins that support Relay, the client that most Ymir PHP runtimes use: [Redis Object Cache](#redis-object-cache-free) and [Object Cache Pro](#object-cache-pro-paid).
+
+### Valkey and Redis cache clusters [#redis]
+
+Ymir cache clusters use either [Valkey][5] or Redis. Valkey is the default for new clusters, and both work with the plugins below. To use a cluster, add it to your environment with the `cache` option and deploy:
+
+```yml
+environments:
+  production:
+    cache: my-cache-cluster
+```
+
+On deployment, Ymir connects your environment's functions to the cache cluster's network and sets these environment variables:
+
+ * `YMIR_REDIS_ENDPOINT`: the hostname of the cache cluster's primary endpoint. Ymir removes it if the environment no longer uses a cache cluster.
+ * `YMIR_CACHE_PREFIX`: a prefix unique to the environment.
+
+Ymir cache clusters listen on port `6379` without TLS or a password. If your environment also uses a private database server, it must be on the same network as the cache cluster.
+
+### DynamoDB [#dynamodb]
+
+The Ymir WordPress plugin doesn't include an object cache drop-in, for DynamoDB or any other backend. Ymir sets the `YMIR_CACHE_TABLE` environment variable, but that variable alone doesn't configure an object cache. This guide only covers Valkey and Redis cache clusters.
+
+### Sharing a cache cluster between environments [#sharing-a-cache-cluster-between-environments]
+
+You can attach the same cache cluster to several environments and projects. Each environment needs both a unique prefix and its own Redis database number. The prefix prevents cache keys from colliding. The database number keeps a cache flush in one environment from wiping another's cache: flushing the object cache usually runs `FLUSHDB`, which empties the whole database regardless of prefix. With Relay, a `FLUSHDB` also empties Relay's entire in-memory cache.
+
+`YMIR_CACHE_PREFIX` gives you the prefix, but you have to pick the database numbers yourself. With the default settings, you can use databases `0` to `15`, so no more than 16 environments can share one cache cluster this way. Each number must be unique across every environment of every project that uses the cache cluster, so keep track of the numbers you've already used.
+
+The examples below map `YMIR_ENVIRONMENT` to a database number. Change the map to match your environments. If an environment isn't in the map, the examples disable the object cache instead of falling back to a shared database. Add new environments to the map before you expect them to use the cache.
+
+### Installing the object cache drop-in [#installing-the-object-cache-drop-in]
+
+<Callout type="error" title="Deploy with object cache drop-in installed">
+
+Because a WordPress project deployed on AWS Lambda is read only, you must install the `object-cache.php` drop-in before deploying your project. The WordPress object cache plugin won't be able to create the drop-in if you try to do it once you deployed the project with Ymir.
+
+</Callout>
+
+On your local copy of the project:
+
+1. Install the object cache plugin and add its configuration below to `wp-config.php` (or `config/application.php` for Bedrock).
+2. Copy the plugin's drop-in file to the location below. The plugins' `wp redis enable` command also copies it, but Redis Object Cache's version needs a reachable Redis server and flushes it first.
+3. Make sure your `.gitignore` doesn't exclude `object-cache.php`. Ymir skips files that git ignores when it builds your project.
+4. Deploy your project.
+
+| Project type | Drop-in location |
+| :--- | :--- |
+| wordpress | `wp-content/object-cache.php` |
+| bedrock | `web/app/object-cache.php` |
+| radicle | `public/content/object-cache.php` |
+
+When you update the plugin, copy its drop-in again and deploy. The plugin can't update the drop-in on Lambda.
+
+The examples only configure the object cache when `YMIR_REDIS_ENDPOINT` is set and the environment has a database number. Everywhere else, including your local environment, they set `WP_REDIS_DISABLED` so that the drop-in doesn't try to connect to a cache server. Test the configuration on a staging environment before you deploy it to production.
+
+<Callout type="warn" title="PHP 7.2 and 7.3">
+
+The Ymir PHP 7.2 and 7.3 runtimes include the `phpredis` extension instead of Relay. On those runtimes, use `phpredis` as the client instead of `relay` in the examples below.
+
+</Callout>
+
+### Redis Object Cache (free)
+
+[Redis Object Cache][6] is a free plugin that supports Relay and [`igbinary`][7] serialization. Its drop-in is `includes/object-cache.php` in the plugin directory.
+
+To configure Redis Object Cache to work Ymir, add the following configuration to your WordPress configuration:
+
+```php
+// Database numbers (0-15) must be unique across all projects using the cache cluster.
+$redisDatabases = ['staging' => 0, 'production' => 1];
+$redisEnvironment = (string) getenv('YMIR_ENVIRONMENT');
+
+if (getenv('YMIR_REDIS_ENDPOINT') && isset($redisDatabases[$redisEnvironment])) {
+    define('WP_REDIS_CLIENT', 'relay');
+    define('WP_REDIS_HOST', getenv('YMIR_REDIS_ENDPOINT'));
+    define('WP_REDIS_PORT', 6379);
+    define('WP_REDIS_DATABASE', $redisDatabases[$redisEnvironment]);
+    define('WP_REDIS_PREFIX', getenv('YMIR_CACHE_PREFIX'));
+    define('WP_REDIS_IGBINARY', true);
+} else {
+    define('WP_REDIS_DISABLED', true);
+}
+```
+
+By default, a Redis Object Cache flush empties the whole database with `FLUSHDB`. The plugin's prefix-only flushing (`WP_REDIS_SELECTIVE_FLUSH`) is slow and unsupported by its authors, so rely on separate databases instead.
+
+### Object Cache Pro (paid)
+
+[Object Cache Pro][8] is a paid object cache plugin with support for Relay, `igbinary` serialization and [`zstd`][9] compression. It needs a license token, which you can store as an [environment secret][10] instead of committing it. Its drop-in is `stubs/object-cache.php` in the plugin directory.
+
+To configure Object Cache Pro to work Ymir, add the following configuration to your WordPress configuration:
+
+```php
+// Database numbers (0-15) must be unique across all projects using the cache cluster.
+$redisDatabases = ['staging' => 0, 'production' => 1];
+$redisEnvironment = (string) getenv('YMIR_ENVIRONMENT');
+
+if (getenv('YMIR_REDIS_ENDPOINT') && isset($redisDatabases[$redisEnvironment])) {
+    define('WP_REDIS_CONFIG', [
+        'token' => getenv('OBJECT_CACHE_PRO_TOKEN'),
+        'client' => 'relay',
+        'host' => getenv('YMIR_REDIS_ENDPOINT'),
+        'port' => 6379,
+        'database' => $redisDatabases[$redisEnvironment],
+        'prefix' => getenv('YMIR_CACHE_PREFIX'),
+        'shared' => true,
+        'async_flush' => true,
+        'compression' => 'zstd',
+        'serializer' => 'igbinary',
+        'prefetch' => false,
+        'split_alloptions' => false,
+        'debug' => false,
+        'save_commands' => false,
+    ]);
+} else {
+    define('WP_REDIS_DISABLED', true);
+}
+```
+
+These settings follow Object Cache Pro's [Relay guide][11]. It suggests testing `prefetch` and `split_alloptions`, since some sites benefit from them and others don't. Object Cache Pro prefixes must be 32 characters or less. If `YMIR_CACHE_PREFIX` is longer, replace it with a shorter value that never changes and that no other environment using the cache cluster uses.
+
+## Checking and flushing the object cache [#checking-and-flushing-the-object-cache]
+
+Both plugins add a `wp redis status` command. Run it on a deployed environment with the [`wp`][12] command:
+
+```bash
+ymir wp --environment=staging redis status
+```
+
+Commands you run with WP-CLI on your computer use your local configuration, not the cache cluster.
+
+Be careful with `wp cache flush` and `wp redis flush` on a deployed environment. They empty the environment's whole Redis database, and anything else stored in it. Ymir cache clusters also evict the least recently used keys when they run out of memory, so only store data you can rebuild in the object cache.
+
+[1]: https://developer.wordpress.org/reference/classes/wp_object_cache/
+[2]: https://wordpress.org/plugins/index-wp-mysql-for-speed/
+[3]: /compatibility/woocommerce
+[4]: /team-resources/caches
+[5]: https://valkey.io
+[6]: https://wordpress.org/plugins/redis-cache
+[7]: https://github.com/igbinary/igbinary
+[8]: https://objectcache.pro/
+[9]: https://github.com/facebook/zstd
+[10]: /projects/environments#secrets
+[11]: https://objectcache.pro/docs/relay
+[12]: /reference/ymir-cli#wp
+[13]: https://wordpress.org/plugins/query-monitor/

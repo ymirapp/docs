@@ -1,0 +1,241 @@
+---
+title: "How to migrate a site to Ymir"
+navTitle: "Migrating to Ymir"
+description: "Plan, rehearse and cut over an existing site to Ymir with a backup, a fallback and a single source of truth for your data."
+---
+
+Moving an existing site to Ymir means moving three separate things: your code, your database and your uploaded files. Ymir deploys your code, but it doesn't copy your database or files from your current host. This guide explains how to plan the move, rehearse it, switch your domain over and recover if something goes wrong.
+
+The planning advice applies to every project type. The command examples are for WordPress, Bedrock and Radicle projects. Laravel applications store files, run queues and schedule work differently, so read the [Laravel guide][1] and the [queues guide][2] for those parts of your plan.
+
+A migration isn't automatically lossless or free of downtime. How much downtime you have and what you can recover depend on your plan, your backups and how you control which site can change your data.
+
+## How a migration works [#how-a-migration-works]
+
+A safe migration has these phases:
+
+1. **Inventory:** Find out what your site depends on.
+2. **Backup:** Make a backup of your current site and check that you can restore it.
+3. **Setup:** Create the Ymir project, databases and database user without sending visitors to it.
+4. **Rehearsal:** Copy your data to Ymir, test the site and test how you'll pause it.
+5. **Cutover:** Stop changes on both sites, copy the final data, check it, switch your domain and then let Ymir accept changes.
+6. **Fallback:** Keep your old host and backups until you're confident you won't need them.
+
+Only one site should be able to change your data at a time. That includes visitors, administrators, cron jobs, queued jobs and integrations such as payment gateways and webhooks. If both your old host and Ymir change data, you end up with two diverging copies that you have to merge by hand. Pointing your domain somewhere doesn't decide this on its own: a Ymir environment is reachable on its vanity domain and runs scheduled tasks whether or not your domain points to it.
+
+<img src="/images/diagrams/migration-cutover.svg" alt="Diagram: a timeline of the six migration phases in two lanes, old host and Ymir. The old host is the only live writer through inventory, backup, setup and rehearsal. Ymir is created during setup with no custom domain mapped and only runs test data without live credentials during the rehearsal. At the cutover, the old host stops accepting live writes and stays paused. Both sites stay paused while you copy the final data, change URLs if your domain changes, check the site, switch your domain and check it again, and only your planned migration steps change the copied data. Only then does Ymir become the only live writer. Switching back is simple only while Ymir has made no live writes or side effects and never acted on live credentials. Once it has, even before the domain switch, keep Ymir paused and reconcile its changes before you reopen the old host. Pointing your domain at a site never decides which site can write." width="1100" height="780" />
+
+<a href="/images/diagrams/migration-cutover.svg">Open the full-size diagram</a>
+
+## Taking an inventory of your site [#taking-an-inventory]
+
+Before you change anything, write down what your site needs. You'll use this list to plan the setup and to check the site before and after the cutover.
+
+* **Code and dependencies:** Where your code lives, how it's built and its PHP version. The [PHP runtime reference][3] lists the PHP versions and extensions available on Ymir. Check separately that your application and its dependencies support the version you choose and that it still gets security fixes.
+* **Plugins and themes:** Plugins that write to the filesystem, cache pages, offload media or need special configuration. Check the compatibility guides, such as [WooCommerce][4], and see what [`wordpress:configure`][5] changes.
+* **Database:** Its engine and version, size, character set and table prefix. Note any triggers, stored procedures, events, plugin tables with other prefixes and database users that your site needs. WordPress projects need a MySQL database server.
+* **Uploads:** The size and number of files in your uploads directory. Note anything that isn't a plain single-site uploads directory, such as a multisite network, a media offload plugin or protected downloads. These need their own plan.
+* **Domains and DNS:** Every domain the site answers to, who hosts their DNS and which records you'll change.
+* **Email:** How the site sends email today. Ymir sends WordPress email with [Amazon SES][6]. You need a verified identity for the address your emails are from. Until your AWS account has [production access][26] in your project region, SES restricts who you can send email to.
+* **Background work and integrations:** Cron jobs, scheduled actions, queues, payment gateways, webhooks, API keys and anything else that sends messages or changes data outside your site. Note where each one's settings live, in your code, your environment variables or your database.
+* **Files your code writes:** Your code can't write to the project directory on AWS Lambda. See the [PHP runtime reference][3].
+
+## Backing up your current site [#backing-up-your-current-site]
+
+Make a full backup of your current site with your current host's tools before you start: code, database and uploads. Then restore the database backup into a scratch database to prove it works. A backup you haven't restored is only a hope.
+
+Keep backups and database exports out of your project repository, your build and your public uploads directory. They contain user data, so store them somewhere private.
+
+Keep your current host running, with its backups, until well after the cutover. It's your fallback.
+
+## Setting up the Ymir project [#setting-up-the-ymir-project]
+
+Create your project with the `init` command. [Creating a project][7] explains each step. The `init` command can create a database server and, on a public database server, empty databases. It doesn't copy your data, and it doesn't create custom databases, tables or database users that your current site uses. You create those yourself.
+
+Create two databases on your database server: one for rehearsals and one that stays empty until the cutover. Then create a database user with access to only those databases. See [managing databases][8] and [managing database users][9]. On a public database server, you can use the Ymir CLI:
+
+```bash
+ymir database:create example_rehearsal --server=example-database-server
+ymir database:create example_production --server=example-database-server
+ymir database:user:create example_user example_rehearsal example_production --server=example-database-server
+```
+
+On a private database server, create the databases with a database client through a [tunnel][10], and run the SQL queries that `database:user:create` displays. Then set the [`database`][11] options of the environment you'll move to, usually `production`, to use the rehearsal database for now.
+
+Keep the new environment isolated from your current site while you prepare it:
+
+* **Don't map your domain yet.** If your team already has a live [DNS zone managed by Ymir][12] for your domain, deploying with that domain in your `ymir.yml` file replaces its `A` record, and traffic can begin switching to Ymir during that deployment. Add the domain only during the cutover.
+* **Use separate resources.** Don't point the environment at your current site's database, cache, search service or queues.
+* **The vanity domain is public.** Anyone with the vanity domain URL can open the environment. It isn't access control.
+* **Import before the first deploy.** A WordPress environment deployed with an empty database shows the WordPress installer to anyone who opens it. You can import your database and uploads before you deploy for the first time.
+
+Request your SSL certificate early, since AWS only issues it once its validation records exist at your domain's current DNS provider. See the [domain mapping guide][13] for the certificate and region requirements. If your DNS provider allows it, lower the TTL of the records you'll change a day or more before the cutover so the switch spreads faster.
+
+### Migrating from Laravel Vapor [#migrating-from-laravel-vapor]
+
+If you're moving a Laravel application from Laravel Vapor, the [`laravel:vapor:migrate`][29] command can copy settings from your `vapor.yml` file into your `ymir.yml` file. The `init` command offers to do this when your Laravel project has a `vapor.yml` file, or you can run it yourself:
+
+```bash
+ymir laravel:vapor:migrate
+```
+
+The command only works with Laravel projects and only converts environments with the same name in both files. The values it copies replace the matching values in your `ymir.yml` file, and it can replace your Dockerfiles. Its `.bak` copies of your Dockerfiles can overwrite earlier `.bak` files, so don't rely on them as your backup. Commit or back up your `ymir.yml` file and Dockerfiles first, then review the changes and any custom Dockerfile instructions before you deploy. The [command reference][29] lists what it converts.
+
+The command only changes configuration files in your project directory. Copying a database, domain or queue setting into your `ymir.yml` file doesn't move or adopt your AWS resources, databases, files, environment variables, secrets, queued messages or DNS. Plan those like the rest of this migration, with the [Laravel guide][1] and the [queues guide][2].
+
+Your Vapor environment keeps running until you delete it, so also check these points:
+
+ * **Scheduler:** When the [`cron`][14] option is enabled, Ymir runs your Laravel scheduler as soon as you deploy, whether or not your domain points to Ymir. If your Vapor scheduler also runs, both can run the same tasks. Set `cron` to `false` before your first rehearsal deployment, and turn off the Vapor scheduler before you enable `cron` at the cutover.
+ * **Configuration:** Store your existing [`APP_KEY`][31] as a secret before your first deployment. Ymir [sets some values itself][32], such as `ASSET_URL` and `SESSION_DRIVER`, so compare them with your Vapor configuration. Also check any Vapor-specific file paths you carry over, such as a `MYSQL_ATTR_SSL_CA` path to a file that Vapor provided, since that file may not exist on Ymir.
+ * **Vapor-specific code:** Converting your `vapor.yml` file and installing the Ymir Laravel bridge don't adapt Vapor-specific application code or replace your Vapor dependencies. Find the code that relies on Vapor packages such as `laravel/vapor-core` or `laravel-vapor`, including asset helpers like `Vapor.asset()` and browser uploads with `Vapor.store()`. The bridge doesn't provide a replacement for `Vapor.store()`. Test each of these on Ymir and adapt them, using [files and storage][34] for how storage works on Ymir.
+ * **Domain:** AWS only lets one CloudFront distribution use a domain. When CloudFront [caching][33] is enabled, Ymir maps your domain to your environment's CloudFront distribution, so the deployment that maps it can fail while your Vapor environment still uses the domain with CloudFront or an edge-optimized custom domain. Changing your DNS records doesn't release the domain from Vapor. Plan removing the domain from Vapor, mapping it on Ymir and updating your DNS as part of the cutover, since your domain can be unavailable until all of them are done and your DNS changes have spread.
+
+## Rehearsing the migration [#rehearsing-the-migration]
+
+Rehearse the whole migration at least once before the cutover, on the environment you'll move to, before you map your domain to it. Time each step so you know how long the cutover will take.
+
+Your database copy contains live credentials and data. An environment running with them can charge customers, send email, call webhooks or run scheduled jobs. The Ymir WordPress plugin stops SES email on a vanity domain, but it doesn't stop email sent by other plugins or services. Disabling the [`cron`][14] option doesn't stop scheduled tasks either, since it turns the standard WP-Cron behaviour back on. So prepare the copy you rehearse with: for example, restore it on your own computer, switch payment gateways to test mode, remove live API keys and disable plugins that send email or call webhooks, then export that copy.
+
+### Planning how to pause the Ymir site [#planning-how-to-pause-the-ymir-site]
+
+During the cutover, the Ymir environment is deployed and reachable while you copy and check the final data. Ymir doesn't have a maintenance mode or a command that pauses an environment, so you need your own way to keep it from changing data or acting on live credentials. Design it for your site and test it during the rehearsal. It has to cover each of these paths, and you need to check each one separately:
+
+* **Visitors:** Requests to the vanity domain, and to your domain once it points to Ymir, must not reach the site's normal pages, logins, forms or checkout. For example, a must-use plugin deployed with your code could answer web requests with a maintenance page. That only covers web requests.
+* **Scheduled tasks:** Cron jobs and scheduled actions must not run with your final data until you're ready. When the `cron` option is enabled, Ymir runs scheduled tasks with WP-CLI on the `console` function, not through web requests, so a maintenance page doesn't stop them.
+* **Queues and integrations:** Queued jobs, webhooks and anything else that sends messages or changes data elsewhere. For Laravel queues, see [changing, removing and rolling back queues][27].
+* **A way for you to check the site** while everyone else is kept out, if your checks need a browser. Make sure the pause doesn't block the WP-CLI commands you'll run with the `wp` command.
+
+Settings stored in your database come from your current site. Your final copy replaces whatever you changed in a rehearsal copy. So put your pause in your code or your environment's configuration, where the final import can't undo it, and check that it still works with an unmodified copy of your database.
+
+A tested pause that covers every path is a requirement for the cutover below. The commands you run yourself with the `wp` command during the migration and the scheduled tasks Ymir runs both use WP-CLI. So your pause has to let your own commands through while it stops scheduled tasks, and you have to check both. If you can't build and test a pause like this, don't use this cutover. Contact Ymir support or design a different plan and review it before you migrate.
+
+### Importing the database [#importing-the-database]
+
+Export your database from your current host as a `.sql` or `.sql.gz` file using a tool that matches your database engine. Then import it into the rehearsal database with the [`database:import`][15] command. Pass the database server, database and user explicitly, and type the password when the Ymir CLI asks for it:
+
+```bash
+ymir database:import ~/migration/example-rehearsal.sql.gz example_rehearsal --server=example-database-server --user=example_user
+```
+
+Check these points before you import:
+
+* **The database exists:** The `database:import` command doesn't create it.
+* **The database is empty and unused:** Many exports drop and recreate each table they contain. Tables that aren't in the export stay as they are. Don't import into a database that a running site uses.
+* **The table prefix matches:** Your WordPress configuration must use the table prefix of the imported tables.
+* **You can connect:** For a private database server, your network needs a [bastion host][16] and your computer needs the `ssh` command. Stop any `database:server:tunnel` command first, since the import opens its own tunnel on the same port.
+
+The Ymir CLI doesn't wrap an import in a transaction, so if it fails partway, some changes can remain in the database. Don't assume it's safe to run the same import again. Find the cause first. For a database that nothing uses, like the rehearsal database, you can then recreate it empty and import again. The [`database:import`][15] reference lists what the command can't import.
+
+### Importing the uploads [#importing-the-uploads]
+
+Copy the uploads directory from your current host to your computer with a tool you trust, so you can check what you have. Then run the [`media:import`][17] command from your project directory. Pass the environment and the path to the uploads directory itself:
+
+```bash
+ymir media:import --environment=production ~/migration/uploads
+```
+
+The command uploads every file under that path to the `uploads` folder of the environment's public S3 bucket, using paths relative to it. For example, `~/migration/uploads/2024/05/photo.jpg` becomes `uploads/2024/05/photo.jpg`. Keep these points in mind:
+
+* **Every file becomes public.** Only import the uploads directory. Don't import a directory with database exports, backups or private plugin files.
+* **It overwrites, but doesn't sync.** A file with the same path replaces the one in the bucket. Files that are already in the bucket and not on your computer stay there.
+* **It only copies files.** It doesn't create media library entries or change URLs in your database. Files uploaded through the WordPress media library work differently. See [WordPress uploads][30].
+* **It doesn't check the result for you.** The Ymir CLI can report success even if some uploads failed, and it doesn't retry or resume them.
+
+To check an import, list the relative paths and sizes of your local files. Then compare them with the objects under `uploads/` in the bucket, for example with the AWS console or the AWS CLI. Every local file should have an object with the same path and size. For important files, also download some and compare their content with your local copy. Objects that aren't in your local list, such as files left from a rehearsal, are expected, but review them. Import missing or different files again.
+
+### Updating stored URLs [#updating-stored-urls]
+
+WordPress stores full URLs in its database, including in serialized data. In your rehearsal copy, links and images still point to your current site, which is still live. So a page on the vanity domain can look right while it loads content from your old host. Replacing the URLs in the rehearsal copy lets you test the Ymir site on its own. These replacements only apply to the rehearsal copy. Your final copy comes from your current site with its original URLs.
+
+Deploy the environment, then use WP-CLI's [`search-replace`][18] command with the [`wp`][19] command. Run it with `--dry-run` first and review what it would change:
+
+```bash
+ymir wp --environment=production "search-replace 'https://www.example.com' 'https://example-site.ymirsites.com' --skip-columns=guid --dry-run"
+```
+
+Use the vanity domain URL that `environment:url` displays. Keep these points in mind:
+
+* **Search for the full URL.** Include the scheme rather than a bare domain, so you don't change email addresses or other domains that contain it.
+* **Check which tables it covers.** By default, `search-replace` only covers the tables WordPress registers for the current site. Plugin tables that WordPress doesn't register aren't changed. Review the report and add the tables you need explicitly, rather than replacing in every table.
+* **Never use SQL `REPLACE` queries.** They corrupt serialized data.
+* **Plan multisite separately.** A multisite network needs its own reviewed plan for which sites and tables to change.
+* **Watch the time limit.** The `wp` command waits for up to the environment's [`console` timeout][28]. A large replacement can run longer. If the Ymir CLI stops waiting or reports a failure, the replacement may still have changed some rows. Check the database before you run it again. For a large database, it can be safer to replace URLs in a copy on your own computer and import the result.
+
+When the report looks right, run the same command without `--dry-run`. Then clear cached copies of the old URLs. If your site uses an object cache, run `ymir wp --environment=production "cache flush"`. If other environments or projects share your cache cluster, first check whether your object cache plugin flushes only this site's data. To clear pages cached by CloudFront, use the [`environment:invalidate-cache`][25] command.
+
+The [`wordpress:change-domain`][20] command is quicker but broader: it replaces the bare domain in every table without a dry run. See its reference before you use it.
+
+### Checking the site [#checking-the-site]
+
+Test the rehearsal against your inventory: pages, logins, forms, search, checkout in test mode, media, scheduled tasks and email. Check that pages and media load from the vanity domain and not from your current host. Read your logs with the [`environment:logs:query`][21] command. Test your pause too, with an unmodified copy of your database.
+
+Fix what you find, update your plan and rehearse again until the steps are repeatable.
+
+## Cutting over [#cutting-over]
+
+The cutover is the rehearsed steps with your final data. Your final database goes into the empty final database, so the rehearsal deployment never runs against it. Do the steps in this order:
+
+1. **Pause the Ymir site.** Deploy your pause and check that it holds.
+2. **Stop writes on your current site.** Put it in maintenance mode or read-only mode, and stop its cron jobs, queue workers and integrations that change data. Maintenance mode on its own doesn't stop scheduled email, payment renewals, webhooks or cron jobs.
+3. **Make a final backup** of your current site.
+4. **Import the final database** into the empty final database, such as `example_production`. Nothing uses it yet.
+5. **Import the final uploads.** Copy the uploads directory from your current site after you stopped its writes. Import all of it, or a set of every new and changed file at the same relative paths, computed by comparing it with the copy you imported before. Files deleted on your current site, and files left from the rehearsal, stay in the bucket. Decide what to do with them in a reviewed step, then [check the import](#importing-the-uploads) against your final copy.
+6. **Switch the environment to the final database.** Change the environment's `database` options to the final database and deploy with your pause still in place. This deployment has your live data and credentials, so the pause has to hold. If your site uses an object cache, flush it so no rehearsal data stays cached, with the same shared cache precautions as when [updating stored URLs](#updating-stored-urls).
+7. **Update stored URLs** only if your domain changes, from your old domain to your new one. Don't replace them with the vanity domain. Skip this step if your domain stays the same.
+8. **Check what you can before the switch.** With WP-CLI, compare things like the site URL, the number of posts, users and orders with your current site. Check the uploads inventory and your logs. If your domain stays the same, pages on the vanity domain link to your domain, which still points to your current site. So the vanity domain can't prove that those links work on Ymir.
+9. **Map your domain.** Add it to your `ymir.yml` file and deploy, with the pause still in place. See the [domain mapping guide][13]. If your domain is in a live DNS zone managed by Ymir, this deployment switches it. Otherwise, add the DNS records that the Ymir CLI displays. If you're also moving your DNS to Ymir, see [moving a domain's DNS to Ymir][22].
+10. **Check the site on your domain** against your inventory once your domain reaches Ymir, while everyone else is still kept out.
+11. **Remove the pause** and turn on the scheduled tasks, queues and integrations you want, on purpose and one at a time. From now on, Ymir is the only site that changes your data.
+
+DNS changes don't reach everyone at once, so some visitors keep reaching your current site for a while. Keep it in maintenance mode, and watch your logs and integrations on Ymir.
+
+## Rolling back [#rolling-back]
+
+Whatever happened, make sure the Ymir site is paused before you reopen your current site, so only one site can change data.
+
+Falling back is simple only if the Ymir site never changed your data or acted on live credentials. That depends on your pause, not on where your domain points. Visitors on the vanity domain, scheduled tasks and integrations can change data before your domain switches.
+
+If anything could have changed data on Ymir, compare its data with your current site's, which stopped at the write freeze, and decide how you'll copy changes back before you reopen your current site and point your domain back.
+
+A deployment [rollback][23] doesn't help here. It only changes your project code and its deployment configuration, not your database or uploads.
+
+## After the migration [#after-the-migration]
+
+Keep your current host and its backups for as long as you might need to fall back or look up old data. When you shut it down, make sure nothing still points to it, such as DNS records, webhooks or email settings. Delete the rehearsal database once you no longer need it.
+
+On Ymir, set up and test your own backups. See [backing up and recovering databases][24]. Ymir doesn't back up your uploads, and deleting an environment's resources deletes its uploads, so keep your own copy.
+
+[1]: /guides/laravel
+[2]: /guides/queues
+[3]: /reference/php-runtime
+[4]: /compatibility/woocommerce
+[5]: /reference/ymir-cli#wordpress-configure
+[6]: /team-resources/email
+[7]: /projects/manage#creating-a-project
+[8]: /team-resources/database-servers#managing-databases
+[9]: /team-resources/database-servers#managing-database-users
+[10]: /team-resources/database-servers#connecting-to-a-private-database-server
+[11]: /reference/configuration#database
+[12]: /guides/domain-mapping#using-a-dns-zone-managed-by-ymir
+[13]: /guides/domain-mapping
+[14]: /reference/configuration#cron
+[15]: /reference/ymir-cli#database-import
+[16]: /team-resources/networks#bastion-host
+[17]: /reference/ymir-cli#media-import
+[18]: https://developer.wordpress.org/cli/commands/search-replace/
+[19]: /reference/ymir-cli#wp
+[20]: /reference/ymir-cli#wordpress-change-domain
+[21]: /reference/ymir-cli#environment-logs-query
+[22]: /team-resources/dns#moving-a-domains-dns-to-ymir
+[23]: /projects/deploy#rolling-back-a-deployment
+[24]: /team-resources/database-servers#backing-up-and-recovering-databases
+[25]: /reference/ymir-cli#environment-invalidate-cache
+[26]: /team-resources/email#getting-your-aws-account-approved-for-sending-email
+[27]: /guides/queues#changing-removing-and-rolling-back-queues
+[28]: /reference/configuration#timeout-2
+[29]: /reference/ymir-cli#laravel-vapor-migrate
+[30]: /reference/php-runtime#wordpress-uploads
+[31]: /guides/laravel#application-key
+[32]: /guides/laravel#configuration-values-ymir-sets
+[33]: /reference/configuration#caching
+[34]: /guides/laravel#files-and-storage

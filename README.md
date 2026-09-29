@@ -10,11 +10,26 @@ Documentation for the [Ymir][1] platform.
 
 ## Contributing
 
-To build documentation:
+Requires Node.js 22 or newer.
+
+To install the project:
 
 ```console
 $ npm install
+```
+
+To run the documentation locally at http://localhost:3000:
+
+```console
 $ npm run dev
+```
+
+To check your changes:
+
+```console
+$ npm run types:check
+$ npm run lint
+$ npm run build
 ```
 
 ## Links

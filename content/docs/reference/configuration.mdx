@@ -1,0 +1,1095 @@
+---
+title: "Configuration reference"
+navTitle: "ymir.yml"
+description: "Every project and environment option in the ymir.yml configuration file, with types, defaults and allowed values."
+---
+
+## Sample configuration file
+
+The sample configuration file shows all possible configuration options with their defaults for the `ymir.yml` file:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+    architecture: x86_64
+    build:
+      commands: []
+      include: []
+    cache: cache-name
+    cdn:
+      cache_policy_assets: ymir-assets-policy
+      cache_policy_content: false
+      caching: enabled
+      cookies_whitelist: []
+      default_expiry: 300
+      excluded_paths: []
+      forwarded_headers: ['origin']
+      functions_assets:
+        - name: function-name
+          type: viewer-request
+      functions_content:
+        - name: function-name
+          type: viewer-request
+      invalidate_paths: []
+      image_processing_memory: 256
+      logging:
+        format: w3c
+        retention: 7
+        status: enabled
+      origin_shield: disabled
+      process_images: disabled
+    concurrency: 10
+    cron: 1
+    database:
+      server: database-server
+      name: database-name
+      user: database-user
+    deployment:
+      type: zip
+      commands: []
+    domain: []
+    # firewall: optional, see the firewall section below
+    gateway: http
+    logging:
+      retention: 7
+      status: enabled
+    log_retention_period: 7
+    memory: 1024
+    network: network-name
+    php: 7.4
+    tags: []
+    tmp_storage: 512
+    warmup: 1
+    website:
+      concurrency: 10
+      logging:
+        retention: 7
+        status: enabled
+      memory: 1024
+      timeout: 30
+      tmp_storage: 512
+    console:
+      logging:
+        retention: 7
+        status: enabled
+      memory: 1024
+      timeout: 60
+      tmp_storage: 512
+    queues:
+      default:
+        concurrency: 10
+        logging:
+          retention: 7
+          status: enabled
+        memory: 1024
+        timeout: 600
+        tmp_storage: 512
+        type: standard
+```
+
+## Project configuration
+
+Project configuration options are global to a project and apply to all environments.
+
+### id
+
+**type**: `int` **required**
+
+The ID of the project in Ymir.
+
+### name
+
+**type**: `string` **required**
+
+The name of the project.
+
+### type
+
+**type**: `string` **required**
+
+The project type.
+
+The possible values are:
+
+ * `bedrock` for [Bedrock][1] projects
+ * `laravel` for [Laravel][20] projects
+ * `radicle` for [Radicle][18] projects
+ * `wordpress` for standard WordPress projects
+
+### environments
+
+**type**: `array` **required**
+
+All the project environments. Configuration values for environments are covered in the next section.
+
+## Environment configuration
+
+Each key under the `environments` option is the name of the environment. Everything under that key is the configuration options for that environment.
+
+### architecture
+
+**type**: `string` **default**: `x86_64`
+
+The CPU architecture used by the Lambda function. Allowed values are `arm64` or `x86_64`. For backwards compatibility, Ymir uses `x86_64` when an environment doesn't set this option. The `ymir init` command sets it to `arm64` for the environments it creates.
+
+Ymir uses a separate PHP runtime for each architecture. Anything native that you add to your functions, such as Lambda [`layers`](#layers), PHP extensions or executables, must support the environment's architecture. With container image deployment, your `Dockerfile` must use the runtime image for the environment's architecture. See the [PHP runtime reference][28] for details.
+
+<Callout type="info" title="Arm64 pricing">
+
+Lambda charges a lower price for the duration of `arm64` functions than `x86_64` functions. See the [AWS Lambda pricing page][19] for current prices. How fast your application runs on each architecture depends on your code, so test it on a staging environment before switching.
+
+</Callout>
+
+### build
+
+**type**: `array`
+
+This is the array of values to configure the environment build. If the database value is a simple array, it'll be used as the `commands` value.
+
+#### commands
+
+**type**: `array`
+
+This is an array of build commands that the Ymir CLI will run when building your project. These commands are executed on the computer performing the build and not on the Ymir platform. If your build commands generate files, they'll get packaged along with the rest of your project files during deployment.
+
+#### include
+
+**type**: `array`
+
+This is an array of paths that you want to include in the environment build artifact. By default, Ymir will only add `.mo` and `.php` files to the build artifact to ensure a small build artifact. This lets you specify additional files or folders to add the build artifact besides the defaults.
+
+### cache
+
+**type**: `string`
+
+The [cache][4] to use with your environment.
+
+Caches only exist on a network's private subnets. So using a cache connects your environment's Lambda functions to the cache's [network][24] unless you set the [`network`](#network) option. Ymir adds a NAT gateway to that network during deployment if it doesn't have one.
+
+### cdn
+
+**type**: `array | string`
+
+This is the array of values to configure the environment's CloudFront distribution. If the `cdn` value is a string, it'll be used as the `caching` value.
+
+#### cache_policy_assets [#cache-policy-assets]
+
+**type**: `string | false` **default**: `ymir-assets-policy`
+
+The custom CloudFront cache policy used for assets and uploads. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
+
+#### cache_policy_content [#cache-policy-content]
+
+**type**: `string | false`
+
+The custom CloudFront cache policy used for the PHP application content. Setting this option to `false` removes the cache policy and reverts back to use the legacy CloudFront cache configuration.
+
+<Callout type="warn" title="Overrides CDN options">
+
+If you decide to use a custom CloudFront cache policy for your PHP application content, the following `cdn` options won't apply anymore: `cookies_whitelist`, `default_expiry` and `forwarded_headers`.
+
+</Callout>
+
+#### caching
+
+**type**: `string` **default**: `enabled`
+
+This option controls which requests go through the CloudFront distribution.
+
+The possible values are:
+
+ * `enabled` routes your mapped domains through CloudFront. The asset and upload URLs that Ymir generates use your primary domain.
+ * `assets` points your mapped domains to your API gateway. The asset and upload URLs that Ymir generates use the CloudFront distribution's `cloudfront.net` domain.
+ * `disabled` points your mapped domains to your API gateway. The asset and upload URLs that Ymir generates use your S3 bucket's domain, so they bypass CloudFront.
+
+The value only changes how requests get routed. Ymir keeps the CloudFront distribution and its cache policies with every value, but removes your mapped domains from the distribution unless the value is `enabled`.
+
+<Callout type="warn" title="Provisioning delay">
+
+Switching the `caching` value can cause your PHP application to not load certain assets while the CloudFront distribution changes and DNS records propagate. There's no fixed time for this to complete.
+
+</Callout>
+
+<Callout type="warn" title="Full CloudFront caching disabled with REST API">
+
+Setting `caching` to `enabled` while the `gateway` option is set to `rest` fails project validation. Because `enabled` is the default `caching` value, an environment using a REST API must set `caching` to `assets` or `disabled`. If you want CloudFront to cache your PHP application pages, use `caching: enabled` with the `http` gateway or without a gateway (`gateway: false`). Switching gateway types changes your environment's DNS records (see [gateway](#gateway)).
+
+</Callout>
+
+#### cookies_whitelist [#cookies-whitelist]
+
+**type**: `array` **default**: project specific
+
+The list of cookies that CloudFront includes in the cache key of your PHP application content. CloudFront caches a separate copy of a page for each combination of values of these cookies. Adding a cookie to this list doesn't stop CloudFront from caching pages. Use [`excluded_paths`](#excluded-paths) or the `Cache-Control` headers of your PHP application for pages that must never be cached. Supports `*` wildcard character.
+
+By default, Ymir automatically whitelists the following cookies based on your project type:
+
+| Project Type | Default Whitelisted Cookies |
+| :--- | :--- |
+| wordpress, bedrock, radicle | comment_*, wp-postpass_*, wordpress_*, wp-settings-* |
+
+<Callout type="info" title="Default cookies always added">
+
+Any cookies you add to this list will be appended to the defaults listed above. You do not need to manually include the default cookies for your project type.
+
+</Callout>
+
+#### default_expiry [#default-expiry]
+
+**type**: `int` **default**: `300`
+
+The default time (in seconds) that CloudFront will keep your PHP application content cached when your PHP application doesn't send `Cache-Control` or `Expires` headers.
+
+#### excluded_paths [#excluded-paths]
+
+**type**: `array` **default**: project specific
+
+The list of URL paths that CloudFront will never cache. CloudFront forwards these requests to your Lambda function, except paths starting with `/uploads/`, which it forwards to your S3 bucket. Supports `*` wildcard character.
+
+By default, Ymir automatically adds default excluded paths depend on your project type:
+
+| Project Type | Default Excluded Paths |
+| :--- | :--- |
+| wordpress | /wp-admin/*, /wp-cron.php, /wp-login.php |
+| bedrock, radicle | /wp/wp-admin/*, /wp/wp-cron.php, /wp/wp-login.php |
+
+<Callout type="info" title="Default paths always added">
+
+Any excluded paths you add to this list will be appended to the defaults listed above. You do not need to manually include the default excluded paths for your project type.
+
+</Callout>
+
+<Callout type="info" title="Use with the WordPress uploads directory">
+
+When a file in the `/uploads` directory doesn't have its own cache headers, the Ymir-managed assets cache policy keeps it cached for 30 days. If some files in your uploads change after you upload them, you can add their sub-directories to `excluded_paths` so that CloudFront always fetches the latest version from your S3 bucket.
+
+Excluding files from the cache doesn't make them private. Anyone with the URL can still download them. Don't store files that need authorization, such as invoices or session data, in your uploads directory.
+
+</Callout>
+
+#### forwarded_headers [#forwarded-headers]
+
+**type**: `array` **default**: `['origin']`
+
+The list of headers that CloudFront includes in the cache key of your PHP application content. CloudFront caches a separate copy of a page for each combination of values of these headers.
+
+<Callout type="warn" title="10 header limit">
+
+You can't list more than 10 headers with this option.
+
+</Callout>
+
+#### functions_assets [#functions-assets]
+
+**type**: `array`
+
+The list of CloudFront functions to associate with CloudFront origin used for assets and uploads. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+
+#### functions_content [#functions-content]
+
+**type**: `array`
+
+The list of CloudFront functions to associate with CloudFront origin used for the PHP application content. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+
+#### invalidate_paths [#invalidate-paths]
+
+**type**: `array`
+
+The list of paths cleared from the CloudFront distribution cache during the project deployment. Supports `*` wildcard character.
+
+#### image_processing_memory [#image-processing-memory]
+
+**type**: `int` **default**: `256` **max**: `3008`
+
+The amount of memory (in MB) used by the Lambda@Edge image processing function. Must be between 128 MB and 3,008 MB in 64 MB increments.
+
+#### logging
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the CloudFront access logs to S3. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### format
+
+**type**: `string` **default**: `w3c`
+
+The format of the access logs. The allowed values are `json`, `plain`, `w3c`, `raw`, and `parquet`.
+
+##### retention
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the access logs are retained in S3. You can set a value between 1 and 3653.
+
+##### status
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the CloudFront distribution is allowed to write access logs to S3.
+
+#### origin_shield [#origin-shield]
+
+**type**: `bool | enabled | disabled` **default**: `disabled`
+
+Flag whether the CloudFront distribution will be configured with [Origin Shield][15].
+
+<Callout type="warn" title="Additional cost">
+
+Origin Shield isn't free. There's an additional cost for every 10,000 request that hits an origin. You can read more on the [CloudFront pricing page][16].
+
+</Callout>
+
+#### process_images [#process-images]
+
+**type**: `bool | enabled | disabled` **default**: `disabled`
+
+Flag whether the CloudFront distribution will be configured with the Lambda@Edge image processing function.
+
+### concurrency
+
+**type**: `int | false` **default**: `10`
+
+The environment-level default concurrency value that is inherited by `website` and `queue` functions. This option controls the maximum number of requests or jobs each of these functions can process at the same time. Ymir sets it as each function's [reserved concurrency][2], which means AWS also sets that much of your account's concurrency in the region aside for the function. Allowed values are between 0 and 10,000. A value of `0` stops the function from running at all.
+
+Setting this option to `false` removes the reservation. The function then shares your account's unreserved concurrency with every other function in the region. It's still limited by your account's concurrency quota and can be throttled when other functions use up the unreserved concurrency.
+
+Individual function types can override this default by specifying their own `concurrency` value:
+
+ * `website` functions inherit this value by default
+ * `queue` functions inherit this value by default
+
+The `console` function doesn't have a `concurrency` option. It always uses your account's unreserved concurrency.
+
+<Callout type="warn" title="Limited by your AWS account quota">
+
+When you reserve concurrency, AWS requires you to leave at least 100 units of your account's concurrency in the region unreserved. So the reserved concurrency of every function in the region, across all your projects and environments, can't add up to more than your account's concurrency quota minus 100. Ymir doesn't set reserved concurrency at all if your account's Lambda concurrency quota in the region is below 100, which can happen with new AWS accounts. In that case, Ymir ignores your `concurrency` values and all functions use unreserved concurrency.
+
+</Callout>
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+
+</Callout>
+
+<Callout type="warn" title="Overwhelming your database server">
+
+If your `concurrency` values are too high or disabled, your database server could get overwhelmed when spikes hit your PHP application. If this happens, you'll want to increase the capacity of your database server.
+
+</Callout>
+
+### cron
+
+**type**: `int | false | null` **default**: `1`
+
+The interval (in minutes) at which CloudWatch runs your project's scheduled tasks: [WP-Cron][3] for WordPress projects and the Laravel scheduler (`artisan schedule:run`) for Laravel projects. Must be an integer between 1 and 60. Setting this option to `false` or `null` disables the CloudWatch rule.
+
+For WordPress projects, this option also controls the `DISABLE_WP_CRON` constant. While the CloudWatch rule is active, WP-Cron is disabled. Disabling `cron` re-enables the standard WP-Cron behaviour.
+
+### database
+
+**type**: `array | string`
+
+This is the array of values to configure the environment's database. If the `database` value is a string, it'll be used as the `server` value.
+
+#### name [#name-2]
+
+**type**: `string` **default**: `ymir`
+
+The name of the database used by the PHP application.
+
+<Callout type="warn" title="Overwrites DB_NAME environment variable">
+
+If you configured the `DB_NAME` environment variable, be aware that Ymir will overwrite it with the `name` value.
+
+</Callout>
+
+#### server
+
+**type**: `string`
+
+The database server used by the PHP application. It can be the name of the database server if it's managed by Ymir or the host name of the database server otherwise.
+
+If the database server is a private database server managed by Ymir, your environment's Lambda functions get connected to the database server's [network][24] unless you set the [`network`](#network) option. Ymir adds a NAT gateway to that network during deployment if it doesn't have one. Publicly accessible database servers don't connect your environment to a network.
+
+<Callout type="warn" title="Overwrites DB_HOST environment variable">
+
+If you configured the `DB_HOST` environment variable, be aware that Ymir will overwrite it with the `server` value.
+
+</Callout>
+
+#### user
+
+**type**: `string`
+
+The user used by the PHP application to connect to the database server.
+
+<Callout type="warn" title="Overwrites DB_USER environment variable">
+
+If you configured the `DB_USER` environment variable, be aware that Ymir will overwrite it with the `user` value.
+
+</Callout>
+
+### deployment
+
+**type**: `array | string` **default**: `zip`
+
+This is the array of values to configure the environment deployment. If the `deployment` value is a string, it'll be used as the `type` value.
+
+#### type [#type-2]
+
+**type**: `string` **default**: `zip`
+
+The deployment method to use for the project environment. Allowed values are `image` or `zip`.
+
+<Callout type="error" title="Cannot rollback after changing deployment method">
+
+Once you deploy a project environment with a new deployment method, you won't be able to rollback to a deployment prior to the change in deployment method. Prior deployments will still be visible so you can see your deployment history. But trying to rollback to them will cause an error.
+
+</Callout>
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more information on how to deploy using container images? Check out this [guide][5].
+
+</Callout>
+
+#### commands [#commands-2]
+
+**type**: `array`
+
+The list of commands to run on the project environment during the project deployment.
+
+### domain
+
+**type**: `array | string`
+
+The list of domain names mapped to the environment. If you map only one domain and it's a registered domain or its `www` subdomain, Ymir also maps the other one. You cannot have more than 99 domain names mapped per environment, including the domain that Ymir adds. See the [domain mapping guide][30] for more details.
+
+<Callout type="warn" title="Domain name requirement">
+
+All domains names must either be managed by a DNS zone or have an issued certificate in the project region.
+
+</Callout>
+
+<Callout type="warn" title="AWS quota limit">
+
+The SSL certificate that Ymir requests during deployment covers your vanity domain as well as your mapped domains. By default, AWS only allows [10 domain names per SSL certificate][31], so that certificate can only have 9 more domain names. These are certificate domain names, not mapped domains. Ymir can cover several mapped subdomains with one wildcard domain name when an issued wildcard SSL certificate or a DNS zone managed by Ymir covers them. You can request a quota increase [here][11], up to 100 domain names per certificate. When CloudFront `caching` is `enabled`, CloudFront also has a [quota of 100 domain names per distribution][32] by default.
+
+</Callout>
+
+### firewall
+
+**type**: `array | string | bool | enabled | disabled`
+
+This is the array of values to configure the environment's firewall. If the `firewall` value is a boolean or `enabled`/`disabled`, it'll be used as the `managed_rules` value. If the `firewall` value is any other string, it'll be used as the `acl` value.
+
+Whenever the `firewall` option is present without an `acl` value, Ymir creates an AWS WAF web ACL for the environment, if it doesn't have one yet, and associates it with the environment's CloudFront distribution. This is true even if `firewall` is `false`, `disabled` or an empty array, and you pay for the web ACL either way. With these values, a new web ACL has no rules. On an existing Ymir-managed web ACL, Ymir removes the managed rules, bot protection and rate limit rules that it manages, but doesn't remove rules added outside of Ymir. If you don't want a firewall, leave out the `firewall` option entirely. The sample configuration above doesn't include it for that reason.
+
+The firewall only inspects requests that go through the environment's CloudFront distribution. Requests sent directly to the environment's API gateway or Lambda function URL don't go through it. The rules Ymir configures apply to every request the distribution receives. A [custom web ACL](#acl) can have rules that only apply to some paths.
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more information on how to configure a firewall? Check out this [guide][9].
+
+</Callout>
+
+<Callout type="warn" title="Requires CloudFront caching">
+
+Ymir rejects your configuration if you use the `firewall` option without having the CDN [`caching`](#caching) option set to `enabled`.
+
+</Callout>
+
+<Callout type="warn" title="Additional cost">
+
+Enabling a firewall on your environment isn't free. AWS charges a monthly amount for each web ACL and each rule or rule group in it, plus a charge for every request it inspects, including requests served from the CloudFront cache. Some rule groups, such as bot protection, cost extra. You can read more on the [AWS WAF pricing page][7].
+
+</Callout>
+
+<Callout type="error" title="Removing or replacing a Ymir-managed firewall">
+
+When you remove the `firewall` option or switch to the `acl` option, Ymir deletes the environment's web ACL before it updates the CloudFront distribution. AWS doesn't allow deleting a web ACL that's still associated with a distribution, so that deployment can fail. [Contact support][25] before removing or replacing a firewall on a deployed environment.
+
+</Callout>
+
+#### acl
+
+**type**: `string`
+
+The [ARN][17] of the custom web ACL used as the environment's firewall. It must be an existing web ACL with the CloudFront scope, which AWS keeps in the `us-east-1` region, in the same AWS account as your project's cloud provider connection. Ymir associates the web ACL with the environment's CloudFront distribution. Deploying this environment never changes the web ACL's rules or deletes it. But if the web ACL is the Ymir-managed firewall of another environment, deploying or removing that environment's firewall can still change or delete it.
+
+<Callout type="warn" title="Overrides firewall options">
+
+If you decide to use a custom web ACL as your environment's firewall, Ymir will ignore all other `firewall` options.
+
+</Callout>
+
+<Callout type="warn" title="You manage the custom web ACL">
+
+You can use the same custom web ACL with more than one environment. Any change you make to it applies to every CloudFront distribution associated with it. AWS won't let you delete it while a distribution still uses it. Before deleting it, remove or replace the whole `firewall` option of every environment using it, deploy them, and check that no distribution is still associated with it. Removing only the `acl` value while keeping other `firewall` values, or leaving an empty `firewall` array, makes Ymir create a new web ACL that you pay for. See the [firewall guide][9] for the risks of removing a firewall.
+
+</Callout>
+
+#### bots
+
+**type**: `array | bool | enabled | disabled`
+
+The list of bot categories that you want the firewall to protect against. Below is the list of available categories you may use. When you list categories, Ymir adds the AWS WAF [Bot Control][26] managed rule group to the firewall and sets every category below that you didn't list to only count matching requests instead of blocking them. Set `bots` to `false` or an empty list (`[]`) to disable bot protection.
+
+<Callout type="error" title="Don't use true, enabled or disabled">
+
+Setting `bots` to `true`, `enabled` or `disabled` doesn't do what you'd expect. All three add the Bot Control rule group to the firewall, which you pay for, but set every category below to count instead of block. To block bot categories, list them explicitly. To disable bot protection, use `false` or `[]`.
+
+</Callout>
+
+For most categories, AWS identifies verified bots, such as major search engines, and doesn't block them. But this depends on the rule and the version of the rule group that AWS applies. The Bot Control rule group can also contain rules that aren't in this list, such as newer categories. Ymir doesn't change those, so they use the actions AWS gives them.
+
+| Category                  | Description                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| CategoryAdvertising       | Bots used for advertising purposes                                                                            |
+| CategoryArchiver          | Bots used for archiving purposes                                                                              |
+| CategoryContentFetcher    | Bots fetching content on behalf of an end-user                                                                |
+| CategoryHttpLibrary       | HTTP libraries often used by bots                                                                             |
+| CategoryLinkChecker       | Bots that check for broken links                                                                              |
+| CategoryMiscellaneous     | Miscellaneous bots                                                                                            |
+| CategoryMonitoring        | Bots used for monitoring purposes                                                                             |
+| CategoryScrapingFramework | Web scraping frameworks                                                                                       |
+| CategorySecurity          | Security\-related bots                                                                                        |
+| CategorySeo               | Bots used for search engine optimization                                                                      |
+| CategorySocialMedia       | Bots used by social media platforms to provide content summaries (Verified social media bots are not blocked) |
+| CategorySearchEngine      | Search engine bots (Verified search engines are not blocked)                                                  |
+| SignalAutomatedBrowser    | Automated web browser                                                                                         |
+| SignalKnownBotDataCenter  | Data centers typically used by bots                                                                           |
+| SignalNonBrowserUserAgent | User-agent strings that don't seem to be from a web browser                                                   |
+
+<Callout type="warn" title="Additional cost">
+
+AWS WAF bot protection is an additional cost on top of your existing AWS WAF bill. AWS charges a monthly fee and a fee for every request it inspects. You can read more on the [AWS WAF pricing page][7].
+
+</Callout>
+
+#### managed_rules [#managed-rules]
+
+**type**: `bool | enabled | disabled` **default**: `disabled`
+
+Flag that determines whether the firewall will be configured with default AWS managed firewall rules. If set to `enabled`, Ymir will configure the managed rules listed below. If set to `disabled`, Ymir removes these managed rules from the firewall. You can read more about them [here][8].
+
+Setting the `firewall` option to `true` or `enabled` is the same as setting `managed_rules` to `enabled`. If you configure `firewall` with an array of options instead, `managed_rules` stays `disabled` unless you enable it.
+
+Ymir only adds the `AWSManagedRulesWordPressRuleSet` rule group to WordPress, Bedrock and Radicle projects. AWS updates these rule groups over time, and they can block legitimate requests. Check your application after enabling them.
+
+| Managed Rule                          | Description                                                                                                                                                                                                                |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AWSManagedRulesAmazonIpReputationList | Amazon IP reputation list rule group contains rules that are based on Amazon internal threat intelligence                                                                                                                  |
+| AWSManagedRulesKnownBadInputsRuleSet  | Known bad inputs rule group contains rules to block request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities                                                     |
+| AWSManagedRulesPHPRuleSet             | PHP application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to the use of the PHP programming language, including injection of unsafe PHP functions |
+| AWSManagedRulesSQLiRuleSet            | SQL database rule group contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks                                                                                 |
+| AWSManagedRulesWordPressRuleSet       | WordPress application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to WordPress sites                                                                |
+
+#### rate_limit [#rate-limit]
+
+**type**: `int`
+
+Enables a rate limit rule that blocks requests from IPs that have made more than the configured amount of requests in a 5 minute time span. You may set a value between 100 and 20,000,000.
+
+AWS WAF [estimates request rates][27], so it won't block requests at exactly this limit and can take some time to start or stop blocking an IP. Users who share an IP address, such as people in the same office or on the same mobile network, count toward the same limit.
+
+### gateway
+
+**type**: `string | false` **default**: `http`
+
+The gateway type used by the environment. Allowed values are `http` for HTTP APIs, `rest` for REST APIs or `false` to use [Lambda function URLs][12] instead of a gateway.
+
+<Callout type="error" title="DNS changes when switching gateway types">
+
+Whenever you switch gateway types, the DNS records pointing to your environment will change. If Ymir manages the DNS zone used by your environment, it'll update your DNS records automatically. Otherwise, you will have to do it yourself. That said, even with a managed DNS zone, your environment will be briefly unavailable while the DNS changes propagate.
+
+</Callout>
+
+<Callout type="warn" title="CloudFront mandatory when using Lambda function URLs">
+
+If your environment doesn't use a gateway (set `gateway` option to `false`), you must enable CloudFront to do all caching for it. This means that any `caching` option other than `enabled` (this is the default value) will cause your project validation to fail.
+
+</Callout>
+
+<Callout type="warn" title="CloudFront page caching disabled with REST API">
+
+When using a REST API, it isn't possible to use CloudFront for page caching. If the `cdn` `caching` option is set to `enabled` (this is the default value), your project validation will fail. Set `caching` to `assets` or `disabled` when using a REST API. If you need CloudFront page caching, use the `http` gateway or no gateway instead.
+
+</Callout>
+
+### layers
+
+**type**: `array`
+
+List of [Lambda layers][6] [ARN][17] to use for your Lambda function. You cannot use more than 5 layers per Lambda function. The layers must be in the same region as your project and support the environment's [`architecture`](#architecture).
+
+<Callout type="error" title="Replaces the PHP runtime layer">
+
+When you set this option to a non-empty list, Ymir only uses the layers that you list and no longer adds the Ymir PHP runtime layer. To keep the runtime, add `ymir:php-` followed by your PHP version to the list. Ymir replaces it with the runtime layer for the environment's region and architecture. It counts toward the limit of 5 layers. The PHP version in this value, and not the [`php`](#php) option, decides which runtime your functions use. An empty list keeps the default runtime layer.
+
+In the example below, replace the second value with the ARN of your own layer:
+
+```yml
+layers:
+  - ymir:php-8.4
+  - arn:aws:lambda:<region>:<account-id>:layer:<layer-name>:<version>
+```
+
+</Callout>
+
+<Callout type="warn" title="Ignored with container image deployment">
+
+Ymir will ignore this configuration option if `deployment` is set to `image`.
+
+</Callout>
+
+### logging [#logging-2]
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the environment logging. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+Environment-level logging settings are inherited by all function types (`website`, `console`, and `queues`) as well as the CloudFront distribution. Inheritance works for each value separately: a function type that only sets its own `retention` still inherits the environment's `status`, and the other way around. Logging changes apply on your next deployment. See the [logging guide][29] for how to read your logs and send them to a logging service.
+
+#### retention [#retention-2]
+
+**type**: `int | false` **default**: `7`
+
+Controls the default duration (in days) that the environment's logs are retained. For Lambda functions, logs are stored in CloudWatch. For CloudFront, access logs are stored in S3. Setting it to `false` removes the time-based expiry, so logs stay until their log group or the S3 objects get deleted, and you keep paying to store them. Lowering this value makes existing logs older than the new value expire. Increasing it again or rolling back doesn't recover them.
+
+Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+#### status [#status-2]
+
+**type**: `bool | enabled | disabled` **default**: `enabled`
+
+Flag whether the environment has logs enabled or not. Controls both Lambda function logs sent to CloudWatch and CloudFront access logs sent to S3.
+
+<Callout type="warn" title="Disabling Lambda function logs">
+
+When logging is disabled for a function, Ymir denies the function permission to write to its CloudWatch log group. Ymir still creates the log group and applies its retention. PHP errors, timeouts and runtime errors aren't recorded, and the Ymir CLI log commands show nothing new. Only disable logging after you've confirmed that another method delivers these logs.
+
+</Callout>
+
+### log_retention_period [#log-retention-period]
+
+<Callout type="error" title="Deprecated">
+
+The `log_retention_period` option is deprecated. Use `logging.retention` instead.
+
+</Callout>
+
+**type**: `int | false` **default**: `7`
+
+With current configurations, Ymir sets the retention of your Lambda function logs from the [`logging`](#logging-2) option, and not from this option. If you set this option to a value other than `7`, it still controls the duration (in days) that the logs of the CloudFront image processing function are retained in CloudWatch. When you redeploy or roll back to a deployment created before function types had their own `logging` options, Ymir doesn't have function-level retention values for it. It then uses this option for your function logs if it's set to a value other than `7` or if that deployment's `logging` option was a boolean, and the environment's `logging.retention` value otherwise. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+### memory
+
+**type**: `int` **default**: `1024`
+
+The amount of memory (in MB) used by the environment's Lambda functions. Must be between 128 MB and 10,240 MB in 64 MB increments. Lambda allocates CPU in proportion to memory. This memory is shared by everything in the function, including the PHP runtime, PHP-FPM, your PHP code and any extensions. The Ymir PHP runtime sets PHP's `memory_limit` to 10,240 MB, so this option is usually the limit your PHP code reaches first, unless your application or its PHP settings set a lower `memory_limit`.
+
+Individual function types can override this default by specifying their own `memory` value:
+
+ * `website` functions inherit this value by default
+ * `console` functions inherit this value by default
+ * `queue` functions inherit this value by default
+
+### network
+
+**type**: `string`
+
+The [network][24] to use with your environment. Ymir connects all your environment's Lambda functions to the network's private subnets. The network must be on the same cloud provider connection and in the same region as your project. Ymir looks up the network by name across all your team's networks, on every cloud provider connection and in every region, and doesn't confirm that it matches your project's cloud provider connection or region.
+
+<Callout type="error" title="Overrides private database configuration">
+
+If your project environment uses a private database or a cache, Ymir will automatically connect your environment Lambda functions to their network. However, setting the `network` option will override this. So if you're using a private database or a cache, it's important it be accessible from the configured `network`.
+
+</Callout>
+
+<Callout type="warn" title="Can create a NAT gateway">
+
+If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment. A NAT gateway is billed by the hour and also has data processing fees. See the [Amazon VPC pricing page][23] for current prices. Ymir doesn't remove the NAT gateway when you stop using the network.
+
+</Callout>
+
+<Callout type="warn" title="Slow deployment">
+
+Whenever you connect or disconnect a `network`, the next deployment will take between 5 and 10 minutes to modify your Lambda functions configuration.
+
+</Callout>
+
+### php
+
+**type**: `string` **default**: `7.4`
+
+The PHP version used by the environment. The allowed values are `7.2`, `7.3`, `7.4`, `8.0`, `8.1`, `8.2`, `8.3`, `8.4` and `8.5`.
+
+An allowed value isn't necessarily supported by your application or its dependencies, and some of these versions no longer receive security fixes from the PHP project. This includes the `7.4` default that zip archive deployments without custom layers use when this option is missing, which Ymir keeps for backwards compatibility. The `ymir init` command sets a newer version for the environments it creates, or removes this option when it configures them for container image deployment. Set this option explicitly on zip archive deployment environments. See the [PHP runtime reference][28] for the security support of each version and how Ymir selects the runtime.
+
+If you set the [`layers`](#layers) option to a non-empty list, this option doesn't select the runtime. The `ymir:php-` value in that list does.
+
+<Callout type="warn" title="Ignored with container image deployment">
+
+Ymir will ignore this configuration option if `deployment` is set to `image`. Instead, you should specifiy the PHP version to use in your project environment's `Dockerfile`.
+
+</Callout>
+
+### tags
+
+**type**: `array`
+
+Associative array of up to 10 custom [tags][13] that will be added to your environment resources on top of the automatic tags added by Ymir. Each tag needs a key and a value. Keys can't be numbers, and they can't begin with `aws:` or `ymir:`. Ymir trims spaces at the start and end of keys and values, so quote your values to keep them as strings. Ymir can also replace hyphens in a key with underscores, so `cost-center` usually becomes `cost_center`. Avoid keys that only differ by a hyphen or an underscore, and check the actual keys on your resources. AWS can still reject a tag that doesn't follow its own rules. Don't use `managed-by` or `managed_by` as keys, since they conflict or get confused with Ymir's own `managed-by` tag, and never put secrets or personal data in tags.
+
+```yml
+environments:
+  production:
+    tags:
+      cost_center: "cc-1234"
+      client: "example-client"
+```
+
+Ymir applies the tags when you deploy the environment, not when you save your `ymir.yml` file. When Ymir updates a resource's tags, it can remove tags added outside of Ymir. To use your tags in Cost Explorer, you have to activate them in AWS Billing. See the [AWS costs guide][33] for details.
+
+<Callout type="error" title="Not available with personal subscription">
+
+Tagging environment resources isn't available with personal subscriptions. Ymir checks the subscription of the team owner. You must upgrade to an agency or enterprise subscription to unlock this feature. Please refer to the [pricing page][14] for details.
+
+</Callout>
+
+### tmp_storage [#tmp-storage]
+
+**type**: `int` **default**: `512`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the environment's Lambda functions. Must be between 512 MB and 10,240 MB. The `/tmp` directory is the only writable directory, and each Lambda execution environment has its own. Its files are lost when Lambda shuts down the execution environment, so don't use it for files that need to persist.
+
+Individual function types can override this default by specifying their own `tmp_storage` value:
+
+ * `website` functions inherit this value by default
+ * `console` functions inherit this value by default
+ * `queue` functions inherit this value by default
+
+<Callout type="warn" title="Additional cost">
+
+AWS includes 512 MB of temporary storage at no additional cost. Any `tmp_storage` value above 512 MB incurs additional charges based on the additional storage and function execution duration. You can learn more on the [AWS Lambda pricing page][19].
+
+</Callout>
+
+### warmup
+
+**type**: `int | false` **default**: `1`
+
+The number of `website` functions that CloudWatch will keep warmed up. Must be between 1 and 100. If set to `false`, it disables the warming up CloudWatch rule.
+
+Every 5 minutes, the CloudWatch rule invokes the `website` function, which then invokes itself about this many times in parallel. Ymir also warms the `website` function during each deployment. Warming up isn't the same as AWS provisioned concurrency. It doesn't guarantee that requests won't hit a cold start, and warm-up invocations count toward the function's concurrency and are billed like other invocations.
+
+### website
+
+**type**: `array`
+
+Configuration for the Lambda function that handles HTTP traffic from your PHP application. This function is connected to the API gateway and processes all web requests.
+
+#### concurrency [#concurrency-2]
+
+**type**: `int | false` **default**: inherits from environment-level `concurrency`
+
+The maximum number of requests the `website` Lambda function can process at the same time. (AWS calls this [reserved concurrency][2].) By default, this inherits the value from the environment-level `concurrency` setting. Setting this option to `false` removes the reservation, so the function shares your account's unreserved concurrency in the region. See the environment-level [`concurrency`](#concurrency) option for the limits that apply.
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+
+</Callout>
+
+<Callout type="warn" title="Overwhelming your database server">
+
+If your `concurrency` value is too high or disabled, your database server could get overwhelmed when a traffic spike hits your application. If this happens, you'll want to increase the capacity of your database server.
+
+</Callout>
+
+#### logging [#logging-3]
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the `website` Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention [#retention-3]
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the `website` function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status [#status-3]
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the `website` Lambda function is allowed to write logs to CloudWatch.
+
+#### memory [#memory-2]
+
+**type**: `int` **default**: inherits from environment-level `memory`
+
+The amount of memory (in MB) used by the `website` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
+
+<Callout type="warn" title="Low memory termination">
+
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
+
+</Callout>
+
+<Callout type="warn" title="Memory cost">
+
+Lambda charges for duration based on configured memory, and more memory also gives the function more CPU. A function with more memory costs more per second, but it can finish faster, so it doesn't always cost more in total. Since the `website` function handles all HTTP traffic, benchmark its duration, errors and cost on a staging environment before changing its memory in production. See the [AWS costs guide][34] for details.
+
+</Callout>
+
+#### timeout
+
+**type**: `int` **default**: `30` with an API gateway, `90` without one
+
+The maximum amount of time (in seconds) that the `website` Lambda function can run before Lambda terminates it. The maximum allowed timeout depends on your gateway configuration:
+
+ * **With API Gateway** (`gateway: http` or `gateway: rest`): Maximum 30 seconds
+ * **Without API Gateway** (`gateway: false`): Maximum 900 seconds (15 minutes)
+
+<Callout type="warn" title="API gateway timeout">
+
+The 30 second timeout limit when using an API gateway is due to AWS API Gateway limits. This cannot be modified.
+
+This can be a significant technical hurdle if your PHP application has long-running operations that take more than 30 seconds to complete. In that scenario, these operations should be offloaded to a WP-CLI command (using the `console` function) or an external service.
+
+</Callout>
+
+#### tmp_storage [#tmp-storage-2]
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the `website` Lambda function. Must be between 512 MB and 10,240 MB.
+
+### console
+
+**type**: `array`
+
+Configuration for the Lambda function used for running WP-CLI commands and other background tasks. This function is not connected to web traffic and is optimized for longer-running console commands and background tasks.
+
+#### logging [#logging-4]
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the `console` Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention [#retention-4]
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the `console` function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status [#status-4]
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the `console` Lambda function is allowed to write logs to CloudWatch.
+
+#### memory [#memory-3]
+
+**type**: `int` **default**: inherits from environment-level `memory`
+
+The amount of memory (in MB) used by the `console` Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
+
+<Callout type="warn" title="Low memory termination">
+
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for worst-case scenarios.
+
+</Callout>
+
+<Callout type="warn" title="Memory cost">
+
+The `console` function's memory affects its cost and speed the same way as the `website` function. Cron jobs, WP-CLI commands and your application's background work can run it often, so measure its duration, errors and cost before changing its memory. See the [AWS costs guide][34] for details.
+
+</Callout>
+
+#### timeout [#timeout-2]
+
+**type**: `int` **default**: `60`
+
+The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 900 seconds (15 minutes), making it suitable for longer-running console commands and background tasks.
+
+#### tmp_storage [#tmp-storage-3]
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the `console` Lambda function. Must be between 512 MB and 10,240 MB.
+
+### queues
+
+**type**: `array | bool`
+
+Configuration for SQS queue-based Lambda functions used for background job processing. Queues allow you to offload time-consuming tasks from your website function to dedicated background processors. See the [queues guide][21] for how Laravel projects dispatch and process queued jobs.
+
+#### Queue Configuration Formats
+
+Choose one of these alternative formats for the `queues` option:
+
+```yaml
+# Boolean format - creates "default" queue
+queues: true
+```
+
+```yaml
+# Single queue format - creates "default" queue with specific settings
+queues:
+  concurrency: 5
+  memory: 2048
+  type: standard
+```
+
+```yaml
+# Multiple named queues format
+queues:
+  email:
+    concurrency: 10
+    memory: 1024
+    timeout: 300
+    type: standard
+  imports:
+    concurrency: 5
+    memory: 2048
+    timeout: 900
+    type: fifo
+```
+
+Queue names can't be longer than 10 characters.
+
+#### concurrency [#concurrency-3]
+
+**type**: `int | false` **default**: inherits from environment-level `concurrency`
+
+The maximum number of concurrent Lambda executions for this queue. By default, this inherits the environment-level `concurrency` setting. Setting it to `false` removes the function's reserved-concurrency limit, not AWS account/region quotas, queue scaling limits or downstream capacity limits.
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more information on how to configure your environment for high `concurrency` values? Check out this [guide][10].
+
+</Callout>
+
+<Callout type="warn" title="Queue processing capacity">
+
+Higher concurrency means more messages can be processed simultaneously, but also increases the load on your database and other resources.
+
+</Callout>
+
+#### logging [#logging-5]
+
+**type**: `array | bool | int | enabled | disabled`
+
+This is the array of values to configure the queue Lambda function logging to CloudWatch. If the `logging` value is a boolean or `enabled`/`disabled`, it'll be used as the `status` value. If the `logging` value is an integer, it'll be used as the `retention` value and `status` will be set to `enabled`.
+
+##### retention [#retention-5]
+
+**type**: `int | false` **default**: inherits from environment-level `logging`
+
+Controls the duration (in days) that the queue function logs are retained in CloudWatch. Allowed values are `1`, `3`, `5`, `7`, `14`, `30`, `60`, `90`, `120`, `150`, `180`, `365`, `400`, `545`, `731`, `1827` and `3653`.
+
+##### status [#status-5]
+
+**type**: `bool | enabled | disabled` **default**: inherits from environment-level `logging`
+
+Flag whether the queue Lambda function is allowed to write logs to CloudWatch.
+
+#### memory [#memory-4]
+
+**type**: `int` **default**: inherits from environment-level `memory`
+
+The amount of memory (in MB) used by the queue Lambda function. Must be between 128 MB and 10,240 MB in 64 MB increments.
+
+<Callout type="warn" title="Low memory termination">
+
+If a function goes over the memory limit during its execution, it gets terminated automatically. So it's important to configure enough memory for your queue processing needs.
+
+</Callout>
+
+#### timeout [#timeout-3]
+
+**type**: `int` **default**: `600`
+
+The maximum amount of time (in seconds) that the queue Lambda function can run before Lambda terminates it. Queue functions can have a maximum timeout of 900 seconds (15 minutes), making them suitable for longer-running background tasks.
+
+<Callout type="info" title="Longer processing time">
+
+Queue functions have much longer timeout capabilities than website functions, making them ideal for tasks like image processing, data imports, or sending bulk emails.
+
+</Callout>
+
+#### tmp_storage [#tmp-storage-4]
+
+**type**: `int` **default**: inherits from environment-level `tmp_storage`
+
+The amount of temporary storage (in MB) available in the `/tmp` directory of the queue Lambda function. Must be between 512 MB and 10,240 MB.
+
+#### type [#type-3]
+
+**type**: `string` **default**: `standard`
+
+The type of SQS queue to use for this queue function. The possible values are:
+
+ * `standard` - Standard SQS queue with high throughput and at-least-once delivery
+ * `fifo` - First-In-First-Out queue with message ordering and deduplication
+
+<Callout type="info" title="FIFO vs Standard queues">
+
+FIFO queues deliver messages with the same message group in order and drop duplicate messages sent within the deduplication interval, but have lower throughput. Standard queues offer higher throughput but may deliver messages more than once and in different orders. Neither queue type guarantees that a job runs exactly once, since failed jobs can run again. See [standard and FIFO queues][22] in the queues guide.
+
+</Callout>
+
+<Callout type="error" title="Changing the queue type deletes the queue">
+
+Standard and FIFO queues are separate SQS queues. When you change the `type` of an existing queue, your next deployment deletes the existing SQS queue and creates a new one. Any messages still in the deleted queue, such as pending, delayed or retrying jobs, are permanently lost. The queue is deleted early in the deployment while your currently deployed code still sends jobs to it, so jobs dispatched during the deployment can also fail or be lost.
+
+Before changing a queue's `type`:
+
+ * Stop your application from dispatching new jobs to the queue.
+ * Wait until the queue has no pending or in-flight jobs left.
+ * Deploy the `type` change, then resume dispatching jobs.
+
+A rollback doesn't restore deleted messages. Rolling back reapplies the queue `type` of the deployment you roll back to, so rolling back across a `type` change deletes the current queue and any messages in it as well. Drain the queue the same way before rolling back.
+
+</Callout>
+
+[1]: https://github.com/roots/bedrock
+[2]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved
+[3]: https://developer.wordpress.org/plugins/cron/
+[4]: /team-resources/caches
+[5]: /guides/container-image-deployment
+[6]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html
+[7]: https://aws.amazon.com/waf/pricing/
+[8]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
+[9]: /guides/firewall
+[10]: /guides/scaling
+[11]: https://console.aws.amazon.com/servicequotas/home/services/acm/quotas/L-FB94F0B0
+[12]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html
+[13]: https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html
+[14]: https://ymirapp.com/pricing
+[15]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html
+[16]: https://aws.amazon.com/cloudfront/pricing/
+[17]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
+[18]: https://roots.io/radicle/
+[19]: https://aws.amazon.com/lambda/pricing/
+[20]: /guides/laravel
+[21]: /guides/queues
+[22]: /guides/queues#standard-and-fifo-queues
+[23]: https://aws.amazon.com/vpc/pricing/
+[24]: /team-resources/networks
+[25]: mailto:support@ymirapp.com
+[26]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-bot.html
+[27]: https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-caveats.html
+[28]: /reference/php-runtime
+[29]: /guides/logging-service
+[30]: /guides/domain-mapping
+[31]: https://docs.aws.amazon.com/acm/latest/userguide/acm-limits.html
+[32]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html#limits-web-distributions
+[33]: /guides/aws-costs#custom-tags
+[34]: /guides/aws-costs#lambda-memory-and-architecture

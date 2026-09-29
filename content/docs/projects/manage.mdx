@@ -1,0 +1,150 @@
+---
+title: "Managing projects"
+navTitle: "Managing projects"
+description: "Create, configure and delete Ymir projects."
+---
+
+## Creating a project [#creating-a-project]
+
+You create a Ymir project by executing the [`init`][2] command at the root of your project directory. The `init` command is interactive, so you can't run it in non-interactive mode. Before running it, you need a connected [cloud provider connection][3] on your team.
+
+```bash
+ymir init
+```
+
+<Callout type="warn" title="Double check your team">
+
+Before creating a project, you should ensure that you're on the correct team. You can use the `team:current` command to view your currently active team. You can switch to a new one using the `team:select` command.
+
+</Callout>
+
+If the directory already has a `ymir.yml` file, the `init` command asks if you want to overwrite it. If you answer yes, it deletes the file and creates a new Ymir project. It doesn't connect the directory to the project that the old `ymir.yml` file used.
+
+### Choosing the project type [#choosing-the-project-type]
+
+The `init` command first asks for your project type: WordPress, Bedrock, Radicle or Laravel. Depending on the type, it can offer to install the project for you:
+
+* **WordPress:** If [WP-CLI][4] is installed and doesn't detect WordPress in the directory, the `init` command offers to download WordPress using WP-CLI.
+* **Bedrock** and **Laravel:** If the directory is empty, the `init` command offers to create a new project using Composer.
+* **Radicle:** The `init` command doesn't install Radicle projects. [Radicle projects](#radicle-projects) explains how Ymir runs them.
+
+The `init` command then asks for the project name, the cloud provider connection and the AWS region of your project. It only lists connected cloud provider connections.
+
+### Setting up resources and integrations [#setting-up-resources-and-integrations]
+
+Next, the `init` command goes through these steps. They all happen before Ymir creates the project and its `ymir.yml` file.
+
+* **Database:** You can use an existing [database server][5] in the project's region or create one. Creating a database server can also create a [network][6]. On a public database server, the `init` command offers to create a database for each environment. On a private one, you have to create them yourself.
+* **Cache:** You can use an existing [cache cluster][7] or create one. Creating one also adds a NAT gateway to its network. This is optional, and the default answer is no.
+* **Container image:** The `init` command asks if you want to deploy using a [container image][8]. The default answer is yes. If you accept, it creates a `Dockerfile` and configures the environments to use container image deployment. You can answer no to deploy using a zip archive.
+* **Integration:** The `init` command offers to install the Ymir integration for your project type if it isn't installed. For WordPress projects, it downloads the Ymir WordPress plugin into your plugins directory. For Bedrock, Radicle and Laravel projects, it requires the integration package with Composer.
+* **WordPress plugins:** For WordPress, Bedrock and Radicle projects, the `init` command can use WP-CLI to scan your active plugins and apply the configuration that some plugins need.
+* **Laravel Vapor:** For Laravel projects with a `vapor.yml` file, the `init` command offers to migrate matching Vapor settings into your `ymir.yml` file.
+
+<Callout type="warn" title="These resources exist right away">
+
+Ymir creates the networks, database servers, databases and cache clusters you choose during the `init` command in your AWS account right away. They can cost money even if you never deploy your project, and they remain if the `init` command stops before creating the project.
+
+</Callout>
+
+Finally, Ymir creates the project with a `staging` and a `production` environment and the Ymir CLI writes the `ymir.yml` file.
+
+## Configuring a project [#configuring-a-project]
+
+Once the [`init`][2] command completes, you'll have a `ymir.yml` file at the root of your project. This is the configuration file for your Ymir project. It contains everything that Ymir needs to deploy your project, but also configure your project environments.
+
+The `init` command can also change other files in your project, such as by creating a `Dockerfile` or installing the Ymir integration. Review these changes along with the generated `ymir.yml` file before your first deployment. Then deploy your project to the `staging` environment with the `ymir deploy staging` command. [Deploying a project][9] explains how deployments work.
+
+<Callout type="info" title="Configuration reference">
+
+The `ymir.yml` has dozens of configuration options. You can learn more about them in the [configuration reference][1].
+
+</Callout>
+
+## Radicle projects [#radicle-projects]
+
+[Radicle][13] combines Bedrock, Sage and Acorn in its own directory structure, and it's a separate `radicle` project [`type`][14]. The Ymir CLI detects it by the `public/content` directory, the `public/wp-config.php` file and the `bedrock/application.php` file. A Bedrock project with a Sage theme isn't a Radicle project, and the [Bedrock][15] and [Sage 10][16] guides don't cover Radicle.
+
+### The two Ymir integrations [#radicle-integrations]
+
+A Radicle project needs two Composer packages: the Ymir WordPress plugin, `ymirapp/wordpress-plugin`, and the Ymir Laravel bridge, `ymirapp/laravel-bridge`. The plugin handles the WordPress side, such as uploads, email and WP-Cron. The bridge runs your Acorn queued jobs. The [`install-integration`][17] command requires both, and the `init` command offers to run it for you. A build fails if either package isn't installed after your build commands run.
+
+The default Radicle build commands start with `composer install`, which installs your Composer dependencies, including both packages, from your `composer.lock` file. If you change your build commands, they still need to install both packages. Commit your `composer.json` and `composer.lock` changes, and `deploy` to pick up an update. A [redeploy][18] or rollback doesn't.
+
+### Acorn on AWS Lambda [#radicle-acorn-on-aws-lambda]
+
+Your project files are read-only on AWS Lambda, and the `/tmp` directory is the only writable directory. See the [PHP runtime reference][19].
+
+ * **Storage:** Ymir sets the `ACORN_STORAGE_PATH` environment variable to `/tmp/storage` on every deployment. When a function starts, the Ymir PHP runtime creates Acorn's cache directories there and runs `wp acorn config:cache`. If that command fails, the function can't start, and the runtime logs the error. Don't add the Sage 10 guide's storage code to a Radicle project. Files in `/tmp` aren't shared between functions, and Lambda deletes them when it shuts an execution environment down, so store anything you need to keep somewhere else.
+ * **Configuration:** Ymir also sets the [environment variables it sets for Laravel projects][20], such as the cache store, the `stderr` log channel and the queue connection. Check that your Radicle configuration files read them. See [reserved environment variables][21].
+
+### Running Acorn commands [#radicle-acorn-commands]
+
+The [`artisan`][22] command only works with Laravel projects. Run Acorn commands through WP-CLI with the [`wp`][23] command instead. They run on the environment's `console` function.
+
+```bash
+# List the Acorn commands available on the staging environment
+ymir wp --environment=staging acorn list
+```
+
+If the Acorn command has its own options or quoted values, wrap the whole command in double quotes, as the [`wp`][23] reference explains. Commands that write to your project files don't work, since those files are read-only.
+
+### Queued jobs [#radicle-queues]
+
+When an environment has [`queues`][24], each queue function runs your Acorn jobs with the bridge's `wp acorn ymir:queue:work` command. Ymir sets `QUEUE_CONNECTION` to `sqs` and gives your application each queue's URL, as it does for Laravel. The [queues guide][25] explains queue configuration, retries, idempotency and the risks of changing, removing or rolling back queues. Its `ymir artisan` examples don't work for Radicle projects.
+
+After deploying to a staging environment, check that `ymir wp --environment=staging acorn list` lists the `ymir:queue:work` command. If it doesn't, Acorn hasn't loaded the bridge, and your queue functions can't run your jobs.
+
+### Scheduled tasks [#radicle-scheduled-tasks]
+
+For Radicle projects, the [`cron`][26] option runs WP-Cron, as it does for WordPress and Bedrock projects. Ymir runs the plugin's `wp ymir run-all-cron` command on the `console` function, which runs your due WP-Cron events. It doesn't run Acorn's `schedule:run` command, so the `cron` option doesn't run tasks you schedule with Acorn's scheduler. The `init` command disables `cron` for the `staging` environment.
+
+## Deleting a project
+
+You can delete a project by executing the [`delete`][10] command at the root of your project directory. Outside a project directory, the command asks you to choose one of your active team's projects. It asks you to confirm, then asks if you want to delete all your project's resources on AWS. The default answer to both questions is no, and in non-interactive mode the command doesn't delete anything.
+
+```bash
+ymir delete
+```
+
+Deleting a project deletes all its environments the same way as [deleting an environment][11]. Read that section and follow its [checklist][12] for each environment before deleting a project. Deleting a project can't be undone, and Ymir doesn't offer a way to restore a deleted project or its data.
+
+* **If you keep the resources**, Ymir deletes the project and its environments from Ymir, along with each environment's vanity domain DNS record. Everything else stays in your AWS account. There isn't a way for Ymir to go back and delete these resources, so you'll have to do it from the AWS management console yourself.
+* **If you delete the resources**, Ymir deletes each environment's resources in the background, which can take a while. It deletes the project once all its environments are gone, so the `project:list` command still shows the project until then. It also deletes the project's container image repository. If the deletion of an environment's resources stops partway, the project and some of its resources can remain. Don't delete or recreate them yourself while the deletion could still be running. Contact Ymir support if the project is still listed long after you deleted it.
+
+**Team resources such as database servers, cache clusters and networks aren't deleted.** Neither are your databases on those database servers or the DNS records of your mapped domain names.
+
+The Ymir CLI deletes the `ymir.yml` file of the project as soon as Ymir accepts the deletion, even if the deletion of its resources hasn't finished. Keep a copy if you need it, such as in your Git repository.
+
+<Callout type="warn" title="You're still paying for these resources">
+
+Resources that you keep, or that Ymir doesn't delete, stay in your AWS account and AWS keeps billing them. For example, S3 buckets keep charging for the media files they store, and a CloudFront distribution and Lambda functions can keep serving your domain names, running cron jobs and processing queues. Check your AWS account and delete what you don't need.
+
+</Callout>
+
+[1]: /reference/configuration
+[2]: /reference/ymir-cli#project-init-init
+[3]: /getting-started#connecting-a-team-to-aws
+[4]: https://wp-cli.org/
+[5]: /team-resources/database-servers
+[6]: /team-resources/networks
+[7]: /team-resources/caches
+[8]: /guides/container-image-deployment
+[9]: /projects/deploy
+[10]: /reference/ymir-cli#project-delete-delete
+[11]: /projects/environments#deleting-an-existing-environment
+[12]: /projects/environments#before-deleting-an-environment
+[13]: https://roots.io/radicle/
+[14]: /reference/configuration#type
+[15]: /guides/bedrock
+[16]: /compatibility/sage-10
+[17]: /reference/ymir-cli#install-integration
+[18]: /projects/deploy#redeploying-a-project
+[19]: /reference/php-runtime#runtime-filesystem
+[20]: /guides/laravel#configuration-values-ymir-sets
+[21]: /projects/environments#reserved-environment-variables
+[22]: /reference/ymir-cli#artisan
+[23]: /reference/ymir-cli#wp
+[24]: /reference/configuration#queues
+[25]: /guides/queues
+[26]: /reference/configuration#cron

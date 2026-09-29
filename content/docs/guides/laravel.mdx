@@ -1,0 +1,154 @@
+---
+title: "How to deploy a Laravel application with Ymir"
+navTitle: "Laravel"
+description: "How Ymir builds, configures and runs a Laravel application, and what changes when your application runs on AWS Lambda."
+---
+
+## Setting up a Laravel project [#setting-up-a-laravel-project]
+
+A Laravel project on Ymir uses the `laravel` project [`type`][1]. You create one with the [`init`][2] command at the root of your Laravel application, or with an empty directory if you want Composer to create a new Laravel application. The `init` command also offers to install the Ymir integration and, if your project has a `vapor.yml` file, to [migrate your Laravel Vapor settings][3].
+
+Once you have a `ymir.yml` file, the rest of this guide covers what's specific to Laravel. [Deploying a project][4] explains how builds, deployments, redeploys and rollbacks work for every project type.
+
+## The Ymir Laravel bridge [#laravel-bridge]
+
+The Ymir integration for Laravel is the `ymirapp/laravel-bridge` Composer package. The [`install-integration`][5] command installs it with `composer require ymirapp/laravel-bridge`. A build fails if the bridge isn't installed after your build commands run.
+
+The bridge is a dependency of your application, like any other Composer package. It's installed from your `composer.lock` file during your build, so:
+
+ * Commit your `composer.json` and `composer.lock` changes after installing or updating the bridge.
+ * To update the bridge, update it with Composer and deploy. A redeploy or rollback doesn't pick up a new `composer.lock` file.
+ * Updating the PHP runtime, such as by changing your Docker image, doesn't update the bridge.
+
+The bridge only changes your application's configuration when it runs on Ymir. Your local environment and tests aren't affected.
+
+### Laravel and PHP versions [#laravel-and-php-versions]
+
+Composer only installs a bridge version whose requirements match your Laravel and PHP versions. For example, bridge version 1.1.0 requires PHP 7.4 or later and supports Laravel 8.47 to 13. Your Laravel version also sets its own minimum PHP version. Not every combination that Composer allows has been tested on Ymir, so deploy to a staging environment before production when you change your Laravel, PHP or bridge version.
+
+How you choose the PHP version depends on your environment's [deployment type][6]:
+
+ * **Zip archive:** The [`php`][7] option sets the PHP version. If you leave it out, it defaults to `7.4`, which recent Laravel versions don't support. The `init` command sets it to `8.3` for new Laravel projects, so keep an explicit `php` value in each environment.
+ * **Container image:** The runtime image tag in your `Dockerfile` sets the PHP version, and the `php` option is ignored.
+
+Your build commands, such as `composer install`, run with the PHP installed on the machine running the build, not the environment's PHP version. Make sure your local PHP version can install dependencies that work on the environment's PHP version.
+
+## Environment configuration [#environment-configuration]
+
+### How Ymir uses your .env files [#env-files]
+
+A Laravel build needs a `.env` file or a `.env.<environment>` file for the environment you're deploying. If both exist, the build uses `.env.<environment>` as the `.env` file, so your build commands can read it.
+
+Your `.env` files aren't deployed. After your build commands run, the build removes every `.env` file except encrypted ones. Your application reads its configuration from the environment's [environment variables and secrets][8] instead. Put sensitive values such as API keys in secrets.
+
+If you use Laravel's [encrypted environment files][9], commit your `.env.<environment>.encrypted` file and store its key in the `LARAVEL_ENV_ENCRYPTION_KEY` secret. When a function starts, it decrypts the file for the environment named in `APP_ENV` and loads its values. These values can replace environment variables, including the ones Ymir sets, so don't put the values in the next section in your encrypted file.
+
+### Configuration values Ymir sets [#configuration-values-ymir-sets]
+
+On every deployment, Ymir sets these environment variables for your Laravel functions. They replace any environment variable with the same name that you set yourself:
+
+| Environment variable | Value |
+| --- | --- |
+| `APP_ENV` | The environment name, such as `staging` or `production` |
+| `APP_URL` | The URL of the environment's primary domain name |
+| `ASSET_URL` | The URL of the environment's assets |
+| `CACHE_STORE` and `CACHE_DRIVER` | `redis` when the environment uses a [cache cluster][10], `dynamodb` otherwise |
+| `DB_CONNECTION` | `mysql` or `pgsql` when the environment uses a [database][11] |
+| `LOG_CHANNEL` | `stderr` |
+| `MAIL_MAILER` and `MAIL_DRIVER` | `ses` |
+| `QUEUE_CONNECTION` | `sqs` when the environment has [queues][12] |
+| `SESSION_DRIVER` | `cookie` |
+
+Ymir also sets other values, such as `DYNAMODB_CACHE_TABLE`, `CACHE_PREFIX`, the Redis connection values and the SQS queue URLs. When the environment uses a database, Ymir stores `DB_HOST`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` as secrets.
+
+`APP_ENV` is the environment name, so any code that checks for the `production` environment only treats the environment named `production` as production.
+
+### Application key [#application-key]
+
+If your environment has no `APP_KEY` environment variable or secret, Ymir generates an `APP_KEY` for the environment. This works for a new application, but Laravel uses `APP_KEY` to encrypt cookies, sessions and any data you encrypted.
+
+<Callout type="warn" title="Keep your existing APP_KEY">
+
+If you're moving an existing application to Ymir, store its current `APP_KEY` as a secret before your first deployment, for example with `ymir environment:secret:change production APP_KEY`, then deploy. Don't generate a new key. A different key logs out your users and can make data you encrypted with the old key unreadable. The `APP_KEY` in your `.env` file isn't deployed, so it doesn't prevent Ymir from generating one.
+
+</Callout>
+
+If you use an encrypted environment file with a `LARAVEL_ENV_ENCRYPTION_KEY`, Ymir doesn't set `APP_KEY`, and your application must get it from the encrypted file or a secret.
+
+## Running on AWS Lambda [#running-on-aws-lambda]
+
+### Files and storage [#files-and-storage]
+
+Your functions can only write to the `/tmp` directory. The bridge moves Laravel's storage path to `/tmp/storage`, so compiled views and the `file` cache store work, but anything written there is temporary:
+
+ * Each function instance has its own `/tmp` directory, so files aren't shared between requests handled by different instances, or between your `website`, `console` and queue functions.
+ * Files are lost when AWS replaces the function instance. Don't rely on them surviving a deployment either, or on a deployment clearing them, since instances of previous function versions can keep running after a deployment or rollback.
+ * The [`tmp_storage`][13] option controls the size of `/tmp`.
+
+The build also removes the contents of your `storage` and `public/storage` directories, so the `local` and `public` disks don't work for user uploads. Store uploads and any file you need to keep in S3 with Laravel's `s3` disk, for example by setting the `FILESYSTEM_DISK` and `AWS_BUCKET` environment variables. Your functions' AWS role can access S3, and the bridge adds the function's session token to `s3` disks that use the function's AWS credentials, so don't set your own AWS access keys.
+
+### Cache, sessions, logs and mail [#cache-sessions-logs-and-mail]
+
+The [values Ymir sets](#configuration-values-ymir-sets) give your application these defaults when your configuration files use Laravel's standard environment variables. Your secrets, an encrypted environment file or values hardcoded in your application's configuration files can change some of them.
+
+ * **Cache:** By default, your cache uses a DynamoDB table that Ymir creates for the environment. If you add a [cache cluster][10], it uses Redis with the Relay client instead. Both stores are shared by all your environment's functions.
+ * **Sessions:** By default, sessions are stored in encrypted cookies, since a `file` session isn't shared between function instances.
+ * **Logs:** By default, logs go to `stderr`, which sends them to CloudWatch. You can read them with the [`environment:logs:query`][14] command. To add the request ID of each request to your logs, set the `YMIR_LOG_REQUEST_CONTEXT` environment variable to `true`.
+ * **Mail:** By default, mail is sent with Amazon SES. You need a verified [email identity][15] for the address you send from, and your AWS account needs [SES production access][20] in your project region before you can send to unverified addresses or beyond the sandbox sending limits.
+
+### Scheduler [#scheduler]
+
+When the [`cron`][16] option is enabled, Ymir runs `php artisan schedule:run` on the `console` function at that interval, every minute by default. The `init` command disables `cron` for the `staging` environment.
+
+Each run is limited by the [`console` timeout][17], so move long-running scheduled work to [queued jobs][12]. By default, the scheduler's locks, such as for `withoutOverlapping`, use your default cache store, which all your functions share.
+
+## Deploying your application [#deploying-your-application]
+
+A deployment runs commands in two different places:
+
+ * **Build commands** run on the machine running the `deploy` command, before anything is uploaded. Use them for `composer install` and building your frontend assets. The `init` command adds these for Laravel projects.
+ * **Deployment commands** run on your environment's `console` function, after Ymir updates your functions but before it sends traffic to the new deployment. Use them for Artisan commands that need your environment, such as database migrations.
+
+```yml
+environments:
+  production:
+    build:
+      - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
+      - 'npm ci && npm run build'
+    deployment:
+      commands:
+        - 'php artisan migrate --force'
+```
+
+Each deployment command must finish within the `console` timeout, and a failed command fails the deployment. A redeploy runs the deployment commands again, so make them safe to run more than once. Use the [`artisan`][18] command to run other Artisan commands on an environment.
+
+<Callout type="warn" title="Rollbacks don't undo migrations">
+
+A [rollback][19] doesn't run your deployment commands or restore your database. After you roll back, the previous code runs against your migrated database. Keep migrations compatible with the code you might roll back to, and back up your database before migrations that remove or change data.
+
+</Callout>
+
+## Queues [#queues]
+
+Laravel projects created with the `init` command have a `default` queue. See the [queues guide][12] for how Ymir processes queued jobs, retries and failures.
+
+[1]: /reference/configuration#type
+[2]: /projects/manage#creating-a-project
+[3]: /reference/ymir-cli#laravel-vapor-migrate
+[4]: /projects/deploy
+[5]: /reference/ymir-cli#install-integration
+[6]: /reference/configuration#type-2
+[7]: /reference/configuration#php
+[8]: /projects/environments#environment-variables
+[9]: https://laravel.com/docs/configuration#encrypting-environment-files
+[10]: /team-resources/caches
+[11]: /reference/configuration#database
+[12]: /guides/queues
+[13]: /reference/configuration#tmp-storage
+[14]: /reference/ymir-cli#environment-logs-query
+[15]: /team-resources/email
+[16]: /reference/configuration#cron
+[17]: /reference/configuration#timeout-2
+[18]: /reference/ymir-cli#artisan
+[19]: /projects/deploy#rolling-back-a-deployment
+[20]: /team-resources/email#getting-your-aws-account-approved-for-sending-email

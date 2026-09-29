@@ -1,0 +1,167 @@
+---
+title: "How to map a domain to a project environment"
+navTitle: "Domain mapping"
+description: "Map a custom domain to a project environment instead of the ymirsites.com vanity domain."
+---
+
+## Why do you need to map a domain to an environment?
+
+Ymir generates a unique `ymirsites.com` [vanity domain][1] for all project environments. This allows you to always have access to your environment. That said, there are some drawbacks to only using a vanity domain.
+
+You can't send emails from a `ymirsites.com` address since it's not your domain. And, of course, you don't want to use a vanity domain for a production environment.
+
+WordPress projects have additional restrictions. While your WordPress site's URL uses a vanity domain, the Ymir WordPress plugin stops search engines from indexing it and disables sending emails with SES. Once you deploy with a mapped domain, Ymir uses your [primary domain][9] as the WordPress site URL. URLs stored in your database still use the old domain. You can replace them with the [`wordpress:change-domain`][10] command.
+
+So while having a vanity domain is useful, you'll want to use your own domain for your project environment pretty quickly.
+
+## DNS requirements
+
+One important consideration when mapping a domain to a project environment is whether Ymir is managing the DNS for that domain or not. Ymir manages a domain when your team has a [DNS zone][6] for it or for one of its parent domains. If it does, you can skip to [using a DNS zone managed by Ymir][11]. If Ymir isn't managing your domain's DNS, you'll want to read the rest of this section.
+
+Changing where your domain's DNS is hosted doesn't move your website or email. Your domain points to your environment only once its DNS records point to it. Your email keeps going wherever your `MX` records point.
+
+### Requesting a SSL certificate
+
+Each domain that you want to map needs to be covered by an issued [SSL certificate][4] in your project region before you're allowed to deploy. If you already have one, such as a wildcard certificate for your domain, Ymir uses it. Otherwise, you'll need to use the [`certificate:request`][2] command to request one. Run it from your project directory so that it uses your project's cloud provider connection and region. So, for example, if you want to map your project environment to `domain.co.uk` and `subsite.domain.co.uk`, you can request a single SSL certificate for `domain.co.uk`.
+
+```bash
+ymir certificate:request domain.co.uk
+```
+
+When the Ymir CLI asks if you want your certificate to also cover `*.domain.co.uk` subdomains, answer yes if you want to map subdomains such as `subsite.domain.co.uk`. You should also answer yes if you map only `domain.co.uk` since Ymir also maps `www.domain.co.uk`.
+
+A `*.domain.co.uk` wildcard only covers one level of subdomains. It doesn't cover `shop.eu.domain.co.uk`, and it doesn't cover `domain.co.uk` by itself. If you map other registered domains, such as `subdomain.co.uk`, your certificates need to cover them as well. See [choosing the domains to cover][7] for examples.
+
+Once you request a SSL certificate, the Ymir CLI will let you know what DNS record you need to add so that AWS can issue the certificate. You can see an example of this output in the [SSL certificates documentation][5]. It's important to note that **you won't be able to deploy until AWS issues your SSL certificate**. Use the `certificate:list` command to [check that it's issued][8], and keep the DNS records in place afterwards. The certificate that Ymir attaches during deployment can be in a different region than this project region certificate. See [deploying with your SSL certificate][15].
+
+If your DNS provider can proxy records, such as Cloudflare, don't proxy the SSL certificate validation records. AWS needs to see them as they are.
+
+### Creating a DNS record pointing to the project environment
+
+You'll also need to create a DNS record to point to the deployed project environment. The Ymir CLI will tell what DNS record to add once the deployment finishes. You can see an example for the `www.domain.co.uk` domain below. You only need to do this once unless you add or remove domains from your `ymir.yml` project configuration file.
+
+```text title="Example output"
+Warning: Not all domains in this project are managed by Ymir. The following DNS record(s) need to be manually added to your DNS server for these domains to work:
+
+ ------- ------------------ -------------------------------
+  Type    Name               Value
+ ------- ------------------ -------------------------------
+  CNAME   www.domain.co.uk   <vanity-domain>.ymirsites.com
+ ------- ------------------ -------------------------------
+```
+
+The `<vanity-domain>.ymirsites.com` value is the [vanity domain][1] of your project environment. Copy the exact records that the Ymir CLI displays.
+
+Add the records after the deployment that adds the domains finishes. Before that, your environment isn't set up to answer for them. If your domain already points to a live site, adding these records is the moment your domain switches to your environment.
+
+The Ymir CLI stops displaying a domain once public DNS returns a `CNAME` record pointing to the vanity domain. If your DNS provider proxies or flattens the record, public DNS doesn't return the `CNAME` record. So the Ymir CLI keeps displaying the domain even though your record is correct.
+
+<Callout type="warn" title="CNAME records on a root domain">
+
+The Ymir CLI lists a `CNAME` record for every domain that needs one. This includes root domains such as `domain.co.uk`. DNS doesn't allow a `CNAME` record on a root domain, so many DNS providers don't let you create one. Some providers offer an alternative, such as an `ALIAS` or `ANAME` record or CNAME flattening. These return the IP addresses of the vanity domain instead of a `CNAME` record. They're features of your DNS provider, so Ymir doesn't create or check them. Otherwise, you can have [Ymir manage the DNS][6] of your domain so that it creates the records for you.
+
+</Callout>
+
+### Using a DNS zone managed by Ymir [#using-a-dns-zone-managed-by-ymir]
+
+When your team has a DNS zone for a domain, Ymir uses the closest parent DNS zone to create the records itself during deployment. It creates the SSL certificate validation records and an `A` alias record for each mapped domain, including wildcard domains. The alias record points to your environment's CloudFront distribution when CloudFront [caching][12] is `enabled`, or to its API gateway otherwise. If the DNS zone already has an `A` record with the same name, Ymir replaces it.
+
+These records only take effect once the domain is delegated to the DNS zone's name servers, at your registrar or, for a subdomain, in the parent zone. Creating the DNS zone isn't enough. Until you delegate the domain, the records that the deployment needs also have to exist at your current DNS provider. See [moving a domain's DNS to Ymir][13].
+
+Route 53 doesn't allow any other record on a name that has a `CNAME` record. If the DNS zone has a `CNAME` record for a domain that you map, such as one that you imported from your old DNS provider, the deployment can't create the alias record. Delete the `CNAME` record before you deploy. If the DNS zone is already live, the domain stops resolving until the deployment finishes.
+
+Ymir doesn't delete records when you remove a domain from your configuration. Once you've confirmed that nothing else uses them, you can delete them with the [`dns:record:delete`][14] command.
+
+## Adding domains to your configuration
+
+Once the DNS requirements are met, you simply need to add the [`domain`][3] option to your `ymir.yml` configuration file with the domain(s) that you want to map your environment to. Once that's done, you need to deploy your environment. Ymir only maps domains during a deployment.
+
+The deployment fails if a domain isn't in a DNS zone managed by Ymir and isn't covered by an issued SSL certificate in the project region.
+
+### Mapping a single domain
+
+If you're looking to map to a single domain, you can use the `domain` option like this:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+      domain: domain.co.uk
+```
+
+<Callout type="info" title="No www subdomain needed">
+
+If you map only one domain and it's a registered domain (such as `domain.co.uk`), Ymir will automatically map the `www` subdomain to your environment. This also works in reverse. If you use `www.domain.co.uk` as your only domain, Ymir will also map `domain.co.uk` to your environment. This also applies to a list with a single domain. Ymir doesn't pair any other subdomain, such as `blog.domain.co.uk`, or a wildcard domain.
+
+</Callout>
+
+## Mapping multiple domains
+
+If you're looking to map multiple domains, you can use the `domain` option like this:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+      domain:
+        - domain.co.uk
+        - www.domain.co.uk
+        - subdomain.co.uk
+```
+
+You'll notice that, with this configuration, you need to add the `www.domain.co.uk` domain. Ymir won't automatically handle it for you.
+
+### Primary domain [#primary-domain]
+
+Ymir uses the first domain in your list that isn't a wildcard domain as the primary domain of your environment. For WordPress projects, it's the WordPress site URL. When CloudFront [caching][12] is `enabled`, it's also the domain that serves your assets and uploads. Put the domain you want your site to use first.
+
+<Callout type="warn" title="Mapped domain limit">
+
+You cannot have more than 99 domain names mapped per environment. This includes the domain that Ymir adds when you map a single domain. If you need to map more than 99 domains, consider using a wildcard domain or creating additional environments. AWS quotas can lower this limit. See the [`domain`][3] option for details.
+
+</Callout>
+
+## Wildcard domains
+
+Ymir also supports wildcard domains. For the purpose of the domain mapping limit, a wildcard domain only counts as a single domain mapping even if it could support hundreds of domains. To map a wildcard domain, you can do the following:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+      domain:
+        - domain.co.uk
+        - '*.domain.co.uk'
+```
+
+A wildcard domain only covers one level of subdomains. `*.domain.co.uk` covers `shop.domain.co.uk`, but not `shop.eu.domain.co.uk` or `domain.co.uk`. So you'll still need to map the `domain.co.uk` top level domain with a wildcard domain. Ymir also needs a domain that isn't a wildcard domain to use as the [primary domain][9]. If all your mapped domains are wildcard domains, Ymir uses the vanity domain.
+
+Your SSL certificate needs to cover the wildcard domain. If Ymir doesn't manage your DNS, add a `CNAME` record for `*.domain.co.uk` that points to your vanity domain.
+
+<Callout type="warn" title="Use single quotes for wildcard domain">
+
+A wildcard domain mapping must be wrapped in single quotes for proper parsing of the YAML file.
+
+</Callout>
+
+[1]: /projects/environments#vanity-domain-name
+[2]: /reference/ymir-cli#certificate-request
+[3]: /reference/configuration#domain
+[4]: /team-resources/ssl-certificates
+[5]: /team-resources/ssl-certificates#requesting-a-ssl-certificate
+[6]: /team-resources/dns
+[7]: /team-resources/ssl-certificates#choosing-the-domains-to-cover
+[8]: /team-resources/ssl-certificates#validating-your-ssl-certificate
+[9]: #primary-domain
+[10]: /reference/ymir-cli#wordpress-change-domain
+[11]: #using-a-dns-zone-managed-by-ymir
+[12]: /reference/configuration#caching
+[13]: /team-resources/dns#moving-a-domains-dns-to-ymir
+[14]: /reference/ymir-cli#dns-record-delete
+[15]: /team-resources/ssl-certificates#deploying-with-your-ssl-certificate

@@ -1,0 +1,159 @@
+---
+title: "How to use queues with a Laravel application on Ymir"
+navTitle: "Queues"
+description: "How Ymir processes Laravel queued jobs with Amazon SQS and AWS Lambda, and how retries, failures and queue changes work."
+---
+
+## How queues work on Ymir [#how-queues-work-on-ymir]
+
+Each queue in your environment's [`queues`][1] option is an Amazon SQS queue with its own Lambda function. When a job arrives in the queue, SQS invokes the queue function with that job. The function starts a new PHP process that boots your Laravel application and runs the job with the [Ymir Laravel bridge][2].
+
+There's no long-running `queue:work` worker. AWS starts and stops queue functions as jobs arrive, so you don't run `queue:work`, Horizon or a process manager on Ymir.
+
+<img src="/images/diagrams/queue-processing.svg" alt="Diagram: normal processing by the Ymir Laravel bridge, with two standard SQS queues, default and emails. A Laravel application with the Ymir Laravel bridge dispatches a ProcessPodcast job to the default queue and a SendNewsletter job to the emails queue. Each queue has its own queue function, and each queue function starts a new PHP process for each job, which boots Laravel and runs the job. In either lane, if the job succeeds, the bridge deletes the job's SQS message. If the job throws an exception that Laravel handles, two paths are possible. If Laravel releases the job, the bridge deletes the original message, then sends a copy back to the same queue, delayed by the backoff. If the job is out of attempts, Laravel records it in your application's failed job storage, such as the failed_jobs table, only if that storage is configured and working. Ymir doesn't configure a dead-letter queue. A job can run more than once." width="1100" height="780" />
+
+<a href="/images/diagrams/queue-processing.svg">Open the full-size diagram</a>
+
+## Configuring queues [#configuring-queues]
+
+Laravel projects created with the `init` command have a `default` queue. You can also configure named queues with their own settings:
+
+```yml
+environments:
+  production:
+    queues:
+      default:
+        timeout: 300
+      emails:
+        concurrency: 5
+      orders:
+        type: fifo
+```
+
+Queue names can't be longer than 10 characters, and you can't use `console` or `website`. Ymir replaces underscores in queue names with hyphens. The [configuration reference][1] lists every queue option.
+
+The next deployment creates the SQS queue and the queue function for each new queue. Changes to your queues only take effect when you deploy.
+
+## Dispatching jobs [#dispatching-jobs]
+
+When an environment has queues, Ymir sets `QUEUE_CONNECTION` to `sqs` and gives your application the URL of each queue. You dispatch jobs using the queue names in your `ymir.yml` file. Your job classes must implement Laravel's `ShouldQueue` contract and be deployed with the code that dispatches them. This example assumes those jobs and model variables already exist in your application:
+
+```php
+use App\Jobs\ProcessPodcast;
+use App\Jobs\SendNewsletter;
+
+// Sent to the "default" queue
+ProcessPodcast::dispatch($podcast);
+
+// Sent to the "emails" queue
+SendNewsletter::dispatch($newsletter)->onQueue('emails');
+```
+
+Jobs without a queue go to the `default` queue. If the environment doesn't have a `default` queue, they go to the first queue in your `ymir.yml` file. Only dispatch jobs to queues configured for the environment you deploy to.
+
+## Timeouts, memory and concurrency [#timeouts-memory-and-concurrency]
+
+Each queue has its own [`timeout`][3], [`memory`][4] and [`concurrency`][5] settings:
+
+ * **Timeout:** A queue function can run for up to 900 seconds, and 600 seconds by default. A job can use the time the function has left, minus one second. If your job sets its own `$timeout`, keep it below the queue's `timeout`.
+ * **Memory:** Each job runs in its own PHP process within the queue function's memory. If the function runs out of memory, AWS stops it.
+ * **Concurrency:** The queue's `concurrency` limits how many jobs from that queue run at the same time. Other jobs wait in the queue. Higher concurrency also means more connections to your database server.
+
+## Retries and failed jobs [#retries-and-failed-jobs]
+
+When a job throws an exception, Laravel handles the retry. The bridge releases the job by deleting its SQS message and sending a new copy of the job, delayed by the backoff. Unless you set them yourself, Ymir sets these environment variables:
+
+ * `SQS_TRIES`: the total number of attempts, including the first one. The default of `3` allows one initial attempt and up to two retries.
+ * `SQS_DELAY`: the delay in seconds before a released job runs again. The default is `3`.
+
+You can change them with the [`environment:variables:change`][6] command, and a job's `$tries` and `$backoff` properties override them. When a job runs out of attempts, Laravel marks it as a [failed job][7] and stores it using your application's failed job configuration. With Laravel's default configuration, that's the `failed_jobs` database table, which needs its migration to exist. If your failed job driver is `null` or its storage isn't available, you won't have a record of the job. You can inspect and retry stored failed jobs with the [`artisan`][8] command:
+
+```bash
+ymir artisan --environment=production queue:failed
+```
+
+<Callout type="warn" title="Some failures aren't retried">
+
+With Ymir Laravel bridge version 1.1.0, the current Ymir PHP runtime and the SQS event source mapping that Ymir creates, not every failure is retried:
+
+ * If a job's PHP process fails, such as when the job reaches its timeout or exits with a fatal error, the queue function still finishes successfully, so the job can be removed from the queue without being retried. Laravel only records a timed out job as failed if the job sets `$failOnTimeout` to `true`.
+ * If the queue function invocation itself fails, such as when the whole function runs out of memory or reaches the queue's `timeout`, the job becomes eligible for delivery again when its SQS visibility timeout ends. Ymir sets that timeout to 90 minutes from receipt of the message. Polling, throttling or other failures can delay delivery further; this isn't a retry deadline. Laravel counts repeated deliveries as attempts.
+ * Ymir doesn't create dead-letter queues. Jobs still in a queue when they reach its message retention period, four days by default in SQS, are deleted.
+ * If your application is in maintenance mode when a queue function receives a job, the job is removed without running, unless forced processing is enabled with the `SQS_FORCE` environment variable. Don't use maintenance mode to pause a queue.
+
+</Callout>
+
+A job can also run more than once, such as when SQS delivers a message twice or a job fails partway through. Make your jobs idempotent, so running one twice has the same result as running it once.
+
+### Diagnosing failed jobs [#diagnosing-failed-jobs]
+
+Each queue function has its own logs. Pass the queue name to the [`environment:logs:query`][9] or `environment:logs:watch` command:
+
+```bash
+ymir environment:logs:query production emails
+```
+
+The logs contain your application's log messages and the output of each job. When a job's PHP process fails, the queue function logs an error with the process output. Jobs that Laravel records as failed are in your failed job storage.
+
+## Standard and FIFO queues [#standard-and-fifo-queues]
+
+Queues are `standard` by default. You can make a queue `fifo` with its [`type`][10] option:
+
+ * **Standard:** SQS delivers each job at least once, and doesn't guarantee the order.
+ * **FIFO:** SQS delivers jobs with the same message group in the order they were sent, and drops messages it receives again with the same deduplication ID within five minutes. Throughput is lower than a standard queue.
+
+A FIFO queue doesn't mean a job runs exactly once. A job can still run again after a failure or retry. Releasing a job sends a new copy to the end of its message group without a delay, so retries can change the order. Sending jobs to a FIFO queue needs a Laravel version with [SQS FIFO support][11], which lets you set a message group with `onGroup` and a deduplication ID.
+
+## Changing, removing and rolling back queues [#changing-removing-and-rolling-back-queues]
+
+Ymir doesn't have a command to pause or drain a queue. To empty a queue, stop your application from dispatching jobs to it and wait for the jobs already in the queue to finish. Your functions can't purge queues, so `queue:clear` doesn't work.
+
+ * **Changing a queue's type:** Deleting and recreating the queue loses the jobs in it. Read the warning in the queue [`type`][10] reference before you change it.
+ * **Removing a queue:** When you remove a queue from `ymir.yml` and deploy, Ymir removes the queue's URL from your functions and your functions' permission to use it. Before deleting the queue, its function and its logs, Ymir checks SQS's approximate visible and in-flight message counts. That check doesn't include delayed messages and isn't proof that every job has finished. Stop producers and drain visible, delayed and in-flight jobs before removing a queue; remaining jobs can be lost.
+ * **Redeploying:** A [redeploy][16] applies the queue configuration saved with the environment's most recent deployment, even if that deployment failed. If that configuration differs from the deployment currently running, the redeploy can create, remove or change the type of queues the same way a deployment does.
+ * **Rolling back:** A [rollback][12] reapplies the queue configuration of the deployment you roll back to. Queues added since that deployment are removed the same way, and type changes delete queues. Jobs already in a queue run with the rolled back code, so they must still work with it. A rollback doesn't restore jobs that were lost or removed.
+
+## Large job payloads [#large-job-payloads]
+
+Amazon SQS limits a message to 1 MiB, and a queue can be configured with a lower maximum message size, such as an older queue created when the SQS limit was lower. Laravel 13 can store larger job payloads in a cache store and send a pointer through SQS, using [SQS overflow storage][13]. Overflow storage needs Laravel 13 and [Ymir Laravel bridge][2] version 1.2.0 or later.
+
+To enable overflow storage, add the `overflow` option to the `sqs` connection in your `config/queue.php` file and keep the connection's other options. Set `store` to a named cache store that meets the requirements below. Leaving it out uses your default cache store, which is DynamoDB unless your environment uses a cache cluster. With a cache cluster, you can use the `redis` store from Laravel's default `config/cache.php` file.
+
+```php title="config/queue.php"
+'sqs' => [
+    // Your existing sqs connection options...
+    'overflow' => [
+        'enabled' => true,
+        'store' => 'redis',
+        'delete_after_processing' => true,
+    ],
+],
+```
+
+Check in a staging environment that a job with a large payload is dispatched and processed, and that a job that throws an exception is released and retried, before you deploy to production.
+
+The functions that dispatch jobs and the queue functions that process them must use the same overflow configuration and cache store. A job whose payload is in overflow storage can't be processed by a deployment that doesn't support overflow storage, doesn't enable it or uses a different store. This includes rolling back to such a deployment, or disabling overflow storage, while those jobs are still in a queue. A rollback doesn't restore payloads removed from the cache store.
+
+Overflow storage also has these requirements:
+
+ * Laravel only stores payloads of at least 1 MiB, unless you set the `always` option to store every payload. A queue with a lower maximum message size can still reject smaller payloads.
+ * The overflow store must be an explicitly configured [cache store][14] that all your functions share and that can store items larger than 1 MiB. Your environment's DynamoDB cache table can't, since DynamoDB items are limited to 400 KB. The `file` and `array` stores aren't shared between functions. A [cache cluster][15] is shared and can store larger items.
+ * The `delete_after_processing` option controls whether Laravel deletes a stored payload after its job is processed. When it's disabled, payloads stay in your cache store until you remove them, so cleaning them up is your responsibility. Either way, if the store evicts or loses a payload before its job runs, the job can't be processed.
+ * Keep `flush_on_clear` disabled when the store is shared. Flushing a cache store can remove all its items, including your application's cache and other queues' payloads, regardless of their key prefix.
+
+[1]: /reference/configuration#queues
+[2]: /guides/laravel#laravel-bridge
+[3]: /reference/configuration#timeout-3
+[4]: /reference/configuration#memory-4
+[5]: /reference/configuration#concurrency-3
+[6]: /reference/ymir-cli#environment-variables-change
+[7]: https://laravel.com/docs/queues#dealing-with-failed-jobs
+[8]: /reference/ymir-cli#artisan
+[9]: /reference/ymir-cli#environment-logs-query
+[10]: /reference/configuration#type-3
+[11]: https://laravel.com/docs/queues#sqs-fifo-and-fair-queues
+[12]: /projects/deploy#rolling-back-a-deployment
+[13]: https://laravel.com/docs/13.x/queues#sqs-overflow-storage
+[14]: https://laravel.com/docs/13.x/cache
+[15]: /team-resources/caches
+[16]: /projects/deploy#redeploying-a-project

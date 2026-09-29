@@ -1,0 +1,401 @@
+---
+title: "Getting Started"
+description: "Install the Ymir CLI, log in, connect your AWS account with an IAM role and deploy your first project."
+---
+
+Getting started with Ymir takes these steps:
+
+1. [Install the Ymir CLI](#installing-the-ymir-cli).
+2. [Log in and check your active team](#logging-in).
+3. [Connect your team to an AWS account](#connecting-a-team-to-aws) using an IAM role.
+4. [Initialize and deploy your first project](#deploying-your-first-project) to its `staging` environment.
+
+## Supported AWS regions [#supported-aws-regions]
+
+Ymir requires AWS services that aren't available in all AWS regions. For that reason, only the following AWS regions are available at this time:
+
+ * `ap-northeast-1` — Asia Pacific (Tokyo)
+ * `ap-northeast-2` — Asia Pacific (Seoul)
+ * `ap-south-1` — Asia Pacific (Mumbai)
+ * `ap-southeast-1` — Asia Pacific (Singapore)
+ * `ap-southeast-2` — Asia Pacific (Sydney)
+ * `ca-central-1` — Canada (Central)
+ * `eu-central-1` — Europe (Frankfurt)
+ * `eu-north-1` — Europe (Stockholm)
+ * `eu-west-1` — Europe (Ireland)
+ * `eu-west-2` — Europe (London)
+ * `eu-west-3` — Europe (Paris)
+ * `sa-east-1` — South America (São Paulo)
+ * `us-east-1` — US East (N. Virginia)
+ * `us-east-2` — US East (Ohio)
+ * `us-west-1` — US West (N. California)
+ * `us-west-2` — US West (Oregon)
+
+## Requirements [#requirements]
+
+To install and run the Ymir CLI, you need:
+
+* PHP 7.2.5 or higher with the `json`, `pdo`, `zip` and `zlib` extensions. That's the minimum the Ymir CLI supports, but you should use a [currently supported version of PHP][1].
+* [Composer][2] to install the Ymir CLI.
+
+The PHP on your machine only runs the Ymir CLI and your local build commands. The PHP version your project runs on AWS depends on how an environment is deployed. With a zip archive, it comes from the environment's [`php`][12] option in your `ymir.yml` file. With a container image, it comes from the runtime image in the environment's [`Dockerfile`][23], and Ymir ignores the `php` option.
+
+Composer is only required to install the Ymir CLI. A regular WordPress project doesn't need a `composer.json` or `package.json` file for Ymir to deploy it. But your project's build commands need their own tools. For example, the build commands that Ymir generates for Bedrock, Radicle and Laravel projects run `composer install`, and the ones for Radicle and Laravel also run `yarn` or `npm`.
+
+For WordPress projects, it's **highly** recommended to have [WP-CLI][7] installed. The `init` command uses it to download WordPress into a new project and to scan your plugins so it can configure your project for them.
+
+If you want to deploy a project using a [container image][13], you also need Docker or Podman on the machine running the `deploy` command.
+
+<Callout type="warn" title="PHP extensions required">
+
+If Composer reports a missing extension such as `ext-zip` when installing the Ymir CLI, the PHP binary that Composer uses doesn't have it. You can list the extensions of that PHP binary with `php -m`. How you install a missing extension depends on how you installed PHP. The PHP manual explains how to install the [zip extension][8].
+
+</Callout>
+
+## Installing the Ymir CLI [#installing-the-ymir-cli]
+
+Most of your interactions with Ymir will be through the [Ymir CLI][3] tool. You cannot deploy your projects without it.
+
+### Globally (preferred) [#globally-preferred]
+
+The preferred way to install the Ymir CLI is globally. You can use the following command to do so:
+
+```bash copy
+composer global require ymirapp/cli
+```
+
+<Callout type="warn" title="Global vendor binaries directory">
+
+For the global installation to work, you must have Composer's global vendor binaries directory in your `$PATH` environment variable. If you see the error `command not found: ymir`, this is the cause. You can find the directory with `composer global config bin-dir --absolute` and then add it to your `$PATH`, as the [Composer documentation][10] explains.
+
+</Callout>
+
+After the installation, you can use the Ymir CLI like this:
+
+```bash
+ymir <command>
+```
+
+### Inside your project [#inside-your-project]
+
+You can also install the Ymir CLI in a project that already uses Composer. This adds the Ymir CLI to that project's `composer.json` file. To do so, you just need to run the following Composer command:
+
+```bash copy
+composer require ymirapp/cli
+```
+
+When installed inside a project, you can find the Ymir CLI in the vendor binaries directory. To run a Ymir CLI command, you then write your commands like this:
+
+```bash
+vendor/bin/ymir <command>
+```
+
+## Creating an account [#creating-an-account]
+
+Before you begin to use Ymir, you're going to need an account on the platform. If you're just working on someone else's team, you don't need to have a paid Ymir subscription. The owner of a team is the one who needs an active Ymir subscription to create projects, deploy them and manage resources on that team.
+
+Speaking of teams, whenever someone creates an account on Ymir, a **Personal** team also gets created. You cannot delete this team, but you can rename it. That's because [teams][14] are central to Ymir. All your projects and resources are tied to a team.
+
+## Logging in [#logging-in]
+
+Once you have an account, you log in to Ymir with the [`login`][15] command.
+
+```bash copy
+ymir login
+```
+
+The Ymir CLI asks for your email and password. If you enabled two-factor authentication on your account, it also asks for your authentication code. After you log in, the Ymir CLI uses your account's active team.
+
+Projects and cloud provider connections get created on your active team. So, before going further, check which team is active with the `team:current` command. You can switch to another team with the `team:select` command.
+
+```bash
+ymir team:current
+ymir team:select
+```
+
+If you're not the owner of the team, the team owner must give you the permissions needed for what you want to do. Connecting an AWS account requires the `provider:create` permission, and changing the authentication of a connected cloud provider connection requires the `provider:update` permission. Creating a project and deploying it require the `project:create` and `deployment:create` permissions.
+
+## Connecting a team to AWS [#connecting-a-team-to-aws]
+
+Ymir creates resources and deploys projects in your own AWS account. For that, a team needs at least one connected **cloud provider connection**. A cloud provider connection is how Ymir authenticates with your AWS account. A team can have more than one, and more than one connection can use the same AWS account.
+
+A cloud provider connection uses one of two authentication methods:
+
+* **IAM role (recommended):** You create an IAM role in your AWS account that trusts Ymir's AWS account. Ymir then requests temporary credentials for that role whenever it needs to work in your AWS account. You don't give Ymir any long-lived AWS credentials.
+* **Access key (legacy, less secure):** You give Ymir the long-lived access key of an IAM user. Ymir continues to support access keys, but you should only use them if you can't use an IAM role.
+
+You connect with an IAM role using the [`provider:connect`][16] command. The [team management][4] page in the Ymir dashboard only supports connecting with an access key.
+
+Whichever authentication method you use, the process is manual. Ymir doesn't create the IAM role, IAM user or IAM policy in your AWS account. You create them yourself with the steps below. For that, the person doing the setup needs AWS permissions to create IAM policies and roles, or IAM users and access keys for the access key method. These AWS permissions are separate from your Ymir team permissions.
+
+### Creating an AWS account [#creating-an-aws-account]
+
+If you don't already have an AWS account, you'll want to create one first. You can do this from the account creation page [here][5].
+
+<Callout type="warn" title="AWS costs not included">
+
+Your Ymir subscription doesn't include your AWS costs. So please ensure that you enter billing information when creating your AWS account.
+
+</Callout>
+
+### Creating the Ymir permissions policy [#creating-the-ymir-permissions-policy]
+
+Ymir needs permissions to manage the AWS resources of your projects and team. Ymir recommends one IAM policy that covers every AWS service that Ymir operates. You attach this policy to the IAM role, or to the IAM user if you use an access key.
+
+To create it, open the [IAM console][6], choose **Policies** and then **Create policy**. Switch the policy editor to **JSON**, replace its content with the policy below and create the policy with a name such as `YmirPermissions`.
+
+```json title="Ymir permissions policy"
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "YmirManagedServices",
+      "Effect": "Allow",
+      "Action": [
+        "acm:*",
+        "apigateway:*",
+        "cloudformation:*",
+        "cloudfront:*",
+        "cloudwatch:GetMetricData",
+        "dynamodb:*",
+        "ec2:*",
+        "ecr:*",
+        "elasticache:*",
+        "events:*",
+        "lambda:*",
+        "logs:*",
+        "rds:*",
+        "route53:*",
+        "s3:*",
+        "servicequotas:GetServiceQuota",
+        "ses:*",
+        "sqs:*",
+        "ssm:*",
+        "wafv2:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "YmirEnvironmentRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoleTags",
+        "iam:PassRole",
+        "iam:PutRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "YmirServiceLinkedRoles",
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+This policy grants broad access to the services it lists. It's narrower than the `AdministratorAccess` policy, but it isn't a least-privilege policy. Ymir creates an IAM role for each project environment and passes it to AWS Lambda and API Gateway, so anyone who can use this policy can create roles with any permissions. Treat the IAM role or IAM user that has this policy as highly privileged.
+
+This is the policy Ymir recommends. Restrictions outside the policy can still block Ymir operations, such as service control policies (SCPs) in AWS Organizations, permissions boundaries or explicit `Deny` statements in other policies. If you need finer-grained permissions, you can customize it, but you own those changes. If a customized policy is missing a permission, some Ymir operations can fail even though the cloud provider connection is connected. Keep in mind that Ymir uses global and `us-east-1` resources, such as IAM roles, CloudFront distributions, Route 53 hosted zones and the SSL certificates and functions CloudFront uses, whatever region your project is in. Don't restrict resource names either. Ymir names resources after your projects, environments and team resources, and existing resources can use older naming patterns.
+
+### Connecting with an IAM role (recommended) [#connecting-with-an-iam-role]
+
+Each cloud provider connection has its own IAM role. You set up the connection and create its IAM role at the same time, so keep the terminal and the IAM console open side by side.
+
+Start by running the `provider:connect` command. Enter a name for the connection and choose **IAM role (recommended)** as the authentication method.
+
+```bash
+ymir provider:connect
+```
+
+Ymir then creates the connection as a pending cloud provider connection, and the Ymir CLI displays three setup values:
+
+* **Ymir AWS account ID:** the AWS account that Ymir uses to request temporary credentials for your role. It isn't your AWS account ID.
+* **External ID:** a unique identifier that Ymir generates for this cloud provider connection.
+* **Role name:** the exact name of the IAM role for this connection. It has the format `ymir-cloud-provider-{provider_id}` where `{provider_id}` is the ID of the cloud provider connection.
+
+The Ymir CLI then asks for the ARN of the IAM role. Leave it waiting while you create the role in the [IAM console][6]:
+
+1. Choose **Roles** and then **Create role**.
+2. For the trusted entity type, choose **AWS account**. Then choose **Another AWS account** and enter the **Ymir AWS account ID**.
+3. Select **Require external ID** and enter the **External ID** exactly as the Ymir CLI displayed it. Leave **Require MFA** unselected. This only affects the role's trust policy. Ymir requests credentials for the role automatically, without an MFA code, so the role can't require one. It doesn't change MFA for the people who sign in to your AWS account. Choose **Next**.
+4. Select the [Ymir permissions policy](#creating-the-ymir-permissions-policy) and choose **Next**.
+5. For **Role name**, enter the **Role name** exactly as the Ymir CLI displayed it. Then choose **Create role**.
+
+The role must be in your AWS account's commercial AWS partition, not AWS GovCloud (US) or the AWS China regions. It must also use the default `/` path, which is what the IAM console uses. Ymir doesn't support other role names or paths.
+
+When you open the role, its **Trust relationships** tab should show a trust policy like the one below. The two placeholders are the **Ymir AWS account ID** and **External ID** values that the Ymir CLI displayed for your connection. Don't add other principals or remove the `sts:ExternalId` condition.
+
+```json title="Trust policy"
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::YMIR_AWS_ACCOUNT_ID:root"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "EXTERNAL_ID"
+        }
+      }
+    }
+  ]
+}
+```
+
+<img src="/images/diagrams/iam-role-policies.svg" alt="Diagram: Ymir's AWS account, YMIR_AWS_ACCOUNT_ID, requests temporary credentials for the IAM role ymir-cloud-provider-42 with EXTERNAL_ID. The role is in your AWS account, YOUR_AWS_ACCOUNT_ID, and you create it and both of its policies. The role's trust policy decides who can assume the role. Its YmirPermissions permissions policy is a separate document that decides what the role can do to your AWS resources, such as Lambda functions, S3 buckets, CloudFront and databases. Ymir then uses the role's temporary credentials to act as the role. Service control policies, permissions boundaries and explicit Deny statements can still block what the permissions policy allows. Connected proves that Ymir could use the role, not that every permission works." width="1100" height="580" />
+
+<a href="/images/diagrams/iam-role-policies.svg">Open the full-size diagram</a>
+
+Copy the role's ARN from the role summary and enter it in the Ymir CLI. The ARN has this format, where `YOUR_AWS_ACCOUNT_ID` is the ID of the AWS account where you created the role and `ROLE_NAME` is the **Role name** value:
+
+```text
+arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/ROLE_NAME
+```
+
+Ymir validates the role by requesting temporary credentials for it with the connection's external ID. If that works, the cloud provider connection becomes connected and you can use it for your projects.
+
+<Callout type="info" title="What connected means">
+
+A connected cloud provider connection means that Ymir could authenticate with your AWS account when you connected it. Ymir doesn't check every permission of the IAM role, and it doesn't monitor the connection afterwards. If you change the role or its policy later, Ymir operations can fail even though the connection is still connected.
+
+</Callout>
+
+### Finishing a pending connection [#finishing-a-pending-connection]
+
+A pending cloud provider connection can't be used by projects or to create resources. If Ymir can't validate the role, the Ymir CLI asks if you want to retry. The retry uses the same pending connection, so you can fix the role in the IAM console and try again.
+
+If you stop the command or don't retry, the connection stays pending. The Ymir CLI error message shows the ID of the pending connection, and the `provider:list` command lists it with its status. You can finish connecting it later with the [`provider:update`][17] command and that same ID. Don't create a new connection instead. The role name and external ID belong to the connection that displayed them.
+
+```bash
+ymir provider:update 42
+```
+
+The `provider:update` command asks if you want to update the authentication method or credentials. It defaults to "no", so you must answer "yes" to enter the role ARN. The Ymir CLI displays the connection's setup values again. You can also pass the role ARN with the `--role-arn` option to skip the authentication method and role ARN questions. The command still asks for the connection name first; press Enter to keep the current name. The `provider:connect` command doesn't have this option.
+
+```bash
+ymir provider:update 42 --role-arn=arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/ROLE_NAME
+```
+
+The ID `42` in these examples is illustrative. Use the ID of your connection.
+
+A disconnected cloud provider connection also can't be used for operations. It keeps its last credentials so you can repair it. Check the status of your connections with the `provider:list` command, and repair a disconnected one by updating its credentials with the `provider:update` command and the same ID. Ymir doesn't monitor your connections, so a connection doesn't become disconnected automatically when its credentials stop working.
+
+If you'd rather start over, you can delete the pending connection with the `provider:delete` command. Deleting a cloud provider connection doesn't delete its IAM role in your AWS account. Delete the role yourself in the IAM console if you don't need it anymore.
+
+### Switching an existing connection to an IAM role [#switching-to-an-iam-role]
+
+Ymir doesn't convert existing access key connections to IAM roles automatically. To switch a connection, run the `provider:update` command with its ID, answer "yes" to update the authentication method or credentials and choose **IAM role (recommended)**. The Ymir CLI then displays the setup values for that connection so you can create its role as described above.
+
+<Callout type="warn" title="Use the same AWS account">
+
+Create the role in the AWS account that contains the connection's existing resources. Ymir doesn't check that the new credentials use the same AWS account. If you use another AWS account, Ymir can no longer manage the resources that the connection already has in the original AWS account.
+
+</Callout>
+
+If Ymir can't validate the new role, the connection keeps its previous credentials and status. Your projects keep using the previous access key, so they only keep working if that access key is still valid.
+
+Once the connection uses the role, check that your usual Ymir operations, such as deploying, work with it before retiring the old access key. Other cloud provider connections or other applications may also use the same access key. Make sure nothing else uses it before you deactivate and then delete it in the IAM console.
+
+Don't delete a working connection to switch it to an IAM role. Deleting a cloud provider connection also deletes all its associated resources on Ymir.
+
+### Adding an IAM user [#adding-an-iam-user]
+
+If you can't use an IAM role, you can connect with the access key of an IAM user instead. Access keys are long-lived credentials, so they're less secure than an IAM role. Ymir stores them for as long as the connection uses them.
+
+Create a dedicated IAM user for Ymir. Never use the access keys of your AWS account's root user.
+
+1. In the [IAM console][6], choose **Users** and then **Create user**. Enter a user name and don't give the user access to the AWS Management Console.
+2. Choose **Attach policies directly**, select the [Ymir permissions policy](#creating-the-ymir-permissions-policy) and create the user.
+3. Open the user, go to the **Security credentials** tab and choose **Create access key**.
+4. Copy the **Access key ID** and **Secret access key**. AWS only displays the secret access key once. Keep both values out of your project files and source control.
+
+You can then enter the access key when you run the `provider:connect` command and choose **Access key (legacy, less secure)**. You can also enter it on the [team management][4] page of the Ymir dashboard.
+
+Instead of typing the access key, the Ymir CLI can read the `aws_access_key_id` and `aws_secret_access_key` of a profile in your `~/.aws/credentials` file. You can select the profile interactively or use the `--aws-profile` option.
+
+```bash
+ymir provider:connect --aws-profile=ymir
+```
+
+The profile must contain the long-lived access key of the IAM user. Ymir doesn't support temporary credentials, so profiles that use a session token, IAM Identity Center (SSO) or another role don't work. To validate an access key, Ymir creates and then deletes a temporary S3 bucket in the `us-east-1` region.
+
+<Callout type="info" title="How Ymir stores credentials">
+
+Ymir stores the authentication configuration of each cloud provider connection encrypted [at rest][11]. For an IAM role, that's the role ARN and external ID. For an access key, that's the access key ID and secret access key. With an IAM role, Ymir requests temporary credentials that last up to one hour and only keeps them in memory while it works in your AWS account.
+
+</Callout>
+
+## Deploying your first project [#deploying-your-first-project]
+
+With a connected cloud provider connection, you can create your first project. Go to the root directory of your project and run the `init` command. The command is interactive. It asks for your project type, name, cloud provider connection and region, and then offers to set up databases, a cache cluster, container image deployment and the Ymir integration for your project. [Managing projects][18] explains each of these steps.
+
+```bash
+cd path/to/your-project
+ymir init
+```
+
+<Callout type="warn" title="Resources are created during init">
+
+When you choose to create a network, database server or cache cluster during the `init` command, Ymir creates it in your AWS account right away. These resources can cost money even if you never deploy your project.
+
+</Callout>
+
+The `init` command creates your project with a `staging` and a `production` environment and writes the `ymir.yml` file at the root of your project. It can also change files in your project, such as by installing the Ymir integration or creating a `Dockerfile`. Review these changes and the generated `ymir.yml` file before deploying.
+
+If your application needs a database, make sure the database configured for the environment exists before deploying. The `init` command only creates databases when you ask it to on a public database server. You have to create them yourself on a private database server, or if you skipped that step.
+
+Then deploy your project to the `staging` environment from the same directory:
+
+```bash copy
+ymir deploy staging
+```
+
+The `deploy` command builds your project on your machine, so the tools your build commands use must be installed. If the environment uses container image deployment, Docker or Podman must also be running. [Deploying a project][19] explains the build and deployment process.
+
+When the deployment finishes, the Ymir CLI displays the URL of the environment. You can display it again with the `environment:url` command:
+
+```bash copy
+ymir environment:url staging
+```
+
+Ymir doesn't copy your local database or media files. Databases that the `init` command creates are empty. If the environment's database already existed, Ymir doesn't import into it or clear it. For a WordPress project, you can import them with the [`database:import`][20] and [`media:import`][21] commands. When you're ready to use your own domain, follow the [domain mapping guide][22].
+
+[1]: https://www.php.net/supported-versions.php
+[2]: https://getcomposer.org
+[3]: https://github.com/ymirapp/cli
+[4]: https://ymirapp.com/dashboard/team/manage
+[5]: https://portal.aws.amazon.com/billing/signup#/start
+[6]: https://console.aws.amazon.com/iam/home
+[7]: https://wp-cli.org/
+[8]: https://www.php.net/manual/en/zip.installation.php
+[10]: https://getcomposer.org/doc/03-cli.md#global
+[11]: https://en.wikipedia.org/wiki/Data_at_rest
+[12]: /reference/configuration#php
+[13]: /guides/container-image-deployment
+[14]: /teams
+[15]: /reference/ymir-cli#login
+[16]: /reference/ymir-cli#provider-connect
+[17]: /reference/ymir-cli#provider-update
+[18]: /projects/manage#creating-a-project
+[19]: /projects/deploy
+[20]: /reference/ymir-cli#database-import
+[21]: /reference/ymir-cli#media-import
+[22]: /guides/domain-mapping
+[23]: /guides/container-image-deployment#creating-the-dockerfile

@@ -1,0 +1,55 @@
+---
+title: "Using plugins that need the GD PHP extension"
+navTitle: "GD PHP extension"
+description: "Why the Ymir runtime uses Imagick instead of the GD PHP extension, and what to do when a plugin requires GD."
+---
+
+## Why use the GD PHP extension?
+
+The Ymir runtime comes with the [Imagick PHP extension][1] for image processing. It doesn't include the [GD extension][2] on any PHP version or architecture. Imagick has more features than GD, which is why Ymir uses it as its image processing extension.
+
+WordPress can do its image processing with either extension. The Ymir plugin configures WordPress to use Imagick first and only use GD when the GD extension is loaded. So WordPress features such as generating image sizes, cropping and rotating images work without GD.
+
+However, some plugins call GD functions directly, such as `imagecreatefromjpeg`, or check that GD is installed. These plugins, or some of their features, don't work with the default runtime.
+
+## Requirements
+
+This guide doesn't currently include a verified recipe for adding the GD extension to the current runtime, including with [container image deployment][3]. If you need GD, start with the [options below](#gd-alternatives).
+
+## Configuring your Ymir project to install the GD extension
+
+Earlier versions of this guide had a `Dockerfile` that installed GD from an Enterprise Linux 7 package repository. That recipe doesn't match the current runtime, so it was removed. A PHP extension only loads if it was built for the same PHP version, thread safety mode, architecture and system libraries as the PHP binary loading it. The Ymir runtime compiles its own PHP binaries on Amazon Linux 2023, so GD packages built for other PHP installations don't match it. The runtime images also don't include the PHP headers and `phpize` tool needed to compile an extension yourself. See [PHP extensions][4] in the PHP runtime reference for details.
+
+If your project still uses that `Dockerfile`, your builds can fail with current runtime images, and GD can fail to load even when the build succeeds. Check whether GD loads in your environment as shown [below](#gd-check-extensions) and remove those instructions from your `Dockerfile` if it doesn't.
+
+## What to do when a plugin needs GD [#gd-alternatives]
+
+If a plugin needs GD, try the following:
+
+ * Check whether the plugin has a setting to use Imagick or WordPress's image editor instead of GD.
+ * Check which plugin features use GD. Test them on a staging environment. Features that don't use GD can work normally.
+ * Look for an alternative plugin that supports Imagick or WordPress's image editor.
+
+If none of these work, [contact support][5] with the name of the plugin, the features you need, and your environment's PHP version and [`architecture`][6].
+
+## Checking which image extensions are loaded [#gd-check-extensions]
+
+To see whether the `imagick` and `gd` extensions are loaded in an environment, use the [`php:info`][7] command. It runs PHP's command-line interface in the environment's `console` function, and each loaded extension has its own section in the output.
+
+```bash
+ymir php:info staging
+```
+
+<Callout type="warn" title="Output contains secrets">
+
+The `php:info` output includes your environment's secrets and temporary AWS credentials. Only look for the extension sections, and don't paste the output into support requests, issues, chats or shared logs.
+
+</Callout>
+
+[1]: https://www.php.net/manual/en/book.imagick.php
+[2]: https://www.php.net/manual/en/book.image.php
+[3]: /guides/container-image-deployment
+[4]: /reference/php-runtime#runtime-extensions
+[5]: mailto:support@ymirapp.com
+[6]: /reference/configuration#architecture
+[7]: /reference/ymir-cli#php-info

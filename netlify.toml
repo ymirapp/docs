@@ -1,16 +1,4 @@
 [build]
   base = ""
   command = "npm run build"
-  publish = "docs/.vuepress/dist"
-
-[[redirects]]
-  from = "/"
-  to = "/getting-started"
-  status = 302
-  force = true
-
-[[redirects]]
-  from = "/projects"
-  to = "/projects/manage"
-  status = 302
-  force = true
+  publish = ".next"

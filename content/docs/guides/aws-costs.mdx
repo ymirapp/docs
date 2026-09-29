@@ -1,0 +1,245 @@
+---
+title: "How to understand and control your AWS costs"
+navTitle: "AWS costs"
+description: "Read your AWS bill, attribute costs with Ymir's tags, set up budgets and reduce costs without breaking your projects."
+---
+
+Ymir runs your projects on AWS resources in your own AWS accounts. So you get two separate bills: your Ymir subscription from Ymir, and your AWS usage from AWS. Ymir doesn't resell, include or cap your AWS charges. This guide explains how to see what you pay AWS for, how to attribute those costs to projects and environments with tags, and how to lower them without breaking anything.
+
+There's no fixed AWS price for a Ymir project. Your AWS bill depends on your traffic, your configuration, the region, the team resources you create and AWS prices, which change over time. Don't count on the AWS Free Tier or credits either, since they depend on your AWS account.
+
+## What you pay for [#what-you-pay-for]
+
+The team owner's Ymir subscription pays for the [team][1]. AWS bills the AWS account behind each of the team's cloud provider connections directly. A cloud provider connection is the Ymir record that Ymir uses to authenticate to an AWS account. Several connections can use the same AWS account, and that account can also hold resources that have nothing to do with Ymir.
+
+Your AWS charges usually fall into these groups:
+
+* **Usage-based charges:** Lambda invocations and duration, API Gateway requests, CloudFront requests and data transfer, S3 storage and requests, DynamoDB, SQS, CloudWatch Logs and AWS WAF. These grow and shrink with your traffic and your configuration.
+* **Resources that bill while they exist:** NAT gateways, database servers, cache clusters and bastion hosts bill by the hour whether your sites get traffic or not. Some components, such as a firewall's web ACL, also have a monthly charge.
+* **Stored data:** Database backups and snapshots, log retention, uploads, container images and other stored artifacts.
+* **Charges that aren't tied to a resource:** For example, taxes, support plans and some data transfer.
+
+## Start with your AWS bill [#start-with-your-aws-bill]
+
+Before you change anything, find out where the money goes:
+
+1. **Find the AWS accounts.** Use the [`provider:list`][2] command to see your team's cloud provider connections, then find the AWS account that each one uses. If you use AWS Organizations, your bill can include several accounts.
+2. **Look at the bill by account, service and region.** In [Cost Explorer][3], group your costs by linked account, then by service and region. This works without any tags, and it shows the charges that tags can't explain.
+3. **List what Ymir manages.** Use the [`project:list`][4], [`environment:list`][5], [`database:server:list`][6], [`cache:list`][7] and [`network:list`][8] commands to list your projects, environments and team resources. Compare them with the services and regions on your bill.
+
+The [`environment:metrics`][9] command also gives a quick view of an environment's usage. Its costs are a partial estimate. It only shows the CloudFront distribution, an HTTP API gateway and the `website` and `console` functions, and it uses fixed reference prices instead of your region's prices or your actual bill. Use it to spot trends, not to reconcile your bill.
+
+## Ymir's automatic tags [#automatic-tags]
+
+A [tag][10] is a key and value label on an AWS resource. Ymir adds tags to most of the AWS resources that it creates. Every tagged resource normally gets these two tags:
+
+| Key | Value | Example |
+| --- | --- | --- |
+| `managed-by` | `ymir` by default. | `ymir` |
+| `ymir:service` | A Ymir label for the service that Ymir associates with the resource. It doesn't always match the service on your AWS bill. For example, the log groups of Lambda functions use `lambda`. Use Cost Explorer's service dimension for cost analysis. | `lambda` |
+
+Depending on the resource, Ymir also adds some of these tags:
+
+| Key | Value | Example |
+| --- | --- | --- |
+| `ymir:provider:id` and `ymir:provider:name` | The ID and name of the Ymir cloud provider connection. Not the AWS account ID. | `1234` and `example-connection` |
+| `ymir:region` | The AWS region that Ymir associates with the resource. A firewall's web ACL, which AWS keeps in `us-east-1`, uses `us-east-1`. DNS zones don't have this tag. | `us-east-1` |
+| `ymir:project:id` and `ymir:project:name` | The ID and name of the Ymir project. | `5678` and `example-project` |
+| `ymir:environment:id` and `ymir:environment:name` | The ID and name of the Ymir environment. | `9012` and `production` |
+| Resource tags such as `ymir:database-server:name`, `ymir:cache:name`, `ymir:network:name` or `ymir:queue-function:name` | The ID or name of the Ymir resource. | `example-database-server` |
+
+The IDs in these tags are the IDs of Ymir records, not AWS resource or account IDs. Ymir removes some special characters from names in tag values. Renaming something in Ymir doesn't update the tags right away (see [how Ymir updates tags](#how-ymir-updates-tags)). Ymir doesn't currently add a tag for your Ymir team.
+
+Which tags a resource gets depends on what it belongs to:
+
+* **Environment resources**, such as Lambda functions, API gateways, the CloudFront distribution, S3 buckets, queues, log groups and secrets, get the project and environment tags.
+* **Project resources**, such as the container image repository, get the project tags but no environment tags.
+* **Team resources**, such as database servers, cache clusters, networks, bastion hosts, DNS zones, SSL certificates and email identities, don't get project or environment tags. They can be [shared by several projects and environments][11], so their cost doesn't belong to one environment just because an environment uses them.
+
+Ymir only adds tags when the team owner's Ymir subscription isn't a personal subscription. For some resources, it also needs that subscription to be active. With a personal subscription, don't rely on any Ymir tags.
+
+Tags only classify resources. They aren't an invoice and they aren't a security boundary. Not every AWS resource that Ymir creates has these tags, and not every AWS charge can be attributed to a tagged resource.
+
+## Adding your own tags [#custom-tags]
+
+You can add up to 10 tags of your own to an environment's resources with the [`tags`][12] option. This is useful for keys that your company already uses for cost allocation, such as a cost center or a client. Add the `tags` option to the environment in your existing `ymir.yml` file without replacing the rest of the file:
+
+```yml
+environments:
+  production:
+    tags:
+      cost_center: "cc-1234"
+      client: "example-client"
+```
+
+Ymir adds these tags to the environment's resources, on top of its automatic tags. It doesn't add them to project or team resources. Ymir validates them when you deploy:
+
+* You can't use them with a personal subscription. Ymir checks the subscription of the team owner, not of the person who deploys.
+* Each tag needs a key and a value. Keys can't be numbers, and they can't begin with `aws:` or `ymir:`.
+* Ymir trims spaces at the start and end of keys and values. Quote your values so YAML keeps them as strings.
+* Ymir can replace hyphens in a key with underscores. For example, `cost-center` usually becomes `cost_center`. Use underscores in your keys, avoid keys that only differ by a hyphen or an underscore, and check the actual keys on your resources before you activate them for cost allocation.
+* AWS services have their own rules for tag keys and values, so AWS can still reject a tag that Ymir accepts. See the [AWS tagging documentation][10].
+
+Don't use `managed-by` or `managed_by` as keys. Ymir doesn't reject them, but they conflict or get confused with Ymir's own `managed-by` tag. Never put secrets or personal data in tags. Anyone who can read your AWS resources or billing data can see them.
+
+## How Ymir updates tags [#how-ymir-updates-tags]
+
+Saving your `ymir.yml` file doesn't change any tags. Ymir applies the `tags` option and updates the automatic tags of environment resources when you deploy the environment. A [rollback][13] reapplies the configuration of the deployment that you roll back to, including its tags.
+
+Ymir tags team resources and project resources when it creates or updates them, not when you deploy. So changing your subscription or renaming a project, an environment or a cloud provider connection doesn't retag everything right away. Some resources can keep their old tags or no tags for a long time.
+
+<Callout type="error" title="Ymir can remove tags that you add elsewhere">
+
+When Ymir updates the tags of a resource, it often replaces all its tags. This removes tags that you or your tools added outside of Ymir, such as in the AWS console. That includes tags that your cost allocation, tag policies or IAM policies rely on. If the team owner's subscription can't use tags, Ymir can remove all of a resource's tags.
+
+Configure the tags that you need on environment resources with the `tags` option. If your company needs other tags or tagging policies on Ymir resources, contact Ymir support before relying on them.
+
+</Callout>
+
+Check the tags yourself with [Tag Editor][14] in the AWS console. A successful deployment or a connected cloud provider connection doesn't prove that every resource has the tags that you expect.
+
+## Activating tags for cost allocation [#activating-cost-allocation-tags]
+
+AWS doesn't use tags in Cost Explorer until you activate them as [cost allocation tags][15]. For AWS, Ymir's automatic tags, including `managed-by` and the `ymir:` tags, are user-defined tags like your own. So you need to activate each tag key that you want to use.
+
+Only the management account of an AWS organization, or a standalone AWS account that isn't part of one, can activate cost allocation tags. A Ymir team role or cloud provider connection doesn't give you this access. You need access to that AWS account's billing console. To [activate tag keys][16]:
+
+1. Open the Billing and Cost Management console.
+2. In the navigation pane, choose **Cost allocation tags**.
+3. Select the tag keys that you want, such as `ymir:project:name`, `ymir:environment:name` and your own `cost_center` key.
+4. Choose **Activate**.
+
+A tag key can take up to 24 hours to appear on that page after a resource gets it, and then up to 24 hours more to activate. Tags only apply to costs from their activation on. You can ask AWS to [backfill][17] cost allocation tags for up to 12 months, but backfilled costs only have tag values for periods when the resources actually had those tags.
+
+Activate the ID keys too if you want to tell apart projects or environments that have the same name, such as two `production` environments.
+
+<img src="/images/aws-cost-allocation-tags.png" alt="Screenshot: the Cost allocation tags page of the AWS Billing and Cost Management console after activation. It says that 3 cost allocation tags are activated. The list is filtered on Status = Active and shows 3 matches: the managed-by, ymir:environment:name and ymir:project:name tag keys, each with the status Active and the type Resource. None of the tag keys are selected, so the Undo, Deactivate and Activate buttons are unavailable." width="2350" height="900" className="rounded-lg border border-fd-border shadow-md" />
+
+The `managed-by`, `ymir:environment:name` and `ymir:project:name` tag keys after activation.
+
+<a href="/images/aws-cost-allocation-tags.png">Open the full-size screenshot</a>
+
+## Reading costs in Cost Explorer [#reading-costs-in-cost-explorer]
+
+Once your tags are active, you can [group and filter][18] your costs by tag in Cost Explorer:
+
+1. Start by grouping by service with no filter, so you see the whole bill.
+2. Group by `ymir:project:id` to see the tagged cost of each project. To see a project's environments, filter on its `ymir:project:id` value and then group by `ymir:environment:name`, or group by `ymir:environment:id`. Grouping all projects by `ymir:environment:name` adds together every environment with the same name, such as all your `production` environments.
+3. Filter on your own keys, such as `cost_center`, to see the costs that you've labeled.
+
+These groups only show the tagged part of your bill. A filter on `ymir:project:id` leaves out untagged and shared costs entirely. To account for the rest, remove the filter and go back to the view of your account by service. Cost Explorer shows costs without a value for the tag key separately when you group by that key without filtering on it. That part can include Ymir team resources such as NAT gateways, database servers and caches, resources that didn't have the tag yet, resources that can't be tagged and charges that aren't tied to a resource. If your AWS account also runs workloads that have nothing to do with Ymir, their costs are there too. Identify what each untagged cost is before you attribute it to a project or client.
+
+To split the shared costs of your Ymir team resources between projects or clients, decide on a rule yourself. For example, split a database server's cost by the number of databases or by usage. Write the rule down and apply it the same way every month. Tags can't make this decision for you.
+
+<img src="/images/diagrams/aws-cost-allocation.svg" alt="Diagram: a conceptual composite, not a single Cost Explorer result, and not to scale: segment sizes aren't amounts. One AWS account's monthly bill is shown as a stacked bar. The top segments are the tagged costs of example-project, its staging and production environments, which have values for the project and environment tag keys. The rest of the bar has no value for those tag keys, although those costs can still have other tags such as managed-by. It's made of a shared NAT gateway, a shared database server and a shared cache cluster used by both environments, charges not tied to a resource, and unrelated workloads in the same AWS account. An arrow labeled your allocation rule starts only from the shared Ymir team resources and splits their cost into an assigned share for staging and an assigned share for production. This is your own cost analysis, done by you and not by Ymir or AWS. The shares aren't tag values or extra charges, and they don't have to be equal. Charges not tied to a resource and unrelated workloads stay outside this allocation and stay on your bill, and this rule doesn't assign unrelated workloads to the project. Filtering on example-project's tags only shows the top segments. Tags only cover part of the bill, so identify the rest before you attribute it and apply the same rule every month." width="1100" height="610" />
+
+<a href="/images/diagrams/aws-cost-allocation.svg">Open the full-size diagram</a>
+
+## Getting notified with budgets [#budgets]
+
+[AWS Budgets][19] can notify you when your costs go over, or are forecast to go over, an amount that you set. You can create a budget for a whole account or filter it on an active cost allocation tag.
+
+A budget isn't a spending cap. AWS updates budget data a few times a day, and there's a delay between your usage and its billing. Your costs can go over your threshold before you get the notification, and they keep going up after it until you act.
+
+Budgets can also run actions automatically, such as applying IAM policies or stopping some resources. Don't set up actions that change IAM permissions or stop resources that Ymir manages without reviewing their effect. They can break your sites, block deployments and leave Ymir unable to manage those resources.
+
+## Reducing costs safely [#reducing-costs-safely]
+
+Measure before you change anything, and then measure again after the change. Look at your bill, your functions' duration and errors and your users' experience. Don't make a change only because it's cheaper in theory, and never weaken your security or backups to save money.
+
+### Lambda memory and architecture [#lambda-memory-and-architecture]
+
+Lambda bills duration by the [memory][20] that you configure, and it gives a function more CPU when it has more memory. More memory costs more per second, but a function that finishes faster can cost the same or less in total. Too little memory can also make functions slow, time out or run out of memory.
+
+Benchmark a [`memory`][21] change on a staging environment before you change it in production, and compare the duration, errors and cost of each function. That includes the `console` function. Cron jobs, WP-CLI commands and your application's background work can run it often.
+
+Lambda charges less per second for `arm64` functions. Before you switch the [`architecture`][22] option, check that your extensions, layers and executables support it and benchmark your application.
+
+### Warm-up, logs and stored data [#warmup-logs-and-stored-data]
+
+* **Warm-up:** [`warmup`][23] invocations are billed like other invocations. They're not provisioned concurrency, and they don't guarantee that there won't be cold starts.
+* **Logs:** CloudWatch charges for the logs that it ingests and stores. Reduce what your application logs and set the [`logging`][24] retention to what you need. See the [logging guide][25] before you disable logging.
+* **Stored data:** S3 uploads, container images, log groups, database backups and snapshots all cost money to store. Keep the container images and deployment artifacts that your current deployments, redeployments and rollbacks need, and only remove others with a reviewed retention plan. The [`docker:delete-images`][39] command only deletes images on your computer, so it doesn't reduce your container image storage costs in AWS.
+
+### CloudFront, API gateway and firewall [#cloudfront-gateway-and-firewall]
+
+Serving pages and assets from the CloudFront cache can reduce your Lambda and API Gateway usage. The [`caching`][26] option changes how requests get routed, but no value removes the CloudFront distribution.
+
+[Origin Shield][27] and the [firewall][28] have their own charges. Setting `firewall` to `false` doesn't remove the firewall. See [removing the firewall][29] before you change it. Don't remove protection that your sites need to save money.
+
+### Networks, NAT gateways and bastion hosts [#networks-nat-gateways-and-bastion-hosts]
+
+A NAT gateway bills by the hour that it exists and for every GB of data that it processes. You also pay for its public IPv4 address and standard data transfer. Prices vary by region. See the [Amazon VPC pricing page][30] and AWS's [NAT gateway pricing][31] for ways to reduce data transfer charges.
+
+A [bastion host][32] is an EC2 instance with storage and a public IP address, and it bills for as long as it exists. Once nobody on your team needs it for tunnels or maintenance, remove it with the `network:bastion:remove` command.
+
+A network has one NAT gateway shared by everything on its private subnets. Only remove it with the [`network:nat:remove`][33] command once nothing on the network needs it.
+
+### Database servers and caches [#database-servers-and-caches]
+
+Database servers and cache clusters bill for as long as they exist, even when no site uses them. Aurora serverless database clusters that Ymir creates have a minimum capacity of 0.5 ACU, so they don't pause or scale down to zero. Backups and manual snapshots also cost money to store.
+
+You can change the type of a [database server][34] or [cache cluster][35], but it becomes unavailable for a few minutes. Before you delete one, see [cleaning up resources](#cleaning-up-resources).
+
+## What doesn't stop AWS charges [#what-doesnt-stop-aws-charges]
+
+These don't guarantee that your AWS costs stop. Most don't remove any resources, and the ones that delete resources leave others in place. Charges that you've already incurred also stay on your bill.
+
+* Less traffic, or removing your domain's DNS records.
+* Putting your site in maintenance mode.
+* Adding, changing or removing tags.
+* Setting `concurrency` to `false`. That removes the reservation, not a cap on spending.
+* Deleting a project or an environment without deleting its resources, or deleting a team. Ymir keeps the resources in your AWS account.
+* Deleting a project or an environment with its resources. Ymir only deletes that project's or environment's resources. Team resources such as database servers, cache clusters and networks stay, and the deletion can stop partway.
+* Deleting a cloud provider connection or revoking its IAM role. AWS keeps billing whatever is still in the account, and Ymir can no longer delete it for you.
+
+## Cleaning up resources you no longer need [#cleaning-up-resources]
+
+Deleting resources is often permanent. Follow these steps:
+
+1. **Find what uses the resource.** A network, a database server or a cache cluster can be used by several projects and environments. List them before you delete anything.
+2. **Keep what you need.** Back up databases and uploads, and check that you can restore them. Ymir doesn't take a final snapshot when it deletes a database server. See [backing up and recovering databases][36].
+3. **Delete with Ymir.** Delete [environments][37], [projects][38] and team resources with the Ymir CLI, and follow the checklists on those pages. Don't delete, rename or replace resources that Ymir manages directly in AWS. Contact Ymir support instead.
+4. **Wait for the deletion to finish.** Ymir deletes environment, project and network resources in the background, and it can stop partway. A project, environment or network that's no longer listed in Ymir doesn't prove that AWS deleted everything.
+5. **Check your AWS account.** In the AWS console for each service and region involved, such as Lambda, S3, CloudFront, VPC, RDS and ElastiCache, check that the resources you expected to delete are gone and that the ones you kept are still there. Tag Editor can help, but it only finds the resource types it supports in the regions that you search. Leave its tag filter empty to include resources without tags, since a search on `managed-by` misses resources that lost their tags or never had them. Cost Explorer shows delayed costs, not current resources, and charges you incurred before the deletion still show up. If a deletion failed or you aren't sure, contact Ymir support instead of deleting the resources yourself.
+6. **Remove access last.** Only delete the cloud provider connection and its IAM role or access key once you've verified in AWS that nothing is left for Ymir to delete.
+
+[1]: /teams#team-ownership-and-billing
+[2]: /reference/ymir-cli#provider-list
+[3]: https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html
+[4]: /reference/ymir-cli#project-list
+[5]: /reference/ymir-cli#environment-list
+[6]: /reference/ymir-cli#database-server-list
+[7]: /reference/ymir-cli#cache-list
+[8]: /reference/ymir-cli#network-list
+[9]: /reference/ymir-cli#environment-metrics
+[10]: https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html
+[11]: /projects/environments#shared-environment-resources
+[12]: /reference/configuration#tags
+[13]: /projects/deploy#rolling-back-a-deployment
+[14]: https://docs.aws.amazon.com/tag-editor/latest/userguide/find-resources-to-tag.html
+[15]: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html
+[16]: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/activating-tags.html
+[17]: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-allocation-backfill.html
+[18]: https://docs.aws.amazon.com/cost-management/latest/userguide/ce-filtering.html
+[19]: https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html
+[20]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html
+[21]: /reference/configuration#memory
+[22]: /reference/configuration#architecture
+[23]: /reference/configuration#warmup
+[24]: /reference/configuration#logging-2
+[25]: /guides/logging-service
+[26]: /reference/configuration#caching
+[27]: /reference/configuration#origin-shield
+[28]: /guides/firewall
+[29]: /guides/firewall#remove-or-replace-the-firewall
+[30]: https://aws.amazon.com/vpc/pricing/
+[31]: https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-pricing.html
+[32]: /team-resources/networks#bastion-host
+[33]: /team-resources/networks#nat-gateway
+[34]: /team-resources/database-servers#managing-database-servers
+[35]: /team-resources/caches#managing-cache-clusters
+[36]: /team-resources/database-servers#backing-up-and-recovering-databases
+[37]: /projects/environments#before-deleting-an-environment
+[38]: /projects/manage#deleting-a-project
+[39]: /reference/ymir-cli#docker-delete-images

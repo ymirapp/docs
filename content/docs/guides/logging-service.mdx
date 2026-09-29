@@ -1,0 +1,117 @@
+---
+title: "How to send logs to a logging service"
+navTitle: "Logging service"
+description: "How Ymir stores your Lambda function logs in CloudWatch, and how to send them to a logging service such as Axiom."
+---
+
+## How Ymir handles logs [#how-ymir-handles-logs]
+
+When logging is enabled for a function, everything it writes to `stdout` and `stderr` goes to [CloudWatch Logs][1]. This includes PHP errors and warnings, messages from the [Ymir PHP runtime][2] and logs that your application writes to `stderr`, such as Laravel's default log channel on Ymir. Lambda also adds `START`, `END` and `REPORT` lines for each invocation.
+
+Each Lambda function has its own log group named `/aws/lambda/` followed by the function name. That's one log group for the `website` function, one for the `console` function and one for each queue function. Ymir creates these log groups when it deploys and sets how long they keep logs using the [`logging`][3] option.
+
+You can read these logs with the [`environment:logs:query`][4] and [`environment:logs:watch`][5] commands. These commands hide the Lambda `START`, `END` and `REPORT` lines and some PHP-FPM messages. To see everything, or to search older logs, use the CloudWatch console. The [`environment:metrics`][6] command doesn't use logs. It gets its data from CloudWatch metrics.
+
+```bash
+# Retrieve the last 20 logged events from the "website" function of the "production" environment over the last hour
+ymir environment:logs:query production --lines=20
+
+# Continuously display the most recent logs from the "console" function of the "staging" environment
+ymir environment:logs:watch staging console
+
+# Get cost and usage metrics for the "production" environment over the last week
+ymir environment:metrics production --period=7d
+```
+
+<Callout type="warn" title="Logs can contain sensitive data">
+
+Logs contain whatever your application, plugins and PHP write to them. That can include personal data, request details, database queries and secrets. Anyone with access to CloudWatch Logs in your AWS account can read them, and so can any logging service that you send them to. Avoid logging secrets and personal data, redact sensitive values before logging them, and keep logs only as long as you need them.
+
+</Callout>
+
+CloudWatch charges for the logs that it ingests and stores. The `retention` value of the `logging` option controls how many days CloudWatch keeps logs. It defaults to 7 days. Setting it to `false` removes the time-based expiry, so logs stay until their log group gets deleted and you keep paying to store them. See the [CloudWatch pricing page][7] for current prices.
+
+Retention changes apply when you deploy. Lowering `retention` makes CloudWatch delete existing logs older than the new value. Increasing it again, or rolling back to an earlier deployment, doesn't recover deleted logs.
+
+When Ymir deletes a function, such as when you remove a queue or delete an environment, it also deletes the function's log group and all its logs.
+
+## Why use a logging service?
+
+CloudWatch Logs is a good starting point since it requires no setup and works with the Ymir CLI. But logging services often have better search, dashboards and alerting. Some can also make it easier to keep logs for longer or to combine logs from several projects.
+
+Whether a logging service is cheaper than CloudWatch depends on how many logs you have, how long you keep them and the service's pricing. Compare both before switching. Also keep in mind that most ways to send logs to a logging service still use CloudWatch, so you pay for both.
+
+## Ways to send logs to a logging service [#logging-service-options]
+
+There are three ways to send your logs to a logging service:
+
+ * **CloudWatch subscription forwarding:** You keep CloudWatch logging enabled and add a [subscription filter][8] to your log groups. CloudWatch then sends new logs to a forwarder, such as a Lambda function from the logging service, which sends them to the service. CloudWatch keeps its copy of your logs, and forwarding happens outside your functions, so it doesn't slow them down. The forwarder needs the logging service's credentials, which stay in its own configuration and not in your Ymir functions. You pay for both CloudWatch and the forwarder.
+ * **Logging from your application:** Your application sends logs to the logging service directly using a logging library. Since this runs in your PHP code, the logging service's API key can be an Ymir [secret][9]. But sending logs makes requests slower, and logs can get lost if your function times out or crashes before sending them.
+ * **Lambda extension:** A [Lambda extension][10] from the logging service receives your function's logs inside the Lambda execution environment and sends them to the service. Extensions share CPU and memory with your function and run with your environment's IAM role. An extension doesn't automatically get the Ymir secrets that the runtime loads into PHP, which makes it harder to give it an API key safely. See [Axiom Lambda extension](#axiom-lambda-extension) for an example.
+
+Ymir doesn't create or manage subscription filters. If you add one, add it to every log group that you want to forward, including those of functions you add later, such as new queues.
+
+## Disable CloudWatch logging [#disable-cloudwatch-logging]
+
+Keep CloudWatch logging enabled until you've confirmed that another method delivers the logs of all your functions, including errors. Disabling CloudWatch logging doesn't stop Lambda from running your code. Instead, Ymir denies your function permission to write to its log group. From then on:
+
+ * The Ymir CLI log commands don't show any new logs.
+ * PHP fatal errors, timeouts and runtime errors aren't recorded in CloudWatch. If your other method fails, nothing records them.
+ * Ymir still creates the log groups and applies their retention.
+
+You can disable CloudWatch logging for a whole environment or for a single function type with the [`logging`][3] option. Each function type, and CloudFront access logging, inherits each `status` or `retention` value that it doesn't set itself from the environment's `logging` option. Changes apply on your next deployment. If you mainly want to lower your CloudWatch costs, lowering `retention` keeps your logs available for diagnostics:
+
+```yml
+id: 42
+name: logging-project
+type: wordpress
+environments:
+  production:
+    logging:
+      retention: 14
+  staging:
+    logging:
+      retention: 3
+```
+
+## Logging services
+
+Below you'll find how to send your logs to different logging services.
+
+### Axiom
+
+[Axiom][11] is a logging service that offers both a CloudWatch forwarder and a Lambda extension.
+
+#### Requirements
+
+To send logs to Axiom, you'll need:
+
+ * An Axiom dataset for your logs.
+ * An Axiom API token that can only ingest data into that dataset.
+ * Permission to create CloudFormation stacks, Lambda functions, IAM roles and CloudWatch subscription filters in your AWS account.
+
+#### Configuring your project to use Axiom
+
+Use the [Axiom CloudWatch Forwarder][12] and keep CloudWatch logging enabled. The forwarder is a Lambda function that you deploy in your AWS account, separately from your Ymir project. Your Axiom API token is part of the forwarder's configuration and not your Ymir functions'. It's still sensitive, and depending on how it's stored, people with access to the forwarder's stack or function configuration may be able to read it. Limit privileged access to them in your AWS account, and follow Axiom's security recommendations for the token. Axiom also has stacks to create subscription filters on your log groups and to subscribe new log groups automatically. Follow Axiom's documentation to install them, and select the log groups of your environment's functions.
+
+Once it's installed, check that logs from each of your functions arrive in your Axiom dataset. Since CloudWatch logging stays enabled, the Ymir CLI log commands keep working.
+
+#### Axiom Lambda extension [#axiom-lambda-extension]
+
+Earlier versions of this guide installed the Axiom Lambda extension by copying it into a container image and suggested storing the `AXIOM_TOKEN` environment variable as a secret. That recipe was removed. Lambda starts the extension as a separate process, so it doesn't automatically get the secrets that the Ymir runtime loads into PHP.
+
+This guide doesn't currently include a verified recipe for the extension. According to [Axiom's documentation][13], the extension reads the token from an environment variable. With Ymir, the direct way to set one is a regular environment variable, which anyone who can view your Lambda function configuration can read. The extension also keeps logs in memory and drops the oldest ones when it can't reach Axiom. For workloads where losing logs matters, Axiom recommends keeping CloudWatch logging enabled and using the CloudWatch forwarder instead.
+
+[1]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html
+[2]: /reference/php-runtime#runtime-logs
+[3]: /reference/configuration#logging-2
+[4]: /reference/ymir-cli#environment-logs-query
+[5]: /reference/ymir-cli#environment-logs-watch
+[6]: /reference/ymir-cli#environment-metrics
+[7]: https://aws.amazon.com/cloudwatch/pricing/
+[8]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
+[9]: /projects/environments#secrets
+[10]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-extensions.html
+[11]: https://axiom.co/
+[12]: https://axiom.co/docs/send-data/cloudwatch
+[13]: https://axiom.co/docs/send-data/aws-lambda

@@ -1,0 +1,58 @@
+---
+title: "Using New Relic with a Ymir project"
+navTitle: "New Relic"
+description: "What's known about running the New Relic PHP agent on Ymir, and how to diagnose performance with Ymir's logs and metrics instead."
+---
+
+## Why use New Relic?
+
+[New Relic][1] is an application performance monitoring ([APM][2]) product. Its PHP agent shows where your application spends its time, such as slow database queries, external HTTP requests or plugins. With AWS Lambda, slow code also costs more since Lambda bills by the millisecond.
+
+This guide doesn't currently include a verified recipe for using New Relic with the current Ymir runtime. It explains what's known about compatibility, and how to diagnose performance problems with the tools that Ymir provides. If you need New Relic, [contact support][12].
+
+## Requirements
+
+Two different compatibility questions apply to New Relic on Ymir.
+
+The first is whether the New Relic PHP agent supports the runtime's operating system, architecture and PHP version. According to New Relic's [PHP agent compatibility requirements][3], the agent supports Amazon Linux 2023 on `x86_64` and `arm64` with the tar file installation. On `arm64`, it only supports PHP 8.0 and later. Newer PHP versions also need a minimum agent version. The Ymir runtime is built on [Amazon Linux 2023][4], so these requirements alone don't rule out the agent.
+
+The second is whether New Relic supports monitoring PHP on AWS Lambda. The PHP agent sends its data through a separate daemon process, which is designed for servers that keep running between requests. New Relic's [Lambda monitoring compatibility requirements][5] list Node.js, Python, Go, Java, Ruby and .NET runtimes, but not PHP. No setup of the PHP agent and its daemon with the current Ymir runtime has been verified for this guide.
+
+## Performance impact
+
+Lambda freezes the execution environment between invocations. A New Relic daemon running in the background is frozen along with it. So it can't send data until the next invocation, and Lambda can shut down the execution environment before the daemon sends its data. Sending the data during each request instead makes every request take longer, and Lambda bills for that time. How much this slows your requests and how much data gets lost depends on your setup, so measure both on a staging environment before relying on it.
+
+## Configuring your Ymir project to use New Relic
+
+Earlier versions of this guide had a `Dockerfile` and an `entrypoint.sh` script that installed New Relic. Don't use them. They downloaded the agent over unencrypted HTTP from a package repository for an old Linux version, stored your license key in the `Dockerfile`, and their entrypoint script mixed a PHP function call into a shell script.
+
+If you build your own New Relic setup, you'll need to validate it yourself. Keep the following in mind:
+
+ * Don't put your New Relic license key in your `Dockerfile`, your repository or your shell history. Anyone with access to your container image can read it.
+ * The runtime only loads Ymir [secrets][6] into its PHP process and the processes it starts. A process that Lambda starts separately, such as a Lambda extension, doesn't get them automatically. Regular [environment variables][7] are readable by anyone who can view the Lambda function configuration.
+ * The agent and its daemon run with your environment's IAM role. That role can read your environment's secrets and access other AWS resources.
+ * Make sure Lambda still starts the Ymir runtime. If you change the `Dockerfile`'s `ENTRYPOINT` or `CMD` instructions, or if a script fails, your functions won't handle requests.
+ * Test on a staging environment and check that your function logs don't show errors and that data arrives in New Relic.
+
+## Diagnosing performance without New Relic [#new-relic-alternatives]
+
+Ymir gives you the following tools to find performance problems:
+
+ * The [`environment:metrics`][8] command shows the invocations and durations of your `website` and `console` functions, your CloudFront and API gateway requests, and a partial cost estimate. These come from CloudWatch metrics, so they work even if you disable logging.
+ * The [`environment:logs:query`][9] and [`environment:logs:watch`][10] commands show the logs of your environment's functions, including PHP errors and warnings, when logging is enabled.
+ * Lambda adds a `REPORT` line to the CloudWatch logs of each invocation with its duration, billed duration and maximum memory used. The Ymir CLI hides these lines, but you can see them in the CloudWatch console when logging is enabled. The runtime also logs how long it took to start after each cold start.
+
+See the [logging guide][11] for more on your environment's logs.
+
+[1]: https://newrelic.com/
+[2]: https://en.wikipedia.org/wiki/Application_performance_management
+[3]: https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/php-agent-compatibility-requirements/
+[4]: /reference/php-runtime#runtime-architecture
+[5]: https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/instrument-lambda-function/compatibility-requirement-lambda-monitoring/
+[6]: /projects/environments#secrets
+[7]: /projects/environments#environment-variables
+[8]: /reference/ymir-cli#environment-metrics
+[9]: /reference/ymir-cli#environment-logs-query
+[10]: /reference/ymir-cli#environment-logs-watch
+[11]: /guides/logging-service
+[12]: mailto:support@ymirapp.com

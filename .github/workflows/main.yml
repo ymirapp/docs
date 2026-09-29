@@ -4,25 +4,36 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build documentation site
-        run: npm run build
+      - name: Lint
+        run: npm run lint
 
-      - name: Deploy documentation site
+      - name: Check types
+        run: npm run types:check
+
+      - name: Check code copy policy
+        run: node --experimental-strip-types scripts/check-code-copy.mjs
+
+      - name: Build and deploy documentation site
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        run: npx netlify-cli deploy --dir=docs/.vuepress/dist --prod
+        # The CLI builds with the Next.js adapter, including the MCP and search functions.
+        run: npx --yes netlify-cli@27.10.2 deploy --prod

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700" role="img" aria-labelledby="title desc">
+  <title id="title">Which SSL certificates a project in eu-west-1 needs for example.com, a domain not managed by Ymir</title>
+  <desc id="desc">This only applies to domains that aren't managed by Ymir. A project in the eu-west-1 region maps example.com. Two separate panels show the two alternatives, and only one applies at a time, depending on the caching value. In both panels, Ymir checks before deploying that an issued certificate in eu-west-1, the project region, covers all the mapped domains, including www.example.com. Left panel, caching: enabled: example.com routes to the CloudFront distribution, which uses an issued certificate in us-east-1 covering the same domains. The eu-west-1 certificate is still required because the us-east-1 certificate doesn't replace it. Right panel, caching: assets or disabled: example.com routes to the API gateway, which uses an issued certificate in eu-west-1 covering the same domains. It can be the same certificate that Ymir checks before deploying. The CloudFront distribution stays, but example.com doesn't route to it. Below both panels, keep the DNS validation records for example.com in place. They're specific to your domain and AWS account, and AWS uses them to validate certificates for example.com in either region and to renew certificates while they're in use.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .item { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .checked { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .records { fill: #f4f1e6; stroke: #071812; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .subheading { font-size: 16px; font-weight: 700; fill: #40594d; }
+    .subheading-green { font-size: 16px; font-weight: 700; fill: #2f7a54; }
+    .title { font-size: 16px; font-weight: 700; }
+    .small { font-size: 15px; fill: #40594d; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 16px; }
+    .code-heading { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 17px; font-weight: 700; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+    .note-green { font-size: 15px; font-style: italic; fill: #2f7a54; }
+    .or { font-size: 18px; font-weight: 700; fill: #40594d; }
+  </style>
+
+  <rect width="1100" height="700" fill="#f4f1e6"/>
+
+  <text class="heading" x="20" y="40">For domains not managed by Ymir</text>
+  <text class="small" x="20" y="66">A project in eu-west-1 maps example.com. Your caching value decides which panel applies, never both.</text>
+
+  <!-- Left panel: caching enabled -->
+  <rect class="area" x="20" y="90" width="510" height="460" rx="12"/>
+  <text class="code-heading" x="40" y="126">caching: enabled</text>
+
+  <text class="subheading" x="40" y="160">Serves visitors</text>
+  <rect class="item" x="40" y="176" width="170" height="64" rx="8"/>
+  <text class="code" x="125" y="214" text-anchor="middle">example.com</text>
+  <line x1="210" y1="208" x2="308" y2="208" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="small" x="259" y="196" text-anchor="middle">routes to</text>
+  <rect class="item" x="310" y="176" width="200" height="64" rx="8"/>
+  <text class="title" x="410" y="203" text-anchor="middle">CloudFront</text>
+  <text class="title" x="410" y="225" text-anchor="middle">distribution</text>
+  <line x1="410" y1="240" x2="410" y2="284" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="small" x="422" y="267">uses</text>
+  <rect class="item" x="310" y="286" width="200" height="84" rx="8"/>
+  <text class="title" x="410" y="312" text-anchor="middle">Issued certificate</text>
+  <text class="code" x="410" y="336" text-anchor="middle">us-east-1</text>
+  <text class="small" x="410" y="358" text-anchor="middle">covers the same domains</text>
+  <text class="note" x="40" y="300">CloudFront requires</text>
+  <text class="note" x="40" y="320">its certificate in</text>
+  <text class="note" x="40" y="340">us-east-1</text>
+
+  <text class="subheading-green" x="40" y="408">Checked before deploying</text>
+  <rect class="checked" x="40" y="424" width="470" height="112" rx="8"/>
+  <text class="title" x="56" y="454">Issued certificate in eu-west-1</text>
+  <text class="small" x="56" y="478">Project region. Covers all mapped domains,</text>
+  <text class="small" x="56" y="498">including www.example.com</text>
+  <text class="note-green" x="56" y="520">Still required. The us-east-1 one doesn't replace it.</text>
+
+  <!-- Alternatives -->
+  <text class="or" x="550" y="326" text-anchor="middle">or</text>
+
+  <!-- Right panel: caching assets or disabled -->
+  <rect class="area" x="570" y="90" width="510" height="460" rx="12"/>
+  <text class="code-heading" x="590" y="126">caching: assets or disabled</text>
+
+  <text class="subheading" x="590" y="160">Serves visitors</text>
+  <rect class="item" x="590" y="176" width="170" height="64" rx="8"/>
+  <text class="code" x="675" y="214" text-anchor="middle">example.com</text>
+  <line x1="760" y1="208" x2="858" y2="208" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="small" x="809" y="196" text-anchor="middle">routes to</text>
+  <rect class="item" x="860" y="176" width="200" height="64" rx="8"/>
+  <text class="title" x="960" y="214" text-anchor="middle">API gateway</text>
+  <line x1="960" y1="240" x2="960" y2="284" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="small" x="972" y="267">uses</text>
+  <rect class="item" x="860" y="286" width="200" height="84" rx="8"/>
+  <text class="title" x="960" y="312" text-anchor="middle">Issued certificate</text>
+  <text class="code" x="960" y="336" text-anchor="middle">eu-west-1</text>
+  <text class="small" x="960" y="358" text-anchor="middle">covers the same domains</text>
+  <text class="note" x="590" y="300">The CloudFront</text>
+  <text class="note" x="590" y="320">distribution stays,</text>
+  <text class="note" x="590" y="340">without example.com</text>
+
+  <text class="subheading-green" x="590" y="408">Checked before deploying</text>
+  <rect class="checked" x="590" y="424" width="470" height="112" rx="8"/>
+  <text class="title" x="606" y="454">Issued certificate in eu-west-1</text>
+  <text class="small" x="606" y="478">Project region. Covers all mapped domains,</text>
+  <text class="small" x="606" y="498">including www.example.com</text>
+  <text class="note-green" x="606" y="520">Can be the same certificate that serves visitors.</text>
+
+  <!-- DNS validation records -->
+  <rect class="records" x="20" y="580" width="1060" height="100" rx="12"/>
+  <text class="title" x="40" y="612">DNS validation records for example.com</text>
+  <text class="subheading-green" x="370" y="612">Keep in place</text>
+  <text class="small" x="40" y="640">Specific to your domain and AWS account. AWS uses them to validate certificates for example.com</text>
+  <text class="small" x="40" y="662">in either region and to renew certificates while they're in use.</text>
+</svg>

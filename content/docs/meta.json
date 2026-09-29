@@ -1,0 +1,21 @@
+{
+  "title": "Ymir documentation",
+  "description": "Documentation for Ymir, a platform that deploys and runs serverless WordPress and PHP applications on your own AWS account.",
+  "pages": [
+    "index",
+    "---Get started---",
+    "introduction",
+    "getting-started",
+    "teams",
+    "---Projects---",
+    "...projects",
+    "---Team resources---",
+    "...team-resources",
+    "---Guides---",
+    "...guides",
+    "---Compatibility---",
+    "...compatibility",
+    "---Reference---",
+    "...reference"
+  ]
+}

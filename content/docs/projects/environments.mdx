@@ -1,0 +1,331 @@
+---
+title: "Project environments"
+navTitle: "Environments"
+description: "What a project environment is, and how to manage environments, environment variables, secrets and domain names."
+---
+
+## What is a project environment?
+
+A project environment is a group of AWS resources used to run your WordPress, Bedrock, Radicle or Laravel project. Every environment of a project is in the project's AWS region and in the AWS account of the project's [cloud provider connection][8]. The most important AWS resources that make up a project environment are:
+
+ * A CloudFront distribution
+ * Two Lambda functions (`console` and `website`)
+ * Two S3 buckets (a public one for assets and uploads and a private one for deployment artifacts)
+ * A DynamoDB table used as a cache
+ * An IAM role used by the environment's Lambda functions
+
+Depending on its configuration, an environment can also have an [API gateway][9], [queues][10] with their own Lambda functions, a [firewall][11] and scheduled rules for cron jobs. Laravel environments that the Ymir CLI creates have queues by default.
+
+Ymir creates some of these resources, such as the S3 buckets and the CloudFront distribution, when it creates the environment. It creates others, like the Lambda functions, when you deploy to the environment for the first time.
+
+### Resources shared with other environments [#shared-environment-resources]
+
+These resources belong to a single environment. Team resources, such as [database servers][12], [cache clusters][13], [networks][14], [DNS zones][15] and [SSL certificates][16], can be used by several environments and projects at the same time. With container image deployment, every environment of a project also uses the project's container image repository.
+
+Environments are separate sets of AWS resources, not a security boundary. Every environment of a project is in the same AWS account, and every team member can see every environment of every project on the team. An environment that shares a database server, cache cluster or network with another environment can reach it the same way.
+
+Putting environments in separate projects doesn't change this. A separate team only limits which Ymir users can see and manage them. To isolate infrastructure, you also need separately scoped AWS accounts, credentials, networks and databases. No Ymir project or team setting provides that isolation by itself.
+
+## Default environments
+
+Whenever you initialize a project with the [`init`][6] command, Ymir will create two environments: `staging` and `production`. The `init` command also applies the choices you make during the command, such as the database server, cache cluster and container image deployment, to both environments.
+
+The `staging` environment's configuration disables `cron` and `warmup`. You're going to need a production environment, and having a staging environment to preview changes for your client or for testing is always beneficial.
+
+## Creating new environments
+
+You can create a new environment using the [`environment:create`][17] command from your project directory. You can either specify the name of the environment to create or you'll be prompted to give one.
+
+```bash
+ymir environment:create preview
+```
+
+The examples on this page use an environment named `preview`. Replace it with the name of the environment you're targeting. A new environment's name must be a slug of 12 characters or less.
+
+Once the command succeeds, you'll have a new node in the [`environments`][1] node of the `ymir.yml` configuration file. The Ymir CLI generates this configuration for your project type, the same way the `init` command does before it applies your choices. By default, the new environment uses container image deployment, unless you use the `--no-image` option.
+
+<Callout type="warn" title="New environments start empty">
+
+The Ymir CLI doesn't copy anything from your other environments. The new environment doesn't have a database, cache cluster, domain names, environment variables or secrets until you add them. It also doesn't get a copy of your database or uploads. Add the [`database`][18] and other options you need to its configuration before you deploy it.
+
+</Callout>
+
+Creating an environment creates AWS resources in your account right away. AWS can charge for them depending on how you use them, and deploying adds more. There's no Ymir limit on how many environments a project can have, but AWS quotas, such as the number of CloudFront distributions or S3 buckets in your account, still apply. Delete environments that you no longer need.
+
+## Deleting an existing environment
+
+You can delete an environment using the [`environment:delete`][19] command. You can pass the name of the environment to delete, or you can pick the environment from a list. The command asks you to confirm, then asks if you want to delete all the environment's resources on AWS. The default answer is no.
+
+```bash
+ymir environment:delete preview
+```
+
+Deleting an environment can't be undone. Ymir doesn't offer a way to restore a deleted environment or its data, so you're responsible for keeping the backups you need.
+
+### Before deleting an environment [#before-deleting-an-environment]
+
+Before deleting an environment, go through these steps:
+
+* **Check the target:** Make sure that you're deleting the right environment of the right project. Run the command from the project's directory, check the environment name with the `environment:list` command, and pass that name explicitly.
+* **Take an inventory:** Note the domain names mapped to the environment, the DNS records that point to it, including ones outside Ymir, and the database, cache cluster and queues it uses.
+* **Back up your data:** Export the environment's database and copy the uploads in its public S3 bucket, then check that you can restore them. Save its environment variables and secret values somewhere safe if you need them. The secret list commands don't show secret values, so keep your own copy of the ones you need.
+* **Stop new work:** Point your domain names elsewhere and stop your application from sending jobs to the environment's queues. Wait until the visible, in-flight and delayed jobs in the queues have all finished. See [removing queues][36].
+
+### What happens to the environment's resources [#environment-resources-on-delete]
+
+What Ymir deletes depends on your answer to the question about the environment's resources.
+
+**If you keep the resources**, Ymir only deletes the environment's [vanity domain][20] DNS record and the environment itself from Ymir. Everything else stays in your AWS account, including the CloudFront distribution, Lambda functions, S3 buckets and their uploads, DynamoDB table, IAM role, secrets in Parameter Store, queues and scheduled rules. They can keep serving your domain names, running cron jobs and processing queues, and AWS keeps billing them. Ymir doesn't support reattaching them to another environment or deleting them later, so you'll have to delete them yourself in AWS.
+
+**If you delete the resources**, Ymir deletes them in the background after the command returns. It deletes the CloudFront distribution first, which can take a while. Then it deletes the other resources, such as the firewall, the DynamoDB table, both S3 buckets and all their files, the IAM role, the scheduled rules, the secrets in Parameter Store, the vanity domain DNS record, the API gateway and the Lambda functions with their log groups. Before deleting a queue and its Lambda function, Ymir waits until SQS reports no visible or in-flight messages. That check doesn't include delayed messages, so it doesn't prove that every job has finished. Jobs still in a queue when Ymir deletes it are lost.
+
+<Callout type="warn" title="Deletion can stop partway">
+
+Deleting an environment's resources isn't atomic or instant. If AWS returns an error or a queue doesn't empty in time, the deletion can stop with some resources deleted and others still in your AWS account. Ymir keeps the environment until it has deleted its resources, so the [`environment:list`][37] command still shows it while the deletion runs. Don't delete or recreate the remaining resources yourself while the deletion could still be running. If the environment is still listed long after you deleted it, contact Ymir support before you clean up anything in AWS. Ymir can't promise to resume or recover a deletion that stopped.
+
+</Callout>
+
+Whatever you choose, Ymir doesn't delete team resources, such as database servers and their databases, cache clusters, networks, DNS zones and SSL certificates. It also doesn't delete the DNS records for your mapped domain names, so remove the ones that pointed to the environment. These resources keep running and keep costing money until you delete them.
+
+The Ymir CLI removes the environment from your `ymir.yml` file as soon as Ymir accepts the deletion, even if the deletion of the environment's resources hasn't finished.
+
+## Environment variables
+
+Ymir relies on [environment variables][2] to pass configuration information to your environment's AWS Lambda functions. This is regardless of project type. So while Bedrock, Radicle and Laravel projects already use environment variables, a regular WordPress project will also use them.
+
+Converting a WordPress project to use environment variables happens during the [build process][3]. The process disables a lot of WordPress constants and injects a configuration file to load them using environment variables. But learning to use environment variables is an important aspect of Ymir and you should consider converting constants to environment variables whenever possible. For Laravel projects, see [how Ymir uses your `.env` files][21].
+
+Environment variables are part of your Lambda functions' configuration. AWS encrypts them at rest, but they aren't hidden. Every member of your team can download their values, and so can anyone who can view your Lambda functions' configuration in your AWS account. Store sensitive values as [secrets](#secrets) instead.
+
+### Managing environment variables
+
+You can only manage the environment variables of an environment that you've deployed at least once. Every change applies to the configuration of the environment's `website`, `console` and queue functions. These changes aren't live until you `deploy` or `redeploy`, which publishes the new configuration.
+
+<Callout type="warn" title="Changes aren't atomic">
+
+Ymir accepts a change and returns before it updates your functions. It then updates each function separately in the background. If one of these updates fails, some functions can have the change while others don't, even though the Ymir CLI said the change was made. Don't make several changes to the same environment at the same time.
+
+</Callout>
+
+The `environment:variables:download` command only reads the `website` function's configuration, so it can't confirm that the `console` and queue functions also got a change. Give a change time to finish before you redeploy, and check it with the `environment:variables:download` command. If you think a change didn't apply everywhere, or you can't tell whether it finished, contact Ymir support before you make it again or redeploy. Don't edit your functions in AWS.
+
+If you're looking to update a single environment variable, you can use the [`environment:variables:change`][22] command. If the environment variable doesn't exist, Ymir will create it instead.
+
+If you're looking to modify a lot of environment variables at once, you can use the [`environment:variables:download`][23] command. The command will pull down all the environment variables for the given environment into a `.env.<environment>` file in your project directory.
+
+```bash
+ymir environment:variables:download preview
+```
+
+For example, the command above would create the `.env.preview` file. It replaces that file without asking if it already exists. When you're done editing it, you can push your changes back to your project environment using the [`environment:variables:upload`][24] command.
+
+```bash
+ymir environment:variables:upload preview
+```
+
+<Callout type="warn" title="Uploading replaces all environment variables">
+
+The `environment:variables:upload` command replaces all the environment's environment variables with the ones in the file. If you remove a line, Ymir deletes that environment variable. Upload a file that you downloaded from the same environment, not your local `.env` file. After the upload, the command asks if you want to delete the file, and the default answer is yes.
+
+</Callout>
+
+The file isn't parsed like a regular `.env` file. Each line needs the `KEY=VALUE` format. The Ymir CLI takes everything after the first `=` as the value, including quotes and `#` characters. The `environment:variables:upload` command ignores lines without an `=`. It doesn't support comments, `export`, variable expansion or values on several lines.
+
+Ymir then removes the whitespace at the start and end of every value it receives, and an empty environment variable value becomes an empty string. So a value that depends on leading or trailing whitespace doesn't survive a round trip.
+
+<Callout type="warn" title="Laravel environment files">
+
+A Laravel build uses the `.env.<environment>` file as its `.env` file. Downloading environment variables replaces that file, and a later `deploy` would build with the downloaded configuration. If you have your own `.env.<environment>` file, move it out of your project directory before you download, and put it back before your next `deploy`.
+
+</Callout>
+
+To change environment variables safely:
+
+1. For Laravel projects, move your own `.env.<environment>` file out of your project directory.
+2. Download the environment variables. Keep an untouched copy outside your project directory, so you can upload the previous values again if something goes wrong and so no build includes it.
+3. Only edit the lines that you need to change. Don't remove the values that Ymir generated, such as the [WordPress salts or Laravel's `APP_KEY`](#reserved-environment-variables).
+4. Upload the file. If you want to be able to upload it again, answer no when the command asks to delete it, and move it out of your project directory instead.
+5. Use `redeploy` to apply the change. A redeploy doesn't build your project, so it doesn't use your local files. Then check your environment.
+6. Put your own Laravel `.env.<environment>` file back before your next `deploy`, and delete the edited file and the untouched copy once you no longer need them. These files contain your environment's configuration, so never commit them or share them.
+
+<Callout type="warn" title="Environment variables and deployments">
+
+Whenever you make environment variable changes, you must either `deploy` or `redeploy` your project again for them to take effect. Environment variables are also tied to a deployment. This means that rolling back an environment also rolls back its environment variables, until your next deployment uses the current ones again. See [rolling back a deployment][7] for details.
+
+</Callout>
+
+AWS Lambda [limits][35] all the environment variables of a function to a total of 4 KB. This includes the ones that Ymir sets, so your own environment variables get less than that.
+
+### Reserved environment variables
+
+You should also be aware that you can't add and edit any environment variable that you want. Some of them are reserved environment variables. These are environment variables that Ymir injects automatically or special AWS environment variables.
+
+**Names that Ymir ignores:** Ymir ignores these names when you change environment variables, and you can't use them as secret names. Most of them are [reserved by AWS Lambda][33]. `TZ` isn't reserved by AWS, but Ymir still ignores it. Lambda reserves other names too, such as `AWS_DEFAULT_REGION`, and Lambda rejects a change that sets one of them.
+
+ * `_HANDLER`
+ * `AWS_ACCESS_KEY_ID`
+ * `AWS_EXECUTION_ENV`
+ * `AWS_LAMBDA_FUNCTION_MEMORY_SIZE`
+ * `AWS_LAMBDA_FUNCTION_NAME`
+ * `AWS_LAMBDA_FUNCTION_VERSION`
+ * `AWS_LAMBDA_LOG_GROUP_NAME`
+ * `AWS_LAMBDA_LOG_STREAM_NAME`
+ * `AWS_LAMBDA_RUNTIME_API`
+ * `AWS_REGION`
+ * `AWS_SECRET_ACCESS_KEY`
+ * `AWS_SESSION_TOKEN`
+ * `LAMBDA_RUNTIME_DIR`
+ * `LAMBDA_TASK_ROOT`
+ * `TZ`
+
+**Ymir environment variables:** Ymir sets these on every deployment and replaces any value you give them. Secret names can't start with `YMIR_`.
+
+ * `YMIR_ASSETS_DOMAIN_URL`
+ * `YMIR_ASSETS_PATH`
+ * `YMIR_ASSETS_URL`
+ * `YMIR_CACHE_PREFIX`
+ * `YMIR_CACHE_TABLE`
+ * `YMIR_CDN_IMAGE_PROCESSING_ENABLED`
+ * `YMIR_DISTRIBUTION_ID`
+ * `YMIR_DOMAIN_NAMES`
+ * `YMIR_ENVIRONMENT`
+ * `YMIR_FUNCTION_TYPE`
+ * `YMIR_PRIMARY_DOMAIN_NAME`
+ * `YMIR_PRIVATE_STORE`
+ * `YMIR_PROJECT_TYPE`
+ * `YMIR_PUBLIC_STORE`
+ * `YMIR_REDIS_ENDPOINT`
+ * `YMIR_SECRETS_PATH`
+ * `YMIR_UPLOAD_URL`
+
+**WordPress environment variables:** For WordPress, Bedrock and Radicle projects, Ymir sets `DOMAIN_CURRENT_SITE`, `DISABLE_WP_CRON`, `WP_ENVIRONMENT_TYPE`, `WP_HOME` and `WP_SITEURL` on every deployment. Bedrock and Radicle projects also get `WP_ENV`. For WordPress projects, but not Bedrock or Radicle projects, the build replaces your `wp-config.php` file's definitions of these constants and always sets `AUTOMATIC_UPDATER_DISABLED`, `DISALLOW_FILE_EDIT` and `DISALLOW_FILE_MODS` to `true`. Environment variables with these three names have no effect on those projects.
+
+**Laravel environment variables:** For Laravel and Radicle projects, Ymir sets the [configuration values][25] that Laravel needs on every deployment.
+
+**Generated keys:** If the environment doesn't have them, Ymir generates the WordPress salts (`AUTH_KEY`, `SECURE_AUTH_KEY`, `LOGGED_IN_KEY`, `NONCE_KEY`, `AUTH_SALT`, `SECURE_AUTH_SALT`, `LOGGED_IN_SALT` and `NONCE_SALT`) and Laravel's [`APP_KEY`][26] when it deploys. You can change these, but don't remove them. If even one of the eight WordPress salts is missing, the next deployment replaces all eight with new ones, which logs out everyone. If `APP_KEY` is missing, the next deployment generates one, which can make data encrypted with your old key unreadable.
+
+## Secrets
+
+Secrets are similar to environment variables, but Ymir doesn't show their values when you list them. This makes them the place to store sensitive information, such as API keys and passwords. When your environment uses a [database][18] on a Ymir database server, Ymir also stores its connection information, such as `DB_PASSWORD`, as secrets when you deploy. These don't appear when you list your secrets. Ymir doesn't move other credentials into secrets for you.
+
+Ymir stores your secrets encrypted. When you deploy or redeploy, it writes them to AWS Systems Manager Parameter Store as `SecureString` parameters. The PHP runtime then loads them as environment variables when your Lambda function boots. See [secrets in the PHP runtime][27] for which processes get them.
+
+Not listing a secret's value doesn't keep it from your code. Anything running in your environment can read your secrets, including your project code, the commands you run on the environment and the output of [`php:info`][28]. So can anyone who can read your Parameter Store parameters and decrypt them in your AWS account.
+
+Secret names must be uppercase. They can't start with `YMIR_` or be one of the [names that Ymir ignores](#reserved-environment-variables). Ymir doesn't check secret names any further, but Parameter Store has its own rules for parameter names, so stick to uppercase letters, numbers and underscores. A secret needs a value, and Ymir removes the whitespace at the start and end of it. Unlike environment variables, you can add secrets before you deploy the environment for the first time.
+
+Secrets don't count toward the 4 KB limit of your Lambda functions' environment variables, but they have their own size limit. Ymir doesn't choose a Parameter Store tier, so AWS uses your account's [default parameter tier][29] in the region. A standard parameter's value can be up to 4 KB, and an advanced parameter's value up to 8 KB. Advanced parameters cost money. With the standard tier, a deployment fails if a secret is too large.
+
+### Managing secrets
+
+The Ymir CLI has a few methods to help you manage your environment's secrets. First, you can view all the environment's secrets using the [`environment:secret:list`][30] command. It shows their names and when they were last updated, but not their values.
+
+You can modify a secret value using the [`environment:secret:change`][31] command. If the secret didn't exist, Ymir will create it instead. Pass the environment and the secret name, and let the command ask you for the value.
+
+```bash
+ymir environment:secret:change preview SECRET_NAME
+```
+
+<Callout type="warn" title="Entering secret values">
+
+The Ymir CLI doesn't hide the secret value while you type or paste it. It stays visible in your terminal and in anything that records your terminal. If you pass the value as an argument instead, it also ends up in your shell history. Enter secret values in a private terminal, and never paste them in tickets, chat messages or AI tools.
+
+</Callout>
+
+To delete a secret, you use the [`environment:secret:delete`][32] command.
+
+<Callout type="warn" title="Secrets and deployments">
+
+Whenever you make changes to your environment's secret, you must either `deploy` or `redeploy` your project again for them to take effect. Both use the environment's current secrets, but only a new `deploy` removes secrets you've deleted. Rolling back an environment isn't guaranteed to restore its previous secret values. See [rolling back a deployment][7] for details.
+
+</Callout>
+
+## Environment domain names
+
+### Vanity domain name
+
+Whenever Ymir creates an environment, it'll give it a `ymirsites.com` vanity domain name. This allows you to access the environment even if you haven't assigned it a domain name yet. And even after assigning it a domain name, the environment will still be accessible using the vanity domain name.
+
+Ymir deletes the vanity domain name's DNS record when you delete the environment, even if you keep the environment's resources. Anything that still uses the vanity domain name, such as a `CNAME` record for one of your domain names, stops working.
+
+<Callout type="info" title="Indexing disabled">
+
+To prevent issues with search engines, environments with only a vanity domain name will have the `blog_public` option set to `false` which will tell search engines not to index the WordPress site.
+
+</Callout>
+
+<Callout type="warn" title="Sending email">
+
+If you send emails with SES, you will not be able to send emails using the `ymirsites.com` vanity domain.
+
+</Callout>
+
+### Additional domain names
+
+While having a vanity domain name is handy, the odds are you'll also need to map your environment to at least one more domain name. You add these additional domain names by editing the `ymir.yml` configuration file and adding the [`domain`][4] configuration option to your environment node. Here's an example with `domain.co.uk` as the mapped domain:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  preview:
+    domain: domain.co.uk
+```
+
+<Callout type="info" title="No www subdomain needed">
+
+If you map only one domain and it's a registered domain (such as `domain.co.uk`), Ymir will automatically map the `www` subdomain to your environment. This also works in reverse. If you use `www.domain.co.uk` as your only domain, Ymir will also map `domain.co.uk` to your environment.
+
+**Note**: This only applies when mapping an environment to a *single* domain name.
+
+</Callout>
+
+If your team has a DNS zone for `domain.co.uk` or one of its parent domains, Ymir creates the SSL certificate validation records and the DNS records pointing to your environment when you deploy it. These records only work once the domain is delegated to the DNS zone's name servers.
+
+If Ymir doesn't manage the DNS of `domain.co.uk`, you can still map it to your environment. Before deploying, you need an issued SSL certificate in your project's region that covers every domain name the environment uses, including the `www` subdomain that Ymir adds. You can request one using the `certificate:request` command. During the deployment, Ymir attaches a certificate that covers all those domain names. When the [`cdn.caching`][38] option is `enabled`, which is the default, that certificate is in the `us-east-1` region, so it can be a different certificate than the one in your project's region. See [deploying with your SSL certificate][34]. Once the environment is deployed, the Ymir CLI will display DNS records for your environment that you'll need to manually add to your DNS server.
+
+<Callout type="info" title="Check out the guide">
+
+Looking for more detailed walkthrough on how to map a domain to your project environment, check out this [guide][5].
+
+</Callout>
+
+[1]: /reference/configuration#environments
+[2]: https://en.wikipedia.org/wiki/Environment_variable
+[3]: /projects/deploy#build-process
+[4]: /reference/configuration#domain
+[5]: /guides/domain-mapping
+[6]: /reference/ymir-cli#project-init-init
+[7]: /projects/deploy#rolling-back-a-deployment
+[8]: /getting-started#connecting-a-team-to-aws
+[9]: /reference/configuration#gateway
+[10]: /guides/queues
+[11]: /guides/firewall
+[12]: /team-resources/database-servers
+[13]: /team-resources/caches
+[14]: /team-resources/networks
+[15]: /team-resources/dns
+[16]: /team-resources/ssl-certificates
+[17]: /reference/ymir-cli#environment-create
+[18]: /reference/configuration#database
+[19]: /reference/ymir-cli#environment-delete
+[20]: #vanity-domain-name
+[21]: /guides/laravel#env-files
+[22]: /reference/ymir-cli#environment-variables-change
+[23]: /reference/ymir-cli#environment-variables-download
+[24]: /reference/ymir-cli#environment-variables-upload
+[25]: /guides/laravel#configuration-values-ymir-sets
+[26]: /guides/laravel#application-key
+[27]: /reference/php-runtime#runtime-secrets
+[28]: /reference/ymir-cli#php-info
+[29]: https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-advanced-parameters.html
+[30]: /reference/ymir-cli#environment-secret-list
+[31]: /reference/ymir-cli#environment-secret-change
+[32]: /reference/ymir-cli#environment-secret-delete
+[33]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
+[34]: /team-resources/ssl-certificates#deploying-with-your-ssl-certificate
+[35]: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
+[36]: /guides/queues#changing-removing-and-rolling-back-queues
+[37]: /reference/ymir-cli#environment-list
+[38]: /reference/configuration#caching

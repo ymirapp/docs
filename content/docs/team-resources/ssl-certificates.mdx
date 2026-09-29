@@ -1,0 +1,120 @@
+---
+title: "SSL certificates"
+description: "When you need an SSL certificate, and how to request and manage one for domains not managed by Ymir."
+---
+
+## Why do you need a SSL certificate?
+
+SSL certificates are an essential element of hosting a WordPress site on AWS. A lot of AWS services require that you have a SSL certificate for the domain(s) mapped to it.
+
+**If your WordPress site only uses a vanity domain or maps to domain(s) managed by Ymir, you don't have to worry about a SSL certificate.** Ymir will issue and attach the correct certificate for your WordPress site during deployment. This is why it's preferable for Ymir to manage your DNS.
+
+If your project uses domains that aren't managed by Ymir, you need to ensure that you have a SSL certificate for those domains. **You will not be able to deploy your WordPress project if there's no issued SSL certificate for the domains that map to it.**
+
+The certificate must cover every domain that Ymir maps to your environment. This includes the domain that Ymir adds automatically when you map a single domain. For example, Ymir also maps `www.example.com` when you map `example.com`, and `example.com` when you map `www.example.com`. See the [domain mapping guide][1] for how Ymir maps domains.
+
+## Requesting a SSL certificate
+
+To request a SSL certificate, you can use the `certificate:request` command.
+
+```bash
+ymir certificate:request example.com
+```
+
+A SSL certificate is only valid for a specific AWS region. **Before deploying, Ymir checks that every domain that isn't managed by Ymir has an issued SSL certificate in the project region.** So request your certificate in the project region.
+
+When you run `certificate:request` from your project directory, the Ymir CLI uses the project's cloud provider connection and region. Outside a project directory, it asks you to choose them. You can also pass them with the `--provider` and `--region` options, but the explicit values replace the project's values. Use the project's cloud provider connection so that the certificate is in the same AWS account as your project.
+
+Once Ymir requested the SSL certificate, it'll return DNS record(s) that you need to add to your DNS provider. AWS won't issue your SSL certificate until they're created. **You also won't be able to deploy your project until AWS issues the SSL certificate.**
+
+```text title="Example output"
+SSL certificate requested
+
+Important: The following DNS record(s) need to be manually added to your DNS server to validate the SSL certificate:
+
+ ------- -------------------------------- -----------------------------------------
+  Type    Name                             Value
+ ------- -------------------------------- -----------------------------------------
+  CNAME   _<validation-name>.example.com   _<validation-value>.acm-validations.aws
+ ------- -------------------------------- -----------------------------------------
+
+Warning: The SSL certificate won't be issued until these DNS record(s) are added
+```
+
+The `<validation-name>` and `<validation-value>` placeholders are unique values that AWS generates for your SSL certificate. Copy the exact records that the command displays.
+
+Sometimes Ymir accepts the request, but the command doesn't display the DNS records. This happens when the command displays "SSL certificate requested" without the records, such as when Ymir manages some of the domains. It also happens when the command shows an error about fetching the DNS validation records that includes the certificate ID. In both cases, don't request another certificate. Find the certificate ID with the [`certificate:list`][2] command if needed and display its DNS records with the [`certificate:info`][3] command.
+
+If the command fails with any other error, check `certificate:list` for an existing request for your domains before trying again.
+
+```bash
+ymir certificate:info 42
+```
+
+### Choosing the domains to cover [#choosing-the-domains-to-cover]
+
+When you request a certificate for a single domain such as `example.com`, the Ymir CLI asks if you also want the certificate to cover `*.example.com` subdomains. If the Ymir CLI can't ask, such as with the `--no-interaction` option, it adds `*.example.com`. If you request a certificate for a single wildcard domain such as `*.example.com`, the Ymir CLI adds `example.com` for you. When you request a certificate for more than one domain, the Ymir CLI requests the domains you listed without asking or adding any.
+
+Wrap wildcard domains in single quotes so that your shell doesn't expand the `*` character.
+
+```bash
+# Cover "example.com" and one level of "example.com" subdomains
+ymir certificate:request example.com '*.example.com'
+
+# Cover two registered domains with one certificate
+ymir certificate:request example.com '*.example.com' example.org www.example.org
+```
+
+A wildcard domain only covers one level of subdomains. `*.example.com` covers `www.example.com` and `blog.example.com`, but not `example.com` or `shop.eu.example.com`. To cover a deeper subdomain, add it or its own wildcard domain, such as `'*.eu.example.com'`, to your request.
+
+Each registered domain that you map, such as `example.com` and `example.org`, needs to be covered. You can cover them with one certificate or with separate certificates. Ymir can also simplify the list of domains when it creates the certificate, such as leaving out `www.example.com` when you also request `*.example.com`. The `certificate:info` command shows the domains your certificate covers.
+
+## Validating your SSL certificate [#validating-your-ssl-certificate]
+
+Add the DNS records as soon as you request the certificate. AWS validates each domain once it finds its DNS record, and then issues the certificate. To check the status of your certificates, use the `certificate:list` command.
+
+```text title="Example output"
+ ---- -------------- ----------- --------------- --------- --------
+  Id   Provider       Region      Domains         Status    In Use
+ ---- -------------- ----------- --------------- --------- --------
+  42   Personal AWS   us-east-1   example.com     pending   no
+                                  *.example.com
+ ---- -------------- ----------- --------------- --------- --------
+```
+
+A certificate stays `pending` until AWS validates all its domains. Once it's `issued`, you can deploy. If you want to know which domains AWS hasn't validated yet, use the `certificate:info` command. It lists each domain as validated or not validated along with the DNS records that the certificate needs.
+
+If a certificate's status is `failed`, AWS couldn't validate it. Fix your DNS records and request a new certificate. Ymir may also remove certificate requests that aren't issued. If your certificate no longer appears in `certificate:list`, request it again.
+
+Don't delete the DNS records once AWS issues your certificate. The records are specific to your domain and AWS account, and AWS uses them to:
+
+* Renew your certificate automatically, as long as the certificate is in use.
+* Validate other certificates for the same domains, including a replacement certificate or one in another region.
+
+## Deploying with your SSL certificate [#deploying-with-your-ssl-certificate]
+
+Only deploy once `certificate:list` shows an `issued` certificate in the project region for your domains. A "SSL certificate requested" message only means that Ymir accepted your request.
+
+During deployment, Ymir attaches an issued certificate that covers all the environment's domains. If CloudFront [caching][4] is `enabled`, which is the default, CloudFront requires this certificate to be in the `us-east-1` region. Otherwise, it's in the project region.
+
+Ymir reuses an existing issued certificate in that region on the project's cloud provider connection when it covers all the domains. If there isn't one, Ymir requests one during the deployment. AWS can only issue it if the DNS records for all your domains are still in place.
+
+When caching is `enabled` and your project region isn't `us-east-1`, the deployment certificate is in a different region than the coverage that Ymir checks before deploying. It doesn't replace that coverage, so you still need an issued certificate in the project region.
+
+<img src="/images/diagrams/ssl-certificate-regions.svg" alt="Diagram: this only applies to domains that aren't managed by Ymir. A project in the eu-west-1 region maps example.com, and two separate panels show the alternatives, only one of which applies depending on the caching value. In both panels, Ymir checks before deploying that an issued certificate in eu-west-1, the project region, covers all the mapped domains, including www.example.com. With caching: enabled, example.com routes to the CloudFront distribution, which uses an issued certificate in us-east-1 covering the same domains. The eu-west-1 certificate is still required because the us-east-1 certificate doesn't replace it. With caching: assets or disabled, example.com routes to the API gateway, which uses an issued certificate in eu-west-1 covering the same domains, and it can be the same certificate that Ymir checks before deploying. The CloudFront distribution stays, but example.com doesn't route to it. Below both panels, keep the DNS validation records for example.com in place. They're specific to your domain and AWS account, and AWS uses them to validate certificates for example.com in either region and to renew certificates while they're in use." width="1100" height="700" />
+
+<a href="/images/diagrams/ssl-certificate-regions.svg">Open the full-size diagram</a>
+
+If a deployment fails because the certificate didn't validate in time, use `certificate:info` to check the new certificate and add any DNS records it lists. Once it's `issued`, deploy again.
+
+## Managing your SSL certificate
+
+You can view all your SSL certificates using the `certificate:list` command. You can also see which certificates are in use. This is important because you can only delete certificates if they aren't in use. To delete a certificate, you simply use the [`certificate:delete`][5] command. Deleting a certificate also deletes it from AWS.
+
+Before deleting a certificate, make sure that another issued certificate in the project region still covers your domains. A certificate that isn't in use can still be the one that lets you deploy.
+
+[1]: /guides/domain-mapping
+[2]: /reference/ymir-cli#certificate-list
+[3]: /reference/ymir-cli#certificate-info
+[4]: /reference/configuration#caching
+[5]: /reference/ymir-cli#certificate-delete

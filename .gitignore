@@ -1,2 +1,20 @@
+# deps
 /node_modules
-.vuepress/dist
+
+# generated content
+.source
+
+# test & build
+/coverage
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# misc
+.DS_Store
+*.pem
+.env*.local
+.netlify
+next-env.d.ts
+npm-debug.log*

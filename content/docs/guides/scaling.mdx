@@ -1,0 +1,111 @@
+---
+title: "How to configure your environment for Lambda scaling"
+navTitle: "Lambda scaling"
+description: "Configure an environment for high traffic that isn't served from the CloudFront page cache."
+---
+
+## When do you need to worry about Lambda scaling?
+
+First, not every request reaches your Lambda functions. That's because Ymir uses CloudFront to do page caching. This is the default setting for production environments unless you changed the [`caching`][1] option.
+
+When CloudFront serves a request from its cache (a cache hit), the request never reaches your `website` function. Neither do requests that CloudFront rejects at the edge, such as requests blocked by a [firewall][16], or requests for assets and uploads, which CloudFront fetches from their own storage instead. But every other request that CloudFront routes to your PHP application does reach it. This includes cache misses, cached pages that expired and need refreshing, and requests that CloudFront doesn't cache at all, such as logged-in users, admin pages, form submissions and other dynamic or private requests. So how much Lambda scaling you need depends on how many of your requests miss the cache, not on your total traffic.
+
+That said, we can't solve every scaling situation with page caching. For example, [WooCommerce][2] has carts which you can’t cache using page caching. This means that all requests to a cart or anyone with a non-empty cart won't have their requests cached and they'll hit Lambda. So to handle thousands of customers shopping on a WooCommerce site, you need your environment to process many requests at the same time.
+
+It's in a situation such as this that you have to worry about Lambda scaling.
+
+## How does Lambda scaling work?
+
+AWS Lambda automatically scales based on the number of incoming requests your environment is receiving. At the heart of Lambda's scaling capability is the concept of concurrency, which refers to the number of requests that your Lambda functions are processing at the same time. A simple way to imagine concurrency is to think of it as the current number of PHP workers.
+
+Concurrency isn't the same as requests per second. A request that takes 200 ms to process uses one unit of concurrency for 200 ms. So an environment that receives 100 requests per second that each take 200 ms needs a concurrency of about 20. Slow pages need more concurrency than fast ones for the same amount of traffic.
+
+### Each function scales separately [#each-function-scales-separately]
+
+An environment isn't a single Lambda function. Ymir creates a `website` function for HTTP requests, a `console` function for console commands and cron, and a separate function for each of your [queues][3]. Each of these functions scales on its own, but they all draw from the same pool of concurrency: your AWS account's concurrency quota for the region. Every function of every project and environment in that region shares it.
+
+### Your account concurrency quota [#your-account-concurrency-quota]
+
+AWS documents a default concurrency quota of 1,000 **per region**. This isn't guaranteed. New AWS accounts can start with a much lower quota that AWS raises automatically over time based on usage. Check your current quota in the Service Quotas console for each region you use.
+
+AWS also limits requests per second to 10 times your account concurrency quota. With functions that respond very quickly, you can hit this limit before you use up your concurrency.
+
+### Reserved concurrency [#reserved-concurrency]
+
+As your environment receives more and more traffic, AWS Lambda will continue to increase your functions' concurrency until it reaches their concurrency limit. (Controlled with the [`concurrency`][4] option.) This concurrency limit is the same as setting the maximum number of PHP workers a function can have.
+
+Ymir applies the `concurrency` option as [reserved concurrency][5] on your `website` function and each of your queue functions. Reserved concurrency is both a maximum and a guarantee: AWS sets that concurrency aside for the function so other functions can't use it. Your `console` function never has reserved concurrency.
+
+You can't reserve your entire account quota. When you reserve concurrency, AWS requires you to leave at least 100 units unreserved for functions without reserved concurrency, such as your `console` functions. So with a quota of 1,000, all your functions in the region can only reserve 900 in total. Ymir also doesn't set reserved concurrency at all if your account quota in the region is below 100.
+
+### Concurrency scaling rate [#concurrency-scaling-rate]
+
+The final aspect of Lambda scaling is the [concurrency scaling rate][6]. This refers to how fast Lambda can add concurrency to a function. AWS documents this rate as 1,000 execution environments every 10 seconds **per function**. For example, a function using 1,000 concurrency can grow to 2,000 after 10 seconds, and to 3,000 after another 10 seconds.
+
+The scaling rate doesn't raise any limit. A function still can't go above its reserved concurrency or the concurrency available in your account. Because the rate is per function, your `website` function and your queue functions can all scale at the same time, as long as your account has enough concurrency for them.
+
+For more detailed explanations, visit the AWS documentation on [Lambda function scaling][7] and [Lambda scaling behavior][6].
+
+## Changes to your AWS account
+
+Next, you might need to make some changes to your AWS account to support a high level of Lambda scaling. It's important to note that **these changes need to be done in each region where you want to use a high level of Lambda scaling**. So, if you have one project in `eu-west-1` and another in `us-east-1`, you need to apply these changes to both regions.
+
+### Raise your account concurrency limit
+
+If the reserved concurrency of all your functions in a region, plus the 100 units AWS keeps unreserved, is larger than your account concurrency quota, you'll need to raise it. To increase that limit, you need to request a quota increase for **Concurrent executions** in the [Service Quotas console][8]. Make sure you're in the correct region before submitting the request.
+
+AWS reviews these requests and might not approve the full amount you asked for. AWS support might also ask you a few questions about your workload. If you're not sure how to answer any of them, you can [contact Ymir support][9] and we'll help you. Make your request well before you need the extra concurrency.
+
+### Increase your parameter store throughput
+
+The parameter store is where Ymir stores the [secrets][10] used by your project. Each time Lambda starts a new execution environment for one of your functions (a cold start), the Ymir runtime loads the environment's secrets with one or more `GetParametersByPath` requests.
+
+By default, the parameter store allows 40 requests per second, shared by all `GetParameter`, `GetParameters` and `GetParametersByPath` requests in your AWS account and region. If Lambda starts many execution environments at once, these requests can get throttled. The Ymir runtime retries throttled requests up to three times with an increasing delay. If they still fail, the execution environment fails to start and the request it was handling returns an error.
+
+You can [enable higher throughput][11] for the parameter store. This raises the `GetParametersByPath` limit to 100 requests per second. But it isn't free: AWS charges for every parameter store API request while it's enabled. See the [AWS Systems Manager pricing page][12] for current prices.
+
+So only enable higher throughput if you see throttling errors, such as `ThrottlingException`, in your function logs while your environment scales. To turn it on, go to the parameter store settings page in the AWS Systems Manager console for each region you use.
+
+## Set the concurrency limit in your project configuration
+
+Once your AWS account configured, you'll want to update your `ymir.yml` configuration file with your desired concurrency limits. By default, Ymir sets the limit to 10 for your `website` function and each queue function.
+
+To change it, you need to change the [`concurrency`][4] option. You can set it for the whole environment and override it for the `website` function and for each queue. You can also set it to `false` to remove the limit. That said, this isn't recommended. Your function then shares the unreserved concurrency with every other function in the region without a guaranteed share, and can use it all up. You should instead set it to a value even if it's quite large.
+
+### Keep functions warm [#keep-functions-warm]
+
+The [`warmup`][13] option controls how many `website` function execution environments Ymir tries to keep warm. Every 5 minutes, Ymir invokes the `website` function so that it starts that many execution environments in parallel. This reduces cold starts when traffic is steady, but it doesn't prevent them. AWS can shut down warm execution environments at any time, and a traffic spike still needs new ones. Warm-up invocations also count toward your `website` function's concurrency and are billed like other invocations.
+
+This isn't the same as AWS [provisioned concurrency][14], which keeps execution environments initialized for a fee. Ymir doesn't configure provisioned concurrency for your functions.
+
+## Configuring your database server
+
+The reason you don't want to disable the concurrency limit is because of your database server. A database server can only have a certain number of active database connections. If you reach that limit, you will start seeing database connection errors. Your concurrency limits are how you keep the number of connections your environment can open under control.
+
+There's no fixed ratio between concurrency and database connections, so estimate how many connections everything can open at the same time:
+
+ * Add up the demand of your `website` function, each queue function and your `console` function. The `console` function has no concurrency limit, so estimate how many console commands and cron runs can happen at once.
+ * A single request or job can open more than one connection, for example when your application or a plugin connects to more than one database.
+ * Connections can stay open after a request ends, such as persistent connections or connections that stay idle until the database server closes them.
+ * Include every other environment, project, tool and person connecting to the same database server.
+
+Then keep that total well below the database server's maximum number of connections. Leave headroom for the database server's own administrative connections, deployments and traffic spikes.
+
+The maximum number of connections depends on the database engine, the database server type and its configuration. This includes Aurora Serverless database clusters, whose limit depends on their capacity. The [Amazon RDS documentation][15] explains how AWS sets the maximum number of connections. You can also check the current limit by running `SHOW VARIABLES LIKE 'max_connections';` on MySQL or `SHOW max_connections;` on PostgreSQL.
+
+[1]: /reference/configuration#caching
+[2]: https://woocommerce.com/
+[3]: /guides/queues
+[4]: /reference/configuration#concurrency
+[5]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html
+[6]: https://docs.aws.amazon.com/lambda/latest/dg/scaling-behavior.html
+[7]: https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.html
+[8]: https://console.aws.amazon.com/servicequotas/home/services/lambda/quotas/L-B99A9384
+[9]: mailto:support@ymirapp.com
+[10]: /projects/environments#secrets
+[11]: https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-throughput.html
+[12]: https://aws.amazon.com/systems-manager/pricing/
+[13]: /reference/configuration#warmup
+[14]: https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html
+[15]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Limits.html#RDS_Limits.MaxConnections
+[16]: /guides/firewall

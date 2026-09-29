@@ -1,0 +1,53 @@
+---
+title: "How to set up Beaver Builder in a Ymir project"
+navTitle: "Beaver Builder"
+description: "Project configuration changes needed to run Beaver Builder on Ymir."
+---
+
+<Callout type="info" title="Automatic configuration">
+
+You can have Ymir configure your project automatically for you by using the [`wordpress:configure`][2] command.
+
+</Callout>
+
+[Beaver Builder][1] is a popular WordPress page builder that you can use to build beautiful WordPress sites. Ymir makes it easy to support Beaver Builder in your serverless WordPress project. This guide will cover the changes that you need to make.
+
+## Project configuration changes
+
+Below is the environment configuration that `wordpress:configure` adds for the Beaver Builder plugin in a WordPress project. Replace `environment` with the correct environment name. If your environment already has these options, add the values to its existing lists instead of replacing them.
+
+```yml
+environments:
+  environment:
+    build:
+      include:
+        - /wp-content/plugins/bb-plugin/fonts
+        - /wp-content/plugins/bb-plugin/img
+        - /wp-content/plugins/bb-plugin/js
+        - /wp-content/plugins/bb-plugin/json
+    cdn:
+      excluded_paths:
+        - /uploads/bb-plugin/*
+```
+
+The `build.include` paths add the plugin's non-PHP files to your build. Ymir ignores the leading `/`. For other project types, replace `/wp-content/plugins` with your plugins directory:
+
+| Project type | Plugins directory |
+| :--- | :--- |
+| wordpress | `/wp-content/plugins` |
+| bedrock | `/web/app/plugins` |
+| radicle | `/public/content/plugins` |
+
+If you use [container image deployment][3], you can omit these `build.include` entries since Ymir only uses them for ZIP archive builds. Keep any other `build` settings, such as `build.commands`. `excluded_paths` stops CloudFront from caching the files that Beaver Builder generates in the uploads directory.
+
+The preset only covers the Beaver Builder plugin. If you use other Beaver Builder products, such as the Beaver Builder Theme, check whether they need non-PHP files or generate files in the uploads directory, and add those paths yourself.
+
+## What `wordpress:configure` changes [#what-wordpress-configure-changes]
+
+`wordpress:configure` uses WP-CLI to scan your local project's plugins. It detects Beaver Builder by the `bb-plugin` plugin directory, so it doesn't detect Beaver Builder Lite. When you confirm, it merges the configuration above into `ymir.yml` for the environments you chose.
+
+The command only edits `ymir.yml`. It doesn't install plugins or guarantee that every Beaver Builder version works on Ymir. It appends values to existing lists, removes duplicates and sorts the keys, and rewriting the file removes any comments. Review the changes, then deploy your project for them to take effect.
+
+[1]: https://www.wpbeaverbuilder.com/
+[2]: /reference/ymir-cli#wordpress-configure
+[3]: /guides/container-image-deployment

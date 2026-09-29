@@ -1,0 +1,197 @@
+---
+title: "DNS"
+description: "Manage DNS zones and records with Ymir, and move an existing domain's DNS to Ymir."
+---
+
+## Why do you need a managed DNS?
+
+Ymir uses AWS services that require specific DNS records, such as the records that validate [SSL certificates][1]. If Ymir doesn't manage your domain's DNS, it tells you which records to add, such as [when you map a domain][2] to an environment. If you want Ymir to create these records for you during deployment, Ymir needs to manage your DNS.
+
+A DNS zone managed by Ymir is an [AWS Route 53][3] hosted zone. Ymir creates it in the AWS account of the cloud provider connection that you choose. Route 53 isn't tied to an AWS region, so a DNS zone works with projects in any region. The DNS zone belongs to your team, and every project in your team can use it. A team can only have one DNS zone for a given domain name.
+
+<Callout type="warn" title="A DNS zone isn't authoritative until you delegate it">
+
+Creating a DNS zone doesn't move your domain's DNS. The internet keeps using your current DNS provider until you [delegate the domain][4] to the DNS zone's name servers. Ymir doesn't check this. Ymir treats a domain as managed as soon as your team has a DNS zone for it, and it writes the records that it creates during deployment to the DNS zone.
+
+You can prepare a DNS zone before you delegate the domain to it. But until you do, the records that Ymir creates there have no effect on the internet. Any new SSL certificate validation records and the records that point your domain to your environment also need to exist at your current DNS provider. Otherwise, AWS can't issue a new SSL certificate and your domain won't point to your environment.
+
+</Callout>
+
+<Callout type="warn" title="No email forwarding">
+
+Ymir doesn't currently support email forwarding with AWS. If your DNS provider does this for you, you'll have to migrate your email forwards to another service before using Ymir to manage your DNS.
+
+</Callout>
+
+### Registrars and DNS providers [#registrars-and-dns-providers]
+
+Your domain's [registrar][5] is where you registered the domain. Your DNS provider is the service whose [name servers][6] answer DNS queries for the domain. They're often the same company, but they don't need to be. You don't need to register or transfer your domain with AWS to have Ymir manage its DNS. You only delegate the domain to the DNS zone's name servers.
+
+You can also have Ymir manage only a subdomain, such as `shop.example.com`, and leave the rest of `example.com` with your current DNS provider. To do that, create a DNS zone for `shop.example.com`. Then delegate it by adding `NS` records for `shop` with the DNS zone's name servers in the parent zone, at your current DNS provider. You don't change anything at your registrar in this case. In the rest of this page, delegating a domain means changing the name servers at your registrar, or the `NS` records in the parent zone for a subdomain.
+
+### DNS zone billing [#dns-zone-billing]
+
+AWS bills each hosted zone to the AWS account where Ymir creates it. The `dns:zone:create` command asks you to confirm the $0.50/month cost before it creates the DNS zone. AWS doesn't charge for a hosted zone that you delete within 12 hours of creating it. DNS queries are billed separately. See the [Route 53 pricing page][7] for current prices.
+
+## Managing DNS zones
+
+To have Ymir manage a domain for you, you need to create a [DNS zone][8] for that domain. A DNS zone manages all the DNS records for one domain. So you need to create one for each domain that you want Ymir to manage.
+
+```bash
+ymir dns:zone:create <domain>
+```
+
+Replace `<domain>` with your domain. The command uses the cloud provider connection that you pass with the `--provider` option. Otherwise, it uses your project's cloud provider connection when you run it from a project directory, or asks you to choose one.
+
+When it creates the DNS zone, the Ymir CLI displays the DNS zone's name servers. It then asks if you want to import DNS records. See [importing DNS records][9] for what an import can and can't do.
+
+You can list all the DNS zones managed by Ymir with the `dns:zone:list` command. It also displays each DNS zone's name servers.
+
+### Moving a domain's DNS to Ymir [#moving-a-domains-dns-to-ymir]
+
+Moving DNS only changes which servers answer DNS queries. It doesn't move your website or your email. They keep working only if the records in your new DNS zone point to the same places as the records at your current DNS provider. So prepare the DNS zone completely before you delegate the domain to it.
+
+1. **Inventory your current records.** Export a zone file from your current DNS provider if it lets you. Otherwise, write down every record from its dashboard. Pay special attention to records that are easy to miss: `MX` records, SPF, DKIM and DMARC `TXT` records, `CAA` records, domain verification records, SSL certificate validation records, `SRV` records and records for every subdomain.
+2. **Create the DNS zone.** Don't delegate the domain yet.
+3. **Add your records.** [Import][9] what you can, then add the rest with the [`dns:record:change`][10] command. Records that use provider-specific features, such as proxying, flattening, redirects or forwarding, need a replacement that works on Route 53.
+4. **Compare the DNS zone with your inventory.** Query one of the DNS zone's name servers directly and check that each record returns the value you expect. Ymir's [`dns:record:list`][11] command only shows the records Ymir stores, so querying the name servers is the better check.
+5. **Lower your TTLs ahead of time.** DNS resolvers cache your current name servers for as long as their TTL, often up to two days. Lowering the TTL of the `NS` records at your current DNS provider, and waiting for the old TTL to expire, makes the switch and a rollback faster. AWS explains this in its [migration guide][12].
+6. **Handle DNSSEC.** See [DNSSEC][13] below before you continue if your domain uses DNSSEC.
+7. **Delegate the domain.** At your registrar, replace the current name servers with all the name servers of your DNS zone. For a subdomain DNS zone, update the `NS` records in the parent zone instead.
+8. **Keep your old DNS provider's zone.** Some resolvers keep using your old name servers until their cached records expire. Don't delete the old zone or its records until the switch is complete and you've checked your website and email. If something goes wrong, you roll back by delegating the domain to the old name servers again. A rollback also takes time to propagate, and it needs the same `DS` record care as the switch if DNSSEC is involved.
+
+There's no fixed time for the switch to complete. It depends on TTLs and on DNS resolvers' caches.
+
+```bash
+# Check which name servers your DNS resolver returns for the domain
+dig +short NS <domain>
+
+# Query one of your DNS zone's name servers directly, before you switch
+dig +short MX <domain> @<name-server>
+```
+
+Replace `<domain>` with your domain and `<name-server>` with one of the name servers that `dns:zone:list` displays for your DNS zone. The first command only shows what the DNS resolver you use returns, which can be cached. Other resolvers can return the old name servers until their cache expires. Before you rely on the switch, check that the domain's records, such as your website, email and SSL certificate validation records, return the values you expect, and that your SSL certificates are still issued.
+
+### DNSSEC [#dnssec]
+
+If your domain uses [DNSSEC][14], there's a `DS` record for it at your registrar, or in the parent zone for a subdomain. That record only matches the signing keys of your current DNS provider. If you delegate the domain to your new DNS zone while it's there, resolvers that validate DNSSEC will reject the answers from your new DNS zone and your domain will stop resolving for them.
+
+Remove the `DS` record first, and wait for its TTL to expire before you delegate the domain. This is the order that AWS recommends in its [migration guide][12]. Ymir doesn't enable DNSSEC signing for its DNS zones, so your domain will stay unsigned after the move.
+
+### Deleting a DNS zone [#deleting-a-dns-zone]
+
+You delete a DNS zone with the [`dns:zone:delete`][15] command. Do this only after another DNS provider is answering for the domain with all the records that you need, and after the switch to that provider is complete.
+
+<Callout type="error" title="Deleting a DNS zone deletes all its records">
+
+Deleting a DNS zone deletes every record in its Route 53 hosted zone, except the zone's own `NS` and `SOA` records, and then deletes the hosted zone. This includes records that Ymir didn't create, the records that point your mapped domains to your environments, SSL certificate validation records and email DKIM records. Ymir doesn't check whether environments, SSL certificates or email identities still use the DNS zone.
+
+Ymir deletes the DNS zone in the background after it accepts the request, even though the command says the DNS zone was deleted. It reads only one page of records from Route 53, so deleting a DNS zone with many records can fail partway and leave some records deleted. There's no automatic rollback. A new DNS zone for the same domain gets different name servers, so you would have to delegate the domain again and recreate your records.
+
+</Callout>
+
+## Importing DNS records
+
+A difficult aspect of changing DNS providers is that your DNS records don't carry over to the new server. To help make the transition easier, Ymir can copy some DNS records from the internet into your DNS zone.
+
+The import isn't a backup or a zone transfer. Ymir looks up the names you give it in public DNS at the time of the import. That means it gets the answers of your current DNS provider, and it can't discover names that you don't give it. It only imports `A`, `CNAME`, `MX` and `TXT` records. Other record types, such as `AAAA`, `CAA` and `SRV`, aren't imported.
+
+What Ymir imports is what public DNS returns, which isn't always your DNS configuration. For example, a provider that proxies or flattens a record returns its own IP addresses instead of your record's target. Check every imported record against your inventory.
+
+When you create a DNS zone, the Ymir CLI asks if you want to import the root DNS records for the domain. This is useful to import the [MX records][16] for your domain and other important records that are often at the root of your domain. It then asks if you want to import DNS records for subdomains.
+
+You can also import records after creating your DNS zone with the `dns:zone:import-records` command. If you don't pass any subdomains, the Ymir CLI asks for a comma-separated list. Leave it blank to import the root DNS records. When you pass subdomains, Ymir only imports those subdomains, not the root DNS records.
+
+```bash
+# Import DNS records with a prompt for the subdomains (leave it blank to import the root DNS records)
+ymir dns:zone:import-records <domain>
+
+# Import the DNS records of the "www" and "api" subdomains
+ymir dns:zone:import-records <domain> www api
+```
+
+Replace `<domain>` with the name of your DNS zone.
+
+Ymir imports the records in the background. An imported record replaces the DNS zone's existing record with the same name and type. If a lookup fails, Ymir skips that name without telling you. `dns:record:list` shows the records that Ymir saved for the import, but that doesn't confirm that Route 53 has them. Query the DNS zone's name servers to check each record.
+
+<Callout type="warn" title="Import before switching name servers">
+
+Import the DNS records before switching your name servers to the ones for your new DNS zone. Once you switch, public DNS returns the records of your new DNS zone instead of your old ones.
+
+</Callout>
+
+## Managing DNS records
+
+You'll also want to add, update and delete DNS records in your DNS zone. You can view the records in a DNS zone with the `dns:record:list` command. It lists the records that Ymir stores for the DNS zone, including whether Ymir manages a record internally. It's not a live list of the Route 53 hosted zone. Records that someone added to the hosted zone outside of Ymir don't appear.
+
+### Changing DNS records [#changing-dns-records]
+
+To modify a DNS record, you want to use the `dns:record:change` command. This command both creates and updates DNS records. If there's no DNS record for the given name and type, Ymir creates it. Otherwise, it replaces all the values of the existing record. Use `@` as the name for the root of the domain.
+
+```bash
+# Point "www" to an IP address
+ymir dns:record:change <domain> A www 192.0.2.10
+
+# Set the MX records of the root of the domain
+ymir dns:record:change <domain> MX @ "10 mail.<domain>,20 mail2.<domain>"
+```
+
+Replace `<domain>` with the name of your DNS zone, and the values with your own.
+
+Before you change a record, save its current values and check what uses it, such as your website, email or an SSL certificate. Ymir doesn't keep the old values. Ymir saves the record and applies the change to Route 53 in the background. The command's success message doesn't confirm that Route 53 applied it, so query the DNS zone's name servers to check.
+
+The supported record types are `A`, `AAAA`, `CAA`, `CNAME`, `MX`, `NAPTR`, `NS`, `PTR`, `SOA`, `SPF`, `SRV` and `TXT`. You can't set a TTL with the command. Don't change the `NS` and `SOA` records at the root of the DNS zone.
+
+<Callout type="info" title="Use commas for multiple DNS records">
+
+Some records such as MX records have multiple values for the same type and name. To create them, pass a comma-separated list of values as shown above. To add a value to an existing record, pass all its values, since the command replaces them.
+
+</Callout>
+
+<Callout type="warn" title="Values that contain commas">
+
+Ymir always splits values on commas, including `TXT` values. You can't create a value that contains a comma, such as a DMARC record with several report addresses. The same applies to imported records. Create these records directly in the Route 53 hosted zone instead, and check them by querying the DNS zone's name servers.
+
+</Callout>
+
+The command doesn't protect records that Ymir manages. Don't change the records that Ymir created for your SSL certificates, email identities or mapped domains.
+
+### Deleting DNS records [#deleting-dns-records]
+
+You can delete DNS records using the `dns:record:delete` command. Before you delete a record, save its values and check that nothing still uses it, such as your website, email or an SSL certificate. Ymir doesn't keep deleted records.
+
+The safest way to delete a record is with its ID, which `dns:record:list` displays. Pass it as a second argument.
+
+```bash
+ymir dns:record:delete <domain> <record-id>
+```
+
+You can also filter the records to delete with the `--name`, `--type` and `--value` options instead of an ID. When you combine them, a record must match all of them. `--name` takes the name without the domain, such as `www`. Unlike with `dns:record:change`, `@` doesn't match the root of the domain, so use the full domain name for it. The `--value` option must match the record's whole value. For a record with several values, that's its comma-separated list of values. See the [`dns:record:delete`][17] reference for examples.
+
+The command asks you to confirm before it deletes anything. It never deletes the records that Ymir marks as internal, which are SSL certificate validation records and email DKIM records. The records that point your mapped domains to your environments aren't internal, so the command can delete them. A redeployment recreates them.
+
+<Callout type="warn" title="Deleting all DNS records">
+
+If you don't specify a record ID or any of the `--name`, `--type` or `--value` filters, the `dns:record:delete` command deletes all the DNS records in the DNS zone except the internal ones. This includes the records for your mapped domains and your email. The command warns you and asks you to confirm a second time before doing so.
+
+</Callout>
+
+Ymir requests the deletion of each record separately and deletes it in the background. If a request fails, the command can stop before requesting the remaining deletions. Ymir doesn't restore records that it already deleted. `dns:record:list` shows what Ymir stores, not what Route 53 has, so query the DNS zone's name servers to check the result.
+
+[1]: /team-resources/ssl-certificates
+[2]: /guides/domain-mapping
+[3]: https://aws.amazon.com/route53/
+[4]: #moving-a-domains-dns-to-ymir
+[5]: https://en.wikipedia.org/wiki/Domain_name_registrar
+[6]: https://en.wikipedia.org/wiki/Name_server
+[7]: https://aws.amazon.com/route53/pricing/
+[8]: https://en.wikipedia.org/wiki/DNS_zone
+[9]: #importing-dns-records
+[10]: /reference/ymir-cli#dns-record-change
+[11]: /reference/ymir-cli#dns-record-list
+[12]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-in-use.html
+[13]: #dnssec
+[14]: https://en.wikipedia.org/wiki/Domain_Name_System_Security_Extensions
+[15]: /reference/ymir-cli#dns-zone-delete
+[16]: https://en.wikipedia.org/wiki/MX_record
+[17]: /reference/ymir-cli#dns-record-delete

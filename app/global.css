@@ -1,0 +1,660 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Ymir palette (ymir/app resources/css/app.css) mapped onto the Fumadocs color tokens.
+   Light mode is the paper reading surface. */
+@theme {
+  --color-fd-background: #f4f1e6;
+  --color-fd-foreground: #071812;
+  --color-fd-muted: #e7e8db;
+  --color-fd-muted-foreground: #40594d;
+  --color-fd-popover: #f4f1e6;
+  --color-fd-popover-foreground: #071812;
+  --color-fd-card: #e9e7dc;
+  --color-fd-card-foreground: #071812;
+  --color-fd-border: rgba(7, 24, 18, 0.14);
+  --color-fd-primary: #2f7a54;
+  --color-fd-primary-foreground: #f4f1e6;
+  --color-fd-secondary: #e9e7dc;
+  --color-fd-secondary-foreground: #071812;
+  --color-fd-accent: #e7e8db;
+  --color-fd-accent-foreground: #071812;
+  --color-fd-ring: #648b73;
+  --color-fd-overlay: rgba(7, 24, 18, 0.4);
+}
+
+/* Marketing tokens used by the site header and footer (components/site-chrome.tsx) and the page
+   and reading type below. */
+@theme {
+  --breakpoint-compact: 35rem;
+  --color-ink: #071812;
+  --color-signal: #a5c9a8;
+  --color-bone: #e9e7dc;
+  --color-paper: #f4f1e6;
+  --color-line: rgba(233, 231, 220, 0.17);
+  --color-control-border: #587064;
+  --color-copy: #40594d;
+  --color-copy-inverse: #b4c3b9;
+  --color-action: #2f7a54;
+  --text-section: clamp(2rem, 3vw, 2.75rem);
+  --text-section--line-height: 1.15;
+  --text-subheading: 1.25rem;
+  --text-subheading--line-height: 1.4;
+  --text-body: 1rem;
+  --text-body--line-height: 1.65;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.55;
+}
+
+/* Callout colors are only referenced from inline styles, so they must stay `static`. */
+@theme static {
+  --color-fd-info: #2f7a54;
+  --color-fd-success: #2f7a54;
+  --color-fd-warning: #94620b;
+  --color-fd-error: #b3402e;
+}
+
+/* Forest surface for the sidebar. */
+#nd-sidebar,
+#nd-sidebar-mobile {
+  --color-fd-background: #0b281f;
+  --color-fd-foreground: #e9e7dc;
+  --color-fd-muted: #143a2e;
+  --color-fd-muted-foreground: #b4c3b9;
+  --color-fd-popover: #0b281f;
+  --color-fd-popover-foreground: #e9e7dc;
+  --color-fd-card: #0b281f;
+  --color-fd-card-foreground: #e9e7dc;
+  --color-fd-border: rgba(233, 231, 220, 0.17);
+  --color-fd-primary: #a5c9a8;
+  --color-fd-primary-foreground: #071812;
+  --color-fd-secondary: #143a2e;
+  --color-fd-secondary-foreground: #e9e7dc;
+  --color-fd-accent: #143a2e;
+  --color-fd-accent-foreground: #e9e7dc;
+  --color-fd-ring: #a5c9a8;
+  --color-fd-info: #a5c9a8;
+  --color-fd-success: #a5c9a8;
+  /* Sidebar headings inherit their color from body instead of reading a token. */
+  color: var(--color-fd-foreground);
+}
+
+/* Sidebar links and group toggles (components/sidebar.tsx): square 44px targets, underlined
+   current page, and group toggles with a leading chevron. */
+:is(#nd-sidebar, #nd-sidebar-mobile) :is(a[data-active], :is([data-open], [data-closed]) > button) {
+  min-height: 44px;
+  border-radius: 0;
+  line-height: 1.5;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active='true'] {
+  background: var(--color-fd-accent);
+  color: var(--color-fd-foreground);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) :is([data-open], [data-closed]) > button {
+  font-weight: 600;
+  color: var(--color-fd-foreground);
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) :is([data-open], [data-closed]) > button > [data-icon] {
+  order: -1;
+  margin-inline: 0;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) :is([data-open], [data-closed]) + :is([data-open], [data-closed]) {
+  margin-top: 12px;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-fd-ring);
+    outline-offset: 2px;
+  }
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* Reading area for every docs page, matching the docs redesign: its page gutter and top spacing
+   around a 72ch reading width. Full-width pages keep the Fumadocs width. */
+#nd-page {
+  --page-gutter: 5vw;
+  --page-spacing: 72px;
+  padding: var(--page-spacing) var(--page-gutter);
+}
+
+#nd-page:not([data-full='true']) {
+  max-width: calc(72ch + 2 * var(--page-gutter));
+}
+
+@media (max-width: 900px) {
+  #nd-page {
+    --page-gutter: 7vw;
+    --page-spacing: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  #nd-page {
+    --page-gutter: 24px;
+    --page-spacing: 44px;
+  }
+}
+
+/* Page header for every docs page: the marketing page title and lead type roles. The header sets
+   its own spacing instead of the Fumadocs 16px gap: breadcrumb 24px, lead 20px, Copy Markdown 8px,
+   body 32px and pager 48px. */
+#nd-page {
+  gap: 0;
+}
+
+#nd-page > h1 {
+  font-size: var(--text-section);
+  font-weight: 500;
+  line-height: var(--text-section--line-height);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+#nd-page > h1 + p {
+  max-width: 55ch;
+  margin-top: 20px;
+  font-size: var(--text-lead);
+  line-height: var(--text-lead--line-height);
+}
+
+#nd-page > .prose {
+  margin-top: 32px;
+  line-height: var(--text-body--line-height);
+}
+
+#nd-page > .prose + * {
+  margin-top: 48px;
+}
+
+/* Marketing reading type (ymir/app resources/css/app.css) on the Fumadocs typography plugin. Colors
+   go through its `--tw-prose-*` variables; the rest overrides its element styles and, like them,
+   skips `not-prose` widgets such as code blocks. Fumadocs also puts `prose` on table of contents
+   links, so nothing here sets the size of `.prose` itself. */
+.prose {
+  --tw-prose-body: var(--color-copy);
+}
+
+.prose :where(h2, h3, h4, h5, h6):not(:where(.not-prose, .not-prose *)) {
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: var(--text-body--line-height);
+  color: var(--color-fd-foreground);
+  margin: 28px 0 12px;
+}
+
+.prose :where(h2):not(:where(.not-prose, .not-prose *)) {
+  font-size: var(--text-subheading);
+  line-height: var(--text-subheading--line-height);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  margin: 56px 0 22px;
+}
+
+.prose :where(h3):not(:where(.not-prose, .not-prose *)) {
+  margin: 36px 0 16px;
+}
+
+.prose :where(ul, ol):not(:where(.not-prose, .not-prose *)) {
+  margin-block: 24px;
+  padding-inline-start: 24px;
+}
+
+.prose :where(li):not(:where(.not-prose, .not-prose *)) {
+  margin-block: 0;
+}
+
+.prose :where(li + li):not(:where(.not-prose, .not-prose *)) {
+  margin-top: 10px;
+}
+
+.prose :where(:is(ul, ol) :is(ul, ol)):not(:where(.not-prose, .not-prose *)) {
+  margin-block: 10px;
+}
+
+.prose :where(strong):not(:where(.not-prose, .not-prose *)) {
+  font-weight: 600;
+}
+
+.prose :where(a:not([data-card])):not(:where(.not-prose, .not-prose *)) {
+  font-weight: inherit;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.prose :where(a:not([data-card]):hover):not(:where(.not-prose, .not-prose *)) {
+  opacity: 1;
+  color: var(--color-action);
+  text-decoration-thickness: 2px;
+}
+
+/* Inline code is a flat proof chip, as in the redesign. */
+.prose :where(code):not(:where(pre *, .not-prose, .not-prose *)) {
+  font-size: 0.875em;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 3px;
+}
+
+.prose :where(table):not(:where(.not-prose, .not-prose *)) {
+  border-radius: 0;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+/* Column headers are quieter than the cells, in the source casing. */
+.prose :where(thead th):not(:where(.not-prose, .not-prose *)) {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Shared callouts keep the paper palette, with sage, ochre and brick distinguishing severity.
+   The existing type label and native icon preserve that meaning without relying on color. */
+.docs-callout {
+  gap: 12px;
+  margin-block: 28px;
+  padding: 20px;
+  border-color: color-mix(in srgb, var(--callout-color) 32%, var(--color-fd-background));
+  border-radius: 0;
+  background: color-mix(in srgb, var(--callout-color) 9%, var(--color-fd-background));
+  box-shadow: none;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+/* One quiet outline replaces the extra inset status bar. */
+.docs-callout > [role='none'] {
+  display: none;
+}
+
+.docs-callout > svg {
+  flex-shrink: 0;
+  margin: 1px 0 0;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  color: var(--callout-color);
+}
+
+/* The body sits 12px below the title, as in the redesign. The content column is always the
+   container's last child, whatever its icon. */
+.docs-callout > :last-child {
+  gap: 12px;
+}
+
+.docs-callout-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docs-callout-heading > p {
+  margin: 0;
+  color: var(--color-fd-foreground);
+}
+
+.docs-callout-heading > .docs-callout-label {
+  color: color-mix(in srgb, var(--callout-color) 80%, var(--color-fd-foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.docs-callout-heading > .docs-callout-label + p {
+  font-weight: 600;
+}
+
+/* Callout paragraphs sit closer than the 20px reading rhythm. */
+.docs-callout-heading + div > p {
+  margin-block: 0;
+}
+
+.docs-callout-heading + div > p + p {
+  margin-top: 12px;
+}
+
+@media (max-width: 560px) {
+  .docs-callout {
+    gap: 10px;
+    padding: 16px;
+  }
+}
+
+/* Inline code chips share the callout surface, so they take the page color instead. */
+.prose .docs-callout :where(code):not(:where(pre *, .not-prose, .not-prose *)) {
+  background: var(--color-fd-background);
+}
+
+/* The heading margins above override the plugin's own reset, so the body and its widgets restore
+   their flush start here. */
+:where(.prose, .prose-no-margin) > :first-child {
+  margin-top: 0;
+}
+
+.shiki pre {
+  font-size: 0.875rem;
+}
+
+/* Code blocks in the marketing CLI look: an ink surface for the Ymir Shiki theme (source.config.ts),
+   with the Fumadocs tokens read by the title, copy button, focus ring, line numbers and highlighted
+   lines remapped onto it. */
+figure.shiki {
+  --color-fd-muted-foreground: var(--color-copy-inverse);
+  --color-fd-accent-foreground: var(--color-bone);
+  --color-fd-border: var(--color-line);
+  --color-fd-primary: var(--color-signal);
+  --color-fd-ring: var(--color-signal);
+  border-color: transparent;
+  border-radius: 8px;
+  background: var(--color-ink);
+  box-shadow: none;
+  color: var(--color-bone);
+}
+
+/* Code blocks show their full height and only scroll sideways. Fumadocs caps the viewport at 600px. */
+figure.shiki > [role='region'] {
+  max-height: none;
+}
+
+/* The copy button shows its native status text beside the icon, Copy and then Copied
+   (app/layout.tsx), as a 44px text action. Titled headers grow to fit it. */
+figure.shiki button[aria-live='polite'] {
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-width: 5rem;
+  min-height: 44px;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+figure.shiki button[aria-live='polite'] > .sr-only {
+  @apply not-sr-only;
+}
+
+figure.shiki > div:has(> figcaption) {
+  height: 44px;
+}
+
+/* Untitled blocks put their actions on a row above the code, as in the redesign, instead of over
+   the start of long lines. An empty row (`allowCopy={false}`) stays hidden. */
+figure.shiki > div:not([role='region'], :has(> figcaption)) {
+  position: static;
+  padding: 4px 8px 0;
+  border-radius: 0;
+  text-align: end;
+  backdrop-filter: none;
+}
+
+figure.shiki > div:not([role='region'], :has(> figcaption), :empty) + [role='region'] {
+  padding-top: 0;
+}
+
+figure.shiki ::selection {
+  background: color-mix(in srgb, var(--color-signal) 30%, transparent);
+}
+
+/* Table of contents, in the sidebar column and the narrow-screen popover: 14px links on a straight
+   rail, with each current section marked by its own action-colored piece of the rail and ink text.
+   The shared block style keeps the Fumadocs depth indent for the section hierarchy. Links are 44px
+   targets, or 36px with a fine pointer. */
+#toc-title {
+  font-weight: 600;
+  color: var(--color-fd-foreground);
+}
+
+/* The block style's sliding highlight, replaced by the rail. */
+.page-toc > :first-child:not(a) {
+  display: none;
+}
+
+.page-toc > a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding-block: 8px;
+  border-inline-start: 1px solid var(--color-fd-border);
+  color: var(--color-copy);
+  transition: none;
+}
+
+.page-toc > a:hover {
+  color: var(--color-fd-foreground);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.page-toc > a[data-active='true'] {
+  border-inline-start-color: var(--color-action);
+  font-weight: 600;
+  color: var(--color-fd-foreground);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .page-toc > a {
+    min-height: 36px;
+    padding-block: 7px;
+  }
+}
+
+/* Topic breadcrumb above the page title. */
+.page-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  font-size: 0.875rem;
+  color: var(--color-fd-muted-foreground);
+}
+
+.page-breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.page-breadcrumb a:hover {
+  color: var(--color-fd-foreground);
+}
+
+/* Copy Markdown as a quiet text action under the lead instead of a bordered button row. */
+#nd-page > button {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-fd-muted-foreground);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+#nd-page > button:hover {
+  color: var(--color-fd-foreground);
+  text-decoration-thickness: 2px;
+}
+
+/* Previous and next cards from the redesign (components/page-navigation.tsx): square, left-aligned
+   cards with a small direction label, an ink title and a small description, stacked on phones.
+   Hover and keyboard focus show the patina border on proof and underline the title. */
+.page-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.page-navigation > a {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 20px;
+  border: 1px solid rgba(7, 24, 18, 0.18);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-copy);
+  overflow-wrap: anywhere;
+}
+
+.page-navigation > a[rel='next'] {
+  grid-column: 2;
+}
+
+.page-navigation > a:is(:hover, :focus-visible) {
+  border-color: var(--color-fd-ring);
+  background: var(--color-fd-muted);
+}
+
+.page-navigation-title {
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: var(--text-body--line-height);
+  color: var(--color-ink);
+}
+
+.page-navigation > a:is(:hover, :focus-visible) > .page-navigation-title {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 560px) {
+  .page-navigation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-navigation > a[rel='next'] {
+    grid-column: auto;
+  }
+}
+
+.overview {
+  container-type: inline-size;
+}
+
+.overview > :is(p:first-child, #team-resources + p) {
+  margin: 0;
+}
+
+.overview > h2 {
+  margin: 40px 0 16px;
+}
+
+/* Plain card links from app/(docs)/[[...slug]]/page.tsx: a title over a small description. */
+.overview a[data-card] > div {
+  line-height: 1.5;
+}
+
+.overview-rows {
+  border-top: 1px solid var(--color-fd-border);
+}
+
+.overview-rows > a {
+  padding-block: 20px;
+  border-bottom: 1px solid var(--color-fd-border);
+}
+
+/* Columns and link grids stack in narrow reading widths, which depend on the sidebar as well as
+   the viewport. */
+.overview-columns {
+  display: grid;
+  border-block: 1px solid var(--color-fd-border);
+}
+
+.overview-columns > a {
+  padding-block: 20px;
+}
+
+.overview-columns > a + a {
+  border-top: 1px solid var(--color-fd-border);
+}
+
+.overview-columns > a > div {
+  margin-top: 8px;
+}
+
+/* Guides are plain linked titles in two columns, and team resources wrap inline. Their descriptions
+   stay available to screen readers. */
+.overview-links {
+  display: grid;
+  column-gap: 32px;
+}
+
+.overview-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+}
+
+:is(.overview-links, .overview-resources) > a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+  padding-block: 8px;
+}
+
+:is(.overview-links, .overview-resources) > a > span {
+  font-weight: 400;
+}
+
+:is(.overview-links, .overview-resources) > a > div {
+  @apply sr-only;
+}
+
+@container (min-width: 25rem) {
+  .overview-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 40rem) {
+  .overview-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 32px;
+  }
+
+  .overview-columns > a + a {
+    border-top: 0;
+  }
+}
+
+/* The closing AI agents section is secondary to the documentation links. */
+.overview > #use-these-docs-with-ai-agents {
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: 1px solid var(--color-fd-border);
+}

@@ -1,0 +1,168 @@
+---
+title: "Using Cloudflare as a content delivery network"
+navTitle: "Cloudflare"
+description: "Use Cloudflare as a content delivery network in front of a Ymir project."
+---
+
+## Why use Cloudflare?
+
+Ymir already comes with CloudFront as a content delivery network. But you can also put another content delivery network like [Cloudflare][1] in front of your environment. You might want to do this to use Cloudflare's features, such as its security, caching or [Workers][2] products, or because Cloudflare already hosts your domain's DNS.
+
+Ymir doesn't configure Cloudflare for you. You configure it in your Cloudflare account, and Cloudflare forwards requests to your environment on AWS. Your environment still uses AWS to handle those requests. So Cloudflare doesn't replace your AWS costs, although its caching can reduce how many requests reach AWS. Check the [Cloudflare plans][3] for what each feature costs.
+
+<img src="/images/diagrams/cloudflare-request-path.svg" alt="Diagram: this only shows caching: enabled. A visitor sends an HTTPS request for example.com to the Cloudflare edge, secured by Cloudflare's edge certificate. Cloudflare then connects to CloudFront in your AWS account over HTTPS, secured by the AWS SSL certificate, which Full (strict) checks, and CloudFront forwards the request to your environment. You set up Cloudflare in your Cloudflare account, not Ymir. Redirecting HTTP visitors to HTTPS is a separate Cloudflare edge setting, such as Always Use HTTPS, and Full (strict) alone doesn't redirect. Cloudflare and CloudFront each have their own cache, which caches based on its own rules and your cache headers, and each has its own purge: purge the Cloudflare cache in Cloudflare, and the CloudFront cache with environment:invalidate-cache. Each purge only clears its own cache. A dashed second path shows any client going straight to your environment's ymirsites.com vanity domain. It skips only Cloudflare, still goes through CloudFront to your environment, and can send any CF-Connecting-IP header. Only trust that header if every request comes through Cloudflare. Ymir doesn't restrict your environment to Cloudflare traffic." width="1100" height="820" />
+
+<a href="/images/diagrams/cloudflare-request-path.svg">Open the full-size diagram</a>
+
+## Prerequisites
+
+To use Cloudflare as content delivery network, you need to have the following prerequisites met.
+
+### Domain name
+
+You must have a domain name you can use with Cloudflare to point to your Ymir project. This guide assumes that Cloudflare hosts the DNS of this domain.
+
+Check that your team doesn't have a Ymir [DNS zone][4] for this domain or one of its parent domains. Ymir would treat the domain as managed and write its records to that DNS zone instead of telling you which records to add in Cloudflare. If your team has one, don't just delete it. A DNS zone may still be answering for the domain or for other records. See [deleting a DNS zone][26] first.
+
+<Callout type="warn" title="Cannot use vanity domain">
+
+You cannot put Cloudflare or other content delivery networks in front of the `ymirsites.com` vanity domain itself, since you don't own it. Your own domain's records in Cloudflare still point to the vanity domain.
+
+</Callout>
+
+### SSL certificate
+
+There are two SSL certificates involved when you use Cloudflare. Cloudflare's edge certificate secures the connection between your visitors and Cloudflare. It needs to be active and cover every hostname that you proxy. Cloudflare's [Universal SSL][27] only covers your root domain and one level of subdomains, so deeper subdomains need another Cloudflare certificate.
+
+An SSL certificate from AWS secures the connection between Cloudflare and your environment. Ymir needs an issued one that covers your domains to map them. If you don't already have one, request it using the [`certificate:request`][5] command. AWS gives you DNS records to add so that it can issue the certificate. Add them in Cloudflare and keep them after AWS issues the certificate. See the [SSL certificates documentation][6] for how to request and validate it, and for which region your certificate needs to be in.
+
+<Callout type="warn" title="Disable proxy">
+
+When adding your SSL certificate DNS validation records, make sure to disable the Cloudflare proxy by setting them to `DNS only`. If you've turned on CNAME flattening for all `CNAME` records, AWS can't validate them either. Cloudflare explains this in its [CNAME flattening documentation][7].
+
+</Callout>
+
+### SSL encryption mode
+
+In Cloudflare, set the SSL/TLS encryption mode to [`Full (strict)`][8] for the domain that you'll use. In this mode, Cloudflare connects to your environment with the same scheme as your visitor's request. For HTTPS requests, it checks that your environment's certificate is valid for your domain. Your environment presents the AWS SSL certificate once you deploy it with your domain. Redirecting visitors from HTTP to HTTPS is a separate Cloudflare setting, such as [Always Use HTTPS][28].
+
+Don't use `Flexible` mode. It connects to your environment with HTTP instead of HTTPS. Don't use `Full` mode either. It doesn't check the certificate of your environment, so it's less secure than `Full (strict)` without any benefit with Ymir.
+
+## Configuring your project
+
+Now, we can start by changing our project configuration.
+
+### Adding your domain
+
+The main thing you need to do is to add the domain managed by Cloudflare as the domain for your project. For this guide, that domain will be `example.com`. Here's a partial `ymir.yml` project configuration file with the domain set for the `staging` environment:
+
+```yml
+environments:
+  staging:
+    domain: example.com
+```
+
+Since this maps a single domain, Ymir also maps `www.example.com`. See the [domain mapping guide][9] for how Ymir maps domains.
+
+### Content delivery network configuration
+
+You can use Cloudflare with any [`caching`][10] value of the `cdn` project configuration option. The value changes which requests go through Cloudflare. Requests for your mapped domains go through Cloudflare. Requests for assets and uploads only go through Cloudflare when they use your mapped domain.
+
+The table below shows the asset URLs that Ymir generates and the WordPress uploads URLs. URLs that your application builds itself, such as Laravel storage URLs, or that you override, can use other domains.
+
+| `caching` | Behind Cloudflare | Generated asset and WordPress upload URLs |
+| :--- | :--- | :--- |
+| `enabled` (default) | CloudFront, then your environment | Your primary domain, through Cloudflare and CloudFront |
+| `assets` | Your environment's API gateway | The CloudFront distribution's `cloudfront.net` domain |
+| `disabled` | Your environment's API gateway | The S3 bucket's domain |
+
+With `enabled`, both Cloudflare and CloudFront can cache your content. Each one decides what to cache based on its own rules and your application's cache headers. For example, Cloudflare doesn't cache your pages by default. With `assets` and `disabled`, Ymir removes your domains from the CloudFront distribution, but it doesn't delete the distribution. Some project options, such as [`gateway: false`][11] and the [`firewall`][12] option, require `enabled`. You can't use `enabled` with a REST API [`gateway`][11].
+
+<Callout type="info" title="Serving assets through Cloudflare">
+
+If you want Cloudflare to serve your assets and uploads, use `caching: enabled`. Your assets and uploads then use your primary domain.
+
+With the other values, your assets use AWS domains that Cloudflare doesn't proxy. Pointing your own subdomain at the S3 bucket doesn't fix this. S3 uses the request's `Host` header to find the bucket, and [only a bucket with the same name as your subdomain][13] works with a `CNAME` record. S3's SSL certificates don't cover your subdomain either. The `YMIR_CUSTOM_ASSETS_URL` environment variable only changes the asset URLs in WordPress projects. It doesn't change your uploads URL or how requests reach the bucket. Ymir doesn't configure or check custom asset domains.
+
+</Callout>
+
+### Cloudflare WordPress plugin [#cloudflare-wordpress-plugin]
+
+If you use the Cloudflare WordPress plugin, your build needs the plugin's `config.json` file, which Ymir doesn't add to your build by default. Add the file with the [`build.include`][14] option. Here's the path for a WordPress project:
+
+```yml
+environments:
+  staging:
+    build:
+      include:
+        - wp-content/plugins/cloudflare/config.json
+```
+
+The [`wordpress:configure`][15] command can add it for you when the plugin is active. The command uses WP-CLI to scan your local WordPress installation, so WP-CLI needs to be installed globally and WordPress needs to be connected to a database. It configures the environments that you pass, or all of them if you don't pass any. It can also suggest changes for other plugins it detects, so check the list before you confirm. It doesn't configure Cloudflare or the plugin's settings. With container image deployments, it doesn't add the path, so add it yourself. Your `Dockerfile` and `.dockerignore` file also decide which files end up in your image.
+
+## Deploying your project
+
+Next, you'll want to deploy your project. Once the project deployed, the Ymir CLI will display a warning with DNS records to add. There'll be a `CNAME` record for each domain that needs one pointing to the `ymirsites.com` [vanity domain][16] of your project environment. You can see an example of this warning in the [domain mapping guide][17].
+
+Cloudflare doesn't return `CNAME` records for proxied records. So the Ymir CLI keeps displaying this warning after you've added them. Check your records in the Cloudflare dashboard instead.
+
+## Adding DNS records to Cloudflare
+
+You'll then want to add these DNS records to Cloudflare. Add the website records after the deployment finishes. For a live site, this is when your domain switches to your environment.
+
+| Type | Name | Target | Proxy status |
+| :--- | :--- | :--- | :--- |
+| `CNAME` | `example.com` | `<vanity-domain>.ymirsites.com` | Proxied |
+| `CNAME` | `www` | `<vanity-domain>.ymirsites.com` | Proxied |
+| `CNAME` | `_<validation-name>` | `_<validation-value>.acm-validations.aws` | DNS only |
+
+The `<vanity-domain>` and validation placeholders are the values that the Ymir CLI displays. Cloudflare allows the `CNAME` record on `example.com` using [CNAME flattening][7].
+
+## Creating Cloudflare caching rule for assets and uploads [#creating-cloudflare-caching-rule-for-assets-and-uploads]
+
+By default, Cloudflare only caches files with [certain file extensions][18], such as images, fonts, JavaScript and CSS files. It doesn't cache HTML pages or JSON. It also respects the `Cache-Control` headers that your environment sends. For example, it doesn't cache a response marked `private`, `no-store`, `no-cache` or `max-age=0`, or one that sets a cookie.
+
+So with `caching: enabled`, Cloudflare already caches most of your assets and uploads without a [cache rule][19]. If you create cache rules, keep them to paths that return the same response to every visitor. Don't create a rule that caches everything, or one that ignores your environment's `Cache-Control` headers. Pages such as the WordPress admin, login, cart, checkout and account pages, and private downloads, must never be cached.
+
+Cloudflare doesn't know your Ymir [`cdn`][20] settings. Paths that you excluded from CloudFront caching with [`excluded_paths`][21] can still get cached by Cloudflare based on their file extension. If you exclude dynamic files in your uploads directory, create a cache rule in Cloudflare that bypasses the cache for those paths too.
+
+<Callout type="warn" title="Each cache is cleared separately">
+
+Clearing the CloudFront cache, such as with the [`environment:invalidate-cache`][22] command, doesn't clear Cloudflare's cache. Clearing Cloudflare's cache doesn't clear CloudFront's either. When you need fresh content, [purge Cloudflare's cache][23] as well.
+
+</Callout>
+
+## Visitor IP addresses [#configuring-wordpress-to-have-the-correct-remote-address]
+
+When you use Cloudflare, the IP address that your application sees for a request can identify a proxy rather than your visitor. Cloudflare sends the visitor's IP address in the [`CF-Connecting-IP` header][24]. But it's an ordinary request header. Your environment is still reachable without going through Cloudflare, such as with its vanity domain, and anyone can send a request with their own `CF-Connecting-IP` header that way.
+
+So only trust the header if every request that reaches your application comes through Cloudflare. Cloudflare's [instructions for restoring visitor IP addresses][25] rely on this too. Ymir doesn't restrict your environment to Cloudflare traffic. Without that guarantee, don't copy the header into `REMOTE_ADDR`, and don't use it for login limits, blocking or other security decisions.
+
+[1]: https://cloudflare.com
+[2]: https://workers.cloudflare.com/
+[3]: https://www.cloudflare.com/plans/
+[4]: /team-resources/dns
+[5]: /reference/ymir-cli#certificate-request
+[6]: /team-resources/ssl-certificates
+[7]: https://developers.cloudflare.com/dns/cname-flattening/
+[8]: https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/
+[9]: /guides/domain-mapping
+[10]: /reference/configuration#caching
+[11]: /reference/configuration#gateway
+[12]: /reference/configuration#firewall
+[13]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingCustomURLs
+[14]: /reference/configuration#include
+[15]: /reference/ymir-cli#wordpress-configure
+[16]: /projects/environments#vanity-domain-name
+[17]: /guides/domain-mapping#creating-a-dns-record-pointing-to-the-project-environment
+[18]: https://developers.cloudflare.com/cache/concepts/default-cache-behavior/
+[19]: https://developers.cloudflare.com/cache/how-to/cache-rules/
+[20]: /reference/configuration#cdn
+[21]: /reference/configuration#excluded-paths
+[22]: /reference/ymir-cli#environment-invalidate-cache
+[23]: https://developers.cloudflare.com/cache/how-to/purge-cache/
+[24]: https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-connecting-ip
+[25]: https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/
+[26]: /team-resources/dns#deleting-a-dns-zone
+[27]: https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/#hostname-coverage
+[28]: https://developers.cloudflare.com/ssl/edge-certificates/additional-options/always-use-https/

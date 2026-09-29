@@ -1,0 +1,130 @@
+---
+title: "How to set up Sage 10 in a Ymir project"
+navTitle: "Sage 10"
+description: "Build steps, packaging, writable storage and logging needed to run a Sage 10 theme with Acorn on Ymir."
+---
+
+[Sage][1] is a starter theme by the [Roots team][2] that uses [Acorn][3] to bring Laravel features, such as Blade templates, to WordPress. This guide covers the changes a Sage 10 theme needs to run on Ymir. It uses a [Bedrock project][4] with the theme in `web/app/themes/sage`, so replace that path with your theme's path.
+
+## Which versions this guide covers [#sage-versions]
+
+This guide is for an existing Sage 10 theme that runs on Acorn 4. It was checked against the source of Sage 10.8.2 and Acorn 4.3.1, not tested on a deployed site. Sage 10 themes created from older releases can have different build scripts and boot code, so compare them with your theme. Deploy to a staging environment first and check your site there.
+
+Sage 11 releases need a newer major version of Acorn and use a different build tool. For example, Sage 11.2.1 requires Acorn 6 and PHP 8.3 or later. This guide doesn't cover them, and its code isn't meant for Acorn versions other than Acorn 4.
+
+[Radicle][5] combines Bedrock, Sage and Acorn in a separate `radicle` project type, and the Ymir PHP runtime prepares Acorn for it. A Bedrock project with a Sage theme isn't a Radicle project, and it doesn't get that support.
+
+### Requirements [#sage-requirements]
+
+Sage 10.8.2 doesn't install Acorn. Your Bedrock project installs it with Composer, so its version is in your project's `composer.lock` file. Check that version before you follow this guide, for example with the `composer show roots/acorn` command. If it isn't Acorn 4, this guide's code doesn't apply. Don't downgrade a newer Acorn version to follow it. If you're installing Acorn, follow Roots' instructions for the version you install. Roots' current installation instructions can install a newer major version than this guide covers.
+
+Sage 10.8.2 requires PHP 8.1 or later in its `composer.json` file and Node.js 20 or later in its `package.json` file. Acorn 4.3.1 also requires PHP 8.1 or later. These are the oldest versions these releases accept. They don't mean that Roots or the PHP project still fixes security issues in these releases or PHP versions.
+
+Your environment's PHP version must satisfy the requirements of your Bedrock project, Acorn and your theme. See [matching your PHP version][7]. Node.js and Yarn need to be installed on the machine running the build.
+
+## Adding build steps to your project configuration
+
+Whenever you deploy a Sage project, the build needs to install your theme's Composer dependencies and build its frontend assets. You configure these build steps in your `ymir.yml` project configuration file. Below are the `build` options for a Bedrock project's `staging` and `production` environments. Change the `build` option of your existing environments, and keep the rest of your `ymir.yml` file.
+
+```yml
+environments:
+  production:
+    build:
+      commands:
+        - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
+        - 'cd web/app/themes/sage && composer install --no-dev'
+        - 'cd web/app/themes/sage && yarn install --frozen-lockfile && yarn build'
+      include:
+        - web/app/themes/sage/composer.json
+  staging:
+    build:
+      commands:
+        - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install'
+        - 'cd web/app/themes/sage && composer install'
+        - 'cd web/app/themes/sage && yarn install --frozen-lockfile && yarn build'
+      include:
+        - web/app/themes/sage/composer.json
+```
+
+ * The first command is the project's Composer build command that Ymir adds to Bedrock projects. It installs WordPress, Acorn and your plugins. Keep it first.
+ * The theme's `composer install` command creates the theme's autoloader, which its `functions.php` file loads.
+ * Sage 10.8.2 builds its assets with `yarn build`, and its `yarn.lock` file is a Yarn 1 lock file, so `--frozen-lockfile` installs the locked versions. If your theme uses another version of Yarn or another package manager, use its command for installing from your lock file. Older Sage 10 themes can use other script names, such as `build:production`, so check your theme's `package.json` file.
+
+The build removes `node_modules` directories after running your commands, so you don't need to remove them yourself. Theme files that your `.gitignore` files ignore, such as Sage's `vendor` and `public` directories, aren't copied to the build, so these commands need to create them. See [what your build contains][8].
+
+### Files Acorn reads on the server [#sage-files-acorn-reads]
+
+Acorn registers your theme's service providers, such as Sage's `ThemeServiceProvider`, by reading the theme's `composer.json` and `vendor/composer/installed.json` files. With zip archive deployment, the archive contains `vendor/composer/installed.json` and the theme's `public/manifest.json` and `public/entrypoints.json` files, but not the theme's `composer.json` file. That's why the configuration above includes it.
+
+Acorn also looks for the `composer.json` and `vendor/composer/installed.json` files at the root of your project. If you rely on packages installed by your project's `composer.json` file to register Acorn service providers, the zip archive needs these two files too. An `include` value matches every path that contains it, so `composer.json` would also add every `composer.json` file in your `vendor` directory.
+
+With container image deployment, the files in this section need to be in the build directory and copied into the final image. The `Dockerfile` generated by the Ymir CLI copies the whole build directory, so you don't need these includes. But a `.dockerignore` file or your own `Dockerfile`, such as a multi-stage one that only copies some paths into the final image, can leave them out.
+
+If your theme's `public/entrypoints.json` file lists a JavaScript runtime file, Acorn reads that file from disk to add it to the page. With zip archive deployment, add the theme's `public/js` directory to `include`. Check on your staging environment that your pages load their CSS and JavaScript.
+
+## Configuring the `storage` directory on Lambda
+
+Acorn needs a writable `storage` directory for its caches and compiled Blade views. Unless you configure it, Acorn 4 uses a `storage` directory in your theme or project if one exists, and creates one in `web/app/cache/acorn` otherwise. Neither works on AWS Lambda, where your project files are read-only. The `/tmp` directory is the only writable directory.
+
+When there's no `ACORN_STORAGE_PATH` environment variable, Acorn 4 uses the `ACORN_STORAGE_PATH` constant as its storage directory. It doesn't create that directory's subdirectories, and it fails to boot if its cache directory doesn't exist. The Ymir PHP runtime doesn't create them for Bedrock projects.
+
+Earlier versions of this guide used an `acorn/paths.storage` filter in a `bootstrap/app.php` file. That code wasn't verified with Acorn 4. Instead, add this code to your theme's `functions.php` file, before the `\Roots\bootloader()->boot();` line.
+
+```php
+if (getenv('YMIR_ENVIRONMENT')) {
+    if (!defined('ACORN_STORAGE_PATH')) {
+        define('ACORN_STORAGE_PATH', '/tmp/storage');
+    }
+
+    if (!str_starts_with(ACORN_STORAGE_PATH, '/tmp/')) {
+        throw new \UnexpectedValueException(sprintf('The "ACORN_STORAGE_PATH" constant must be inside "/tmp" on Ymir, "%s" given', ACORN_STORAGE_PATH));
+    }
+
+    foreach (['framework/cache/data', 'framework/views', 'framework/sessions', 'logs'] as $directory) {
+        $directory = ACORN_STORAGE_PATH.'/'.$directory;
+
+        if (!is_dir($directory) && !@mkdir($directory, 0755, true) && !is_dir($directory)) {
+            throw new \RuntimeException(sprintf('Unable to create the "%s" directory', $directory));
+        }
+    }
+}
+```
+
+The code only runs on Ymir, where the `YMIR_ENVIRONMENT` environment variable exists, so your local environment keeps using its usual storage directory. It sets the storage directory to `/tmp/storage`, unless your code already defines an `ACORN_STORAGE_PATH` constant inside `/tmp`. It then creates the same directories that Acorn creates for its default storage directory. If the constant points outside `/tmp`, or a directory can't be created, it stops with an error that appears in your logs.
+
+ * **Run it before Acorn boots:** WordPress loads your theme's `functions.php` file for web requests and for WP-CLI commands on the `console` function, so the code runs before Sage boots Acorn in both. This only works as long as nothing, such as a plugin, boots Acorn before your theme loads. If something does, this code needs to run before it.
+ * **Replace other storage configuration:** Don't set an `ACORN_STORAGE_PATH` environment variable on Ymir. Acorn uses it instead of the constant, and this code wouldn't create its directories. Remove other code that changes Acorn's storage directory, such as an `acorn/paths.storage` filter from an earlier version of this guide.
+
+<Callout type="warn" title="/tmp isn't permanent storage">
+
+Each Lambda execution environment has its own `/tmp` directory. Files in it can still be there for later requests that the same execution environment handles. But they aren't shared with other execution environments, or between your `website` and `console` functions, and Lambda deletes them when it shuts the execution environment down. Acorn rebuilds its caches and compiled views when they're missing. Don't rely on Acorn's `file` cache, `file` sessions or `single` and `daily` logs to keep data between requests. Store uploads, sessions, queued work and anything you need to keep somewhere else. The [`tmp_storage`][9] option controls the size of `/tmp`.
+
+</Callout>
+
+## Configuring logs [#configuring-external-logs]
+
+Acorn 4's default log channel is the `LOG_CHANNEL` environment variable. Without it, Acorn writes logs to a file when `WP_ENV` is `development` and discards them otherwise. Ymir sets `WP_ENV` to the environment name, so your `staging` and `production` environments discard Acorn's logs. Log files in `/tmp` wouldn't be useful either.
+
+Instead, use Acorn's `stderr` channel. When [logging][13] is enabled for a function, what PHP writes to `stderr` goes to CloudWatch. Set the `LOG_CHANNEL` [environment variable][10] for each environment, then redeploy it. You can only change the environment variables of an environment that you've deployed at least once.
+
+```bash
+ymir environment:variables:change staging LOG_CHANNEL stderr
+ymir redeploy staging
+```
+
+Acorn logs everything from the `debug` level up by default. To log less, set the `LOG_LEVEL` environment variable, such as to `warning`. If your theme has its own `config/logging.php` file, check that it uses these environment variables.
+
+Your logs can contain sensitive data, so don't log secrets or personal data. Don't use the [`php:info`][11] command to debug configuration, since its output includes your secrets. The [logging guide][12] explains how to read your logs and send them to a logging service.
+
+[1]: https://roots.io/sage/
+[2]: https://roots.io
+[3]: https://roots.io/acorn/
+[4]: /guides/bedrock
+[5]: https://roots.io/radicle/
+[7]: /guides/bedrock#matching-your-php-version
+[8]: /guides/bedrock#what-your-bedrock-build-contains
+[9]: /reference/configuration#tmp-storage
+[10]: /projects/environments#environment-variables
+[11]: /reference/ymir-cli#php-info
+[12]: /guides/logging-service
+[13]: /reference/configuration#logging-2

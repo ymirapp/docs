@@ -1,0 +1,105 @@
+---
+title: "How to set up WooCommerce in a Ymir project"
+navTitle: "WooCommerce"
+description: "Project configuration changes needed to run WooCommerce on Ymir."
+---
+
+<Callout type="info" title="Automatic configuration">
+
+You can have Ymir configure your project automatically for you by using the [`wordpress:configure`][2] command.
+
+</Callout>
+
+[WooCommerce][1] is a popular open source e-commerce platform for WordPress. Ymir makes it easy to support WooCommerce in your serverless WordPress project. This guide will cover the changes that you need to make.
+
+## Project configuration changes
+
+Below is the environment configuration that `wordpress:configure` adds for WooCommerce in a WordPress project. Replace `environment` with the correct environment name. If your environment already has these options, add the values to its existing lists instead of replacing them.
+
+```yml
+environments:
+  environment:
+    build:
+      include:
+        - /wp-content/plugins/woocommerce
+    cdn:
+      cookies_whitelist:
+        - woocommerce_cart_hash
+        - woocommerce_items_in_cart
+        - woocommerce_recently_viewed
+        - wp_woocommerce_session_*
+      excluded_paths:
+        - /addons
+        - /cart
+        - /checkout
+        - /my-account
+      forwarded_headers:
+        - authorization
+        - origin
+        - x-http-method-override
+        - x-wp-nonce
+```
+
+The `build.include` path adds all of the plugin's files to your build, not only its PHP files. Ymir ignores the leading `/`. For other project types, replace `/wp-content/plugins` with your plugins directory:
+
+| Project type | Plugins directory |
+| :--- | :--- |
+| wordpress | `/wp-content/plugins` |
+| bedrock | `/web/app/plugins` |
+| radicle | `/public/content/plugins` |
+
+If you use [container image deployment][3], you can omit these `build.include` entries since Ymir only uses them for ZIP archive builds. Keep any other `build` settings, such as `build.commands`.
+
+## What `wordpress:configure` changes [#what-wordpress-configure-changes]
+
+`wordpress:configure` uses WP-CLI to scan your local project's plugins. It detects WooCommerce by the `woocommerce` plugin directory. When you confirm, it merges the configuration above into `ymir.yml` for the environments you chose.
+
+The command only edits `ymir.yml`. It doesn't install plugins or guarantee that every WooCommerce version works on Ymir. It appends values to existing lists, removes duplicates and sorts the keys, and rewriting the file removes any comments. Review the changes, then deploy your project for them to take effect.
+
+## Keeping customer pages out of the page cache [#keeping-customer-pages-out-of-the-page-cache]
+
+CloudFront never caches the paths in [`excluded_paths`][4], and it forwards the WooCommerce cookies and the headers above to WordPress. The preset uses WooCommerce's default page paths. If you renamed your cart, checkout or account pages, or serve them under other paths such as a language prefix, add those paths to `excluded_paths` yourself. Do the same for any other page that shows a customer's cart, order or account details.
+
+If you use a custom [`cache_policy_content`][5], CloudFront ignores `cookies_whitelist` and `forwarded_headers`, so your cache policy must forward these cookies and headers instead.
+
+## Page cache invalidation [#page-cache-invalidation]
+
+When you save or update a WooCommerce product or variation, the Ymir plugin invalidates these URLs in CloudFront:
+
+ * The product page.
+ * The shop page and everything under it.
+ * The product's category and tag archives, and everything under them.
+
+If you enable `YMIR_CLEAR_ALL_ON_POST_UPDATE`, the plugin invalidates the whole CloudFront cache instead. The plugin doesn't invalidate other pages that show the product, such as your home page. Those stay cached until they expire or you invalidate them with the [`environment:invalidate-cache`][6] command. If you use Elementor, see [WooCommerce product pages][7] for the Elementor pages that the plugin also invalidates.
+
+`YMIR_DISABLE_PAGE_CACHING` only controls this invalidation. Setting it to true, as an environment variable or a constant, stops the plugin from invalidating pages, but CloudFront keeps caching them. To change what CloudFront caches, use the [`caching`][8] option. If you don't set `YMIR_DISABLE_PAGE_CACHING`, the plugin only invalidates pages when your uploads URL uses the same domain as your site.
+
+## Scheduled actions [#scheduled-actions]
+
+WooCommerce uses [Action Scheduler][9] to run background jobs. When the [`cron`][10] option is enabled, Ymir runs `wp ymir run-all-cron` on your environment at that interval. The Ymir plugin removes Action Scheduler's WP-Cron queue runner, and adds `wp action-scheduler run --batches=1` to the commands that `run-all-cron` starts for each site.
+
+This has a few limits:
+
+ * Each cron run processes at most one batch of actions per site. Action Scheduler's default batch size is 100 actions, so a longer queue takes several cron runs to clear.
+ * Ymir starts the command asynchronously and doesn't wait for it to finish.
+ * Ymir doesn't guarantee that an action runs exactly once. A failed or timed-out command can leave work half done or run again, so make your own scheduled actions safe to run again.
+ * If you disable `cron`, Ymir doesn't run the command, but the plugin still removes Action Scheduler's WP-Cron queue runner.
+
+You can change the command with the `ymir_action_scheduler_command` filter. For example, to use smaller batches:
+
+```php
+add_filter('ymir_action_scheduler_command', function (): string {
+    return 'action-scheduler run --batches=1 --batch-size=50';
+});
+```
+
+[1]: https://woocommerce.com/
+[2]: /reference/ymir-cli#wordpress-configure
+[3]: /guides/container-image-deployment
+[4]: /reference/configuration#excluded-paths
+[5]: /reference/configuration#cache-policy-content
+[6]: /reference/ymir-cli#environment-invalidate-cache
+[7]: /compatibility/elementor#woocommerce-product-pages
+[8]: /reference/configuration#caching
+[9]: https://actionscheduler.org/
+[10]: /reference/configuration#cron

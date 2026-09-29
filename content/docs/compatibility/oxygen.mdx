@@ -1,0 +1,48 @@
+---
+title: "How to set up Oxygen in a Ymir project"
+navTitle: "Oxygen"
+description: "Project configuration changes needed to run Oxygen on Ymir."
+---
+
+<Callout type="info" title="Automatic configuration">
+
+You can have Ymir configure your project automatically for you by using the [`wordpress:configure`][2] command.
+
+</Callout>
+
+[Oxygen][1] is a popular WordPress page builder that you can use to build beautiful WordPress sites. Ymir makes it easy to support Oxygen in your serverless WordPress project. This guide will cover the changes that you need to make.
+
+## Project configuration changes
+
+Below is the environment configuration that `wordpress:configure` adds for Oxygen in a WordPress project. Replace `environment` with the correct environment name. If your environment already has these options, add the values to its existing lists instead of replacing them.
+
+```yml
+environments:
+  environment:
+    build:
+      include:
+        - /wp-content/plugins/oxygen
+    cdn:
+      excluded_paths:
+        - /uploads/oxygen/*
+```
+
+The `build.include` path adds all of the plugin's files to your build, not only its PHP files. Ymir ignores the leading `/`. For other project types, replace `/wp-content/plugins` with your plugins directory:
+
+| Project type | Plugins directory |
+| :--- | :--- |
+| wordpress | `/wp-content/plugins` |
+| bedrock | `/web/app/plugins` |
+| radicle | `/public/content/plugins` |
+
+If you use [container image deployment][3], you can omit these `build.include` entries since Ymir only uses them for ZIP archive builds. Keep any other `build` settings, such as `build.commands`. `excluded_paths` stops CloudFront from caching the files that Oxygen generates in the uploads directory.
+
+## What `wordpress:configure` changes [#what-wordpress-configure-changes]
+
+`wordpress:configure` uses WP-CLI to scan your local project's plugins. It detects Oxygen by the `oxygen` plugin directory. When you confirm, it merges the configuration above into `ymir.yml` for the environments you chose.
+
+The command only edits `ymir.yml`. It doesn't install plugins or guarantee that every Oxygen version works on Ymir. It appends values to existing lists, removes duplicates and sorts the keys, and rewriting the file removes any comments. Review the changes, then deploy your project for them to take effect.
+
+[1]: https://oxygenbuilder.com/
+[2]: /reference/ymir-cli#wordpress-configure
+[3]: /guides/container-image-deployment

@@ -1,0 +1,185 @@
+---
+title: "PHP runtime reference"
+navTitle: "PHP runtime"
+description: "PHP versions, architectures, extensions, filesystem and limits of the Ymir PHP runtime on AWS Lambda."
+---
+
+Ymir runs your PHP code on AWS Lambda with the open source [Ymir PHP runtime][1]. This page covers what the runtime provides and where its boundaries are. It describes the runtime as built from the source of runtime release 1.21.0. The runtime your environment actually runs depends on the runtime layer or image used by its deployment.
+
+To check the PHP version of an environment, use the [`php:version`][3] command. The [`php:info`][2] command shows the full PHP configuration, including loaded extensions. Both commands run PHP's command-line interface in the environment's `console` function. They don't show the runtime release, and the `website` function's PHP-FPM settings can differ.
+
+<Callout type="warn" title="php:info output contains secrets">
+
+The `php:info` command prints the environment variables of the `console` function. These include your environment's secrets and temporary AWS credentials. Don't paste its output into support requests, issues, chats or shared logs. Use `php:version` if you only need the PHP version.
+
+</Callout>
+
+## PHP versions [#php-versions]
+
+The [`php`][4] configuration option accepts `7.2`, `7.3`, `7.4`, `8.0`, `8.1`, `8.2`, `8.3`, `8.4` and `8.5`. Ymir publishes a runtime for each of these versions on both architectures. That only means Ymir can deploy that version. It doesn't mean that your application, WordPress, plugins or Composer packages support it, or that the PHP project still fixes security issues in it.
+
+| `php` value | Security support from the PHP project |
+| --- | --- |
+| `7.2`, `7.3`, `7.4`, `8.0` and `8.1` | Ended |
+| `8.2` | Until December 31, 2026 |
+| `8.3` | Until December 31, 2027 |
+| `8.4` | Until December 31, 2028 |
+| `8.5` | Until December 31, 2029 |
+
+These dates come from the PHP project's [supported versions page][5]. Check it for the current status.
+
+The `php` option only selects the runtime for zip archive deployments whose [`layers`][9] option is absent or empty. With container image deployment, your `Dockerfile` selects the PHP version. With a non-empty `layers` list, its `ymir:php-` value selects it. See [how Ymir selects the runtime](#runtime-selection).
+
+<Callout type="warn" title="Default PHP version">
+
+If a zip archive deployment environment without custom layers doesn't set the `php` option, Ymir uses PHP `7.4`, which no longer receives security fixes. This default exists for backwards compatibility. The `ymir init` command writes a newer `php` value to the environments it creates: `8.2` for WordPress, Bedrock and Radicle projects and `8.3` for Laravel projects. If you configure the environment for container image deployment, it removes the `php` value instead. Set the `php` option explicitly on zip archive deployment environments.
+
+</Callout>
+
+Before changing an environment's PHP version, check that your application and its dependencies support the new version and test it on a staging environment. Ymir builds your project on the computer running the `build` or `deploy` command. For example, the default build commands of Bedrock, Laravel and Radicle projects run `composer install`, which installs the package versions from your `composer.lock` file. Make sure that file contains versions that support the environment's PHP version. Composer's [`platform`][6] setting changes the PHP version that Composer resolves dependencies for when it updates the lock file. It doesn't change the PHP version that runs your code or any native binaries in your dependencies, and it doesn't prove that your dependencies work with that version.
+
+## How Ymir selects the runtime [#runtime-selection]
+
+How your environment gets its runtime depends on its [deployment type][7].
+
+ * **Zip archive deployment:** Ymir deploys your Lambda functions with the `provided.al2023` Lambda runtime. When the `layers` option is absent or empty, it adds the Ymir runtime layer matching the environment's `php` and `architecture` options. Ymir chooses the runtime layer version when it deploys, so a new deployment can use a newer runtime release with a newer PHP patch version.
+ * **Container image deployment:** Your `Dockerfile` decides the runtime. Its `FROM` instruction uses the Ymir runtime image for your architecture with a PHP version tag, such as `php-8.4`, and Ymir ignores the `php` option. The image contains the runtime release that the tag pointed to when you built the image. See the [container image deployment guide][8].
+
+<Callout type="error" title="Custom layers replace the runtime layer">
+
+If you set the [`layers`][9] option to a non-empty list, Ymir uses only the layers you list. It no longer adds the Ymir runtime layer for you. To keep the runtime, add `ymir:php-` followed by your PHP version, such as `ymir:php-8.4`, to the list. Ymir replaces it with the runtime layer for the environment's region and architecture. The PHP version in that value, and not the `php` option, decides which runtime your functions use.
+
+</Callout>
+
+## Architecture [#runtime-architecture]
+
+The runtime is available for the `x86_64` and `arm64` [architectures][10], with a separate runtime layer and image for each one. Anything native that you add to your functions must be built for the environment's architecture. This includes Lambda layers, PHP extensions, executables and native binaries installed by Composer or npm. Switching an environment's architecture can break these even if your PHP code works on both.
+
+Runtime release 1.21.0 is built on the Amazon Linux 2023 Lambda base images for both architectures. Native code built for other Linux distributions or versions can fail to load because of missing or incompatible shared libraries.
+
+## PHP extensions [#runtime-extensions]
+
+According to its build files, runtime release 1.21.0 includes the following extensions on every PHP version and architecture:
+
+ * **Compiled into PHP:** `bcmath`, `curl`, `exif`, `ftp`, `gettext`, `mbstring`, `mysqli`, `mysqlnd`, `openssl`, `pcntl`, `readline`, `soap`, `sockets`, `sodium`, `xsl`, `zip` and `zlib`, along with the extensions PHP enables by default, such as `ctype`, `dom`, `fileinfo`, `pdo_sqlite`, `session`, `simplexml`, `tokenizer` and `xml`.
+ * **Loaded as shared extensions:** `apcu`, `igbinary`, `imagick`, `intl`, `pdo_mysql`, `pdo_pgsql`, `pgsql` and `zstd`.
+ * **OPcache:** Built into PHP 8.5 and loaded as a shared extension on earlier versions.
+ * **PHP 7.4 and later:** `msgpack` and `relay`.
+ * **PHP 7.2 and 7.3:** `redis`.
+
+The runtime doesn't include the `gd` extension or any APM agent. The [GD extension guide][11] and the [New Relic guide][12] cover what this means.
+
+The runtime's `php.ini` file also sets the following:
+
+ * Errors aren't displayed. PHP logs them to `stderr`, which goes to [CloudWatch logs](#runtime-logs) when logging is enabled.
+ * `memory_limit` is `10240M`. See [memory](#runtime-limits) for what this means.
+ * OPcache is enabled and doesn't check files for changes. It caches compiled files in `/tmp`.
+ * The `fastcgi_finish_request` function is disabled. The runtime doesn't support using it to keep working after sending the response.
+
+<Callout type="info" title="Adding PHP extensions">
+
+This page doesn't include a verified recipe for adding PHP extensions to the current runtime. A PHP extension only loads if it was built for the same PHP version, thread safety mode, architecture and system libraries as the runtime. Extensions from operating system package repositories are built for a different PHP installation, and the runtime images don't include the PHP headers or `phpize` needed to compile extensions. The runtime's build files also configure PHP to scan a `php/conf.d` directory in your project for `.ini` files, but no recipe using it has been verified for this page. If you need an extension, [contact support][14].
+
+</Callout>
+
+## Filesystem [#runtime-filesystem]
+
+Lambda makes your project files in `/var/task` read-only. Your code can't write files next to itself, such as caches, compiled templates or uploads.
+
+The `/tmp` directory is the only writable directory. Its size comes from the [`tmp_storage`][15] option. Each Lambda execution environment has its own `/tmp` directory. It isn't shared with other concurrent requests, and it's deleted when Lambda shuts down the execution environment. The runtime also uses `/tmp` for its OPcache files and the PHP-FPM socket. Only use `/tmp` for temporary files. Store anything that needs to persist in a database or object storage, such as the S3 storage that Ymir uses for WordPress uploads.
+
+## Memory, timeouts and payloads [#runtime-limits]
+
+ * **Memory:** Each function type gets between 128 MB and 10,240 MB of memory in 64 MB increments with the [`memory`][13] option. Lambda allocates CPU in proportion to memory. This memory is shared by everything in the execution environment, including the runtime, PHP-FPM, your PHP code and any extensions. The runtime sets PHP's `memory_limit` to `10240M`, so usually the Lambda memory limit is reached first, unless your application or its PHP settings set a lower `memory_limit`. When an invocation uses more memory than configured, Lambda terminates it.
+ * **Timeouts:** Each function type has its own `timeout` option. The [`website`][16] function's timeout defaults to 30 seconds and can't be longer than 30 seconds with an API gateway. Without an API gateway, it defaults to 90 seconds and can be up to 900 seconds. The `console` function and queue functions can run for up to 900 seconds.
+ * **Response size:** The runtime base64-encodes HTTP response bodies. If the encoded body is 6,000,000 characters or more, the runtime first gzip-compresses it, but only for `text/html` and `application/json` responses that aren't already compressed, and only when the request's `Accept-Encoding` header includes `gzip`. If the encoded body is still 6,000,000 characters or more, the runtime replaces the response with a `403` "Response Too Large" response. Base64 encoding makes a body about a third larger, so a response body that doesn't get compressed is rejected at about 4.5 MB. Clients that don't accept gzip get no compression fallback. Serve large files from object storage instead.
+ * **Lambda payload quotas:** Separately from the runtime's limit, Lambda limits synchronous request and response payloads, including headers and the event's other fields, to 6 MB.
+ * **Environment variables:** Lambda limits a function's environment variables to 4 KB in total. [Secrets][17] don't count toward this limit.
+
+See the [Lambda quotas][18] for the AWS limits that apply to every Lambda function.
+
+## WordPress uploads [#wordpress-uploads]
+
+This section applies to WordPress, Bedrock and Radicle projects. It describes how the Ymir WordPress plugin, as of plugin release 1.28.2, handles files uploaded with the WordPress media uploader. Other ways of adding files work differently. For example, the [`media:import`][22] command only copies files to S3 storage. It doesn't create attachments or their metadata.
+
+The plugin replaces WordPress's browser uploader, so an upload happens in three steps:
+
+ 1. **Upload:** The browser asks your site for a file name and a temporary upload URL. It then sends the file directly to your environment's S3 storage. The file doesn't go through PHP or the `website` function, so PHP's upload settings and the [Lambda payload quotas](#runtime-limits) don't limit its size.
+ 2. **Attachment:** The browser asks your site to create the attachment. The `website` function adds it to the WordPress database.
+ 3. **Metadata:** The `website` function then has the `console` function run a WP-CLI command that generates the attachment's metadata. For images, this is when WordPress reads the file and creates the thumbnails and other image sizes.
+
+### Upload size limit [#wordpress-upload-limit]
+
+The plugin limits uploads to 15 MB by default. WordPress's uploader checks this limit in the browser and rejects larger files before they upload. The upload URL itself doesn't enforce the limit. To change the limit, use the `YMIR_UPLOAD_LIMIT` setting. The plugin uses the first of these values:
+
+ 1. The `YMIR_UPLOAD_LIMIT` [environment variable][19], unless it's empty or `0`.
+ 2. The `YMIR_UPLOAD_LIMIT` PHP constant, if your configuration defines it.
+ 3. `15MB`.
+
+The value is a size, such as `64MB`, or a number of bytes. Use an environment variable and not a secret, since secret names can't start with `YMIR_`. Environment variable changes only take effect after you deploy or redeploy. To use a constant instead, define it in your WordPress configuration, such as your `wp-config.php` file:
+
+```php
+define('YMIR_UPLOAD_LIMIT', '64MB');
+```
+
+Raising the limit only lets larger files reach S3. It doesn't give the `console` function more memory, `/tmp` storage or time to process them.
+
+### Attachment metadata and thumbnails [#wordpress-attachment-metadata]
+
+Usually, the `website` function waits for the `console` function to finish generating the metadata before it responds to the browser. So this has to finish within both functions' timeouts. If it fails, the plugin's uploader shows an error, but the file is already in S3 and WordPress may already have created the attachment. Check the Media Library before you upload the file again.
+
+For images larger than 15 MB (15,728,640 bytes), the plugin doesn't wait. It saves basic metadata, such as the image's width and height, and has the `console` function generate the rest in the background. The Media Library shows the attachment right away, but its thumbnails and other image sizes only appear once the `console` function finishes. This threshold is fixed, so it only matters if you raise the upload limit.
+
+To generate the metadata of every upload in the background, use the `YMIR_FORCE_ASYNC_ATTACHMENT_CREATION` setting. If the environment variable exists, the plugin uses it, even if it's empty, and ignores the PHP constant. The plugin converts the value with PHP's boolean casting. Environment variables, including the values in a `.env` file or set with the Ymir CLI, are always strings. Every string except an empty string and `0` turns the setting on, including `false` and `off`. Set the environment variable to `1` to turn it on. Setting it to `0` turns it off, even if the constant is `true`. If you delete the environment variable, the plugin uses the constant again, so the setting is only off if the constant isn't defined or is `false`. A constant should use a boolean:
+
+```php
+define('YMIR_FORCE_ASYNC_ATTACHMENT_CREATION', true);
+```
+
+The plugin doesn't tell you when background processing fails. The attachment then keeps its basic metadata, without the missing image sizes. Changing either setting doesn't reprocess uploads whose processing already failed.
+
+Generating metadata can need a lot of the `console` function's [memory][23], [`/tmp` storage][24] and [time][25], depending on the file, the image's dimensions and the image sizes that your theme and plugins register. No image size is known to always work. Test large uploads on a staging environment.
+
+When an upload fails, check the [logs](#runtime-logs) of the function involved:
+
+ * **Rejected as too large:** If the uploader says that the file exceeds the maximum upload size, the file is larger than the upload limit. It never reaches your functions.
+ * **Error after the upload:** Check the `website` function's logs, and the `console` function's logs if the metadata generation failed.
+ * **Missing thumbnails or image sizes:** Check the `console` function's logs.
+
+The [logging guide][21] explains how to read these logs. They can contain file names, paths and personal data. Remove sensitive values before you share them, including with support.
+
+## Secrets [#runtime-secrets]
+
+When a Lambda execution environment starts, the runtime loads your environment's [secrets][17] from AWS Systems Manager Parameter Store. It adds them as environment variables to its PHP process before your application starts, and the processes it starts, such as PHP-FPM, inherit them. Other processes in the execution environment, such as Lambda extensions, don't get them automatically. Regular [environment variables][19] are part of the Lambda function configuration, so every process in the execution environment can read them, and so can anyone who can view the function's configuration.
+
+Lambda extensions and other code you add to your functions also run with your environment's IAM role. That role can read your environment's secrets from Parameter Store and access other AWS resources. Only add code that you trust.
+
+## Logs [#runtime-logs]
+
+The runtime, PHP-FPM and PHP send their output and errors to `stdout` and `stderr`. When logging is enabled for a function, Lambda sends this output to the function's CloudWatch log group, which Ymir configures with the [`logging`][20] option. The [logging guide][21] explains how to read these logs and send them to another logging service.
+
+[1]: https://github.com/ymirapp/php-runtime
+[2]: /reference/ymir-cli#php-info
+[3]: /reference/ymir-cli#php-version
+[4]: /reference/configuration#php
+[5]: https://www.php.net/supported-versions.php
+[6]: https://getcomposer.org/doc/06-config.md#platform
+[7]: /reference/configuration#deployment
+[8]: /guides/container-image-deployment
+[9]: /reference/configuration#layers
+[10]: /reference/configuration#architecture
+[11]: /guides/gd-extension
+[12]: /guides/new-relic
+[13]: /reference/configuration#memory
+[14]: mailto:support@ymirapp.com
+[15]: /reference/configuration#tmp-storage
+[16]: /reference/configuration#website
+[17]: /projects/environments#secrets
+[18]: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
+[19]: /projects/environments#environment-variables
+[20]: /reference/configuration#logging-2
+[21]: /guides/logging-service
+[22]: /reference/ymir-cli#media-import
+[23]: /reference/configuration#memory-3
+[24]: /reference/configuration#tmp-storage-3
+[25]: /reference/configuration#timeout-2

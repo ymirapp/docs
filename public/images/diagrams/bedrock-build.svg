@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="706" viewBox="0 0 1320 706" role="img" aria-labelledby="title desc">
+  <title id="title">How the Ymir CLI builds a Bedrock project, default behavior, illustrative</title>
+  <desc id="desc">A left-to-right build flow for a fictional Bedrock project, example-bedrock-project, showing default behavior for illustration only. Step 1, the initial copy: the Ymir CLI copies the project files to .ymir/build. By default, this copy leaves out Git-ignored paths, such as vendor, web/wp and web/app/plugins, except negated paths such as !web/app/plugins/acme. It also leaves out hidden files, such as .env, and web/app/uploads. These are only initial-copy defaults. They shape the initial copy, but they don't decide what ends up in the final build artifact, and they don't guarantee secrecy. Step 2, build commands run in .ymir/build: composer install installs WordPress, your plugins and the Ymir plugin from composer.lock, and other build commands can generate files, such as theme assets. Build commands, include paths and your Dockerfile can add files back, even ignored ones. Step 3, two separate selections from the built .ymir/build directory, which can overlap. First, the public asset files: files under web, by default except PHP, .mo, .po and hidden files, are selected for upload to the environment's public asset storage when you deploy. The build itself doesn't upload them. Second, the build artifact, which is one of two alternatives depending on the environment's deployment type: a zip archive, which by default contains server files such as PHP and .mo files, WordPress core and a few plugin and theme files, plus include paths, or a container image, where your Dockerfile and .dockerignore file decide what goes in and the generated Dockerfile copies the whole build directory. Step 4, review the build and public assets: check .ymir/build, the build artifact and the public assets for credentials and private files, such as a service account JSON file. A file extension doesn't make a private file safe to publish. This review is your own check, not a deploy approval or a security scan. Your .gitignore file isn't a secrecy boundary, so store credentials as secrets, not in your build.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#40594d"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .panel { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1.25; }
+    .item-dark { fill: #e9e7dc; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .item { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .caution { fill: #f4f1e6; stroke: #40594d; stroke-width: 1.25; stroke-dasharray: 6 4; }
+    .success { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .tag { fill: #071812; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .title { font-size: 16px; font-weight: 700; }
+    .title-green { font-size: 16px; font-weight: 700; fill: #2f7a54; }
+    .label { font-size: 15px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .tiny { font-size: 14px; fill: #40594d; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; }
+    .inline-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+    .or { font-size: 16px; font-weight: 700; fill: #40594d; }
+    .tag-text { font-size: 15px; font-weight: 700; fill: #f4f1e6; }
+  </style>
+
+  <rect width="1320" height="706" fill="#f4f1e6"/>
+
+  <text class="heading" x="20" y="40">How <tspan class="inline-code">example-bedrock-project</tspan> is built</text>
+  <rect class="tag" x="1040" y="18" width="260" height="32" rx="16"/>
+  <text class="tag-text" x="1170" y="39" text-anchor="middle">default behavior, illustrative</text>
+
+  <rect class="area" x="20" y="66" width="1280" height="560" rx="12"/>
+
+  <!-- 1. Initial copy -->
+  <rect class="panel" x="36" y="82" width="240" height="528" rx="10"/>
+  <text class="title" x="52" y="110">1. Initial copy</text>
+  <text class="small" x="52" y="134">Copies the project files</text>
+  <text class="small" x="52" y="154">to <tspan class="inline-code">.ymir/build</tspan></text>
+
+  <text class="title" x="52" y="190">Left out by default</text>
+  <rect class="item-dark" x="52" y="202" width="208" height="236" rx="8"/>
+  <text class="small" x="66" y="226">Git-ignored paths, like</text>
+  <text class="code" x="66" y="250">vendor</text>
+  <text class="code" x="66" y="272">web/wp</text>
+  <text class="code" x="66" y="294">web/app/plugins</text>
+  <text class="small" x="66" y="320">except negated paths, like</text>
+  <text class="code" x="66" y="344" font-size="13">!web/app/plugins/acme</text>
+  <text class="small" x="66" y="380">Hidden files, like <tspan class="inline-code">.env</tspan></text>
+  <text class="code" x="66" y="414">web/app/uploads</text>
+
+  <rect class="caution" x="52" y="470" width="208" height="124" rx="8"/>
+  <text class="note" x="66" y="496">Initial-copy defaults</text>
+  <text class="note" x="66" y="518">only. They don't decide</text>
+  <text class="note" x="66" y="540">the final artifact or</text>
+  <text class="note" x="66" y="562">guarantee secrecy.</text>
+
+  <!-- 2. Build commands -->
+  <rect class="panel" x="316" y="82" width="240" height="528" rx="10"/>
+  <text class="title" x="332" y="110">2. Build commands</text>
+  <text class="small" x="332" y="134">run in <tspan class="inline-code">.ymir/build</tspan></text>
+
+  <rect class="item-dark" x="332" y="170" width="208" height="134" rx="8"/>
+  <text class="code" x="346" y="196">composer install</text>
+  <text class="small" x="346" y="222">From <tspan class="inline-code">composer.lock</tspan>,</text>
+  <text class="small" x="346" y="244">installs WordPress, your</text>
+  <text class="small" x="346" y="266">plugins and the Ymir</text>
+  <text class="small" x="346" y="288">plugin</text>
+
+  <rect class="item-dark" x="332" y="320" width="208" height="96" rx="8"/>
+  <text class="title" x="346" y="346">Other build commands</text>
+  <text class="small" x="346" y="372">can generate files, such</text>
+  <text class="small" x="346" y="394">as theme assets</text>
+
+  <rect class="caution" x="332" y="470" width="208" height="124" rx="8"/>
+  <text class="note" x="346" y="496">Build commands, <tspan class="inline-code">include</tspan></text>
+  <text class="note" x="346" y="518">paths and your Dockerfile</text>
+  <text class="note" x="346" y="540">can add files back, even</text>
+  <text class="note" x="346" y="562">ignored ones.</text>
+
+  <!-- 3. Two separate selections -->
+  <rect class="panel" x="596" y="82" width="420" height="528" rx="10"/>
+  <text class="title" x="612" y="110">3. Two separate selections</text>
+  <text class="small" x="612" y="134">from the built <tspan class="inline-code">.ymir/build</tspan> directory.</text>
+  <text class="small" x="612" y="154">They can overlap.</text>
+
+  <rect class="item-dark" x="612" y="170" width="388" height="164" rx="8"/>
+  <text class="title" x="628" y="196">Public asset files</text>
+  <text class="small" x="628" y="220">Files under <tspan class="inline-code">web</tspan>, by default except PHP,</text>
+  <text class="small" x="628" y="242"><tspan class="inline-code">.mo</tspan>, <tspan class="inline-code">.po</tspan> and hidden files</text>
+  <rect class="item" x="628" y="280" width="356" height="42" rx="8"/>
+  <text class="label" x="806" y="306" text-anchor="middle">Environment's public asset storage (on deploy)</text>
+
+  <rect class="item-dark" x="612" y="350" width="388" height="248" rx="8"/>
+  <text class="title" x="628" y="376">Build artifact</text>
+  <text class="small" x="628" y="400">One of these, depending on the</text>
+  <text class="small" x="628" y="422">environment's deployment type</text>
+  <rect class="item" x="628" y="436" width="158" height="148" rx="8"/>
+  <text class="title" x="707" y="460" text-anchor="middle">Zip archive</text>
+  <text class="tiny" x="640" y="484">Server files, like</text>
+  <text class="tiny" x="640" y="502">PHP, <tspan class="inline-code">.mo</tspan>, WordPress</text>
+  <text class="tiny" x="640" y="520">core and a few</text>
+  <text class="tiny" x="640" y="538">plugin and theme</text>
+  <text class="tiny" x="640" y="556">files, plus <tspan class="inline-code">include</tspan></text>
+  <text class="tiny" x="640" y="574">paths</text>
+  <text class="or" x="806" y="514" text-anchor="middle">or</text>
+  <rect class="item" x="826" y="436" width="158" height="148" rx="8"/>
+  <text class="title" x="905" y="460" text-anchor="middle">Container image</text>
+  <text class="tiny" x="838" y="484">Your Dockerfile and</text>
+  <text class="tiny" x="838" y="502"><tspan class="inline-code">.dockerignore</tspan> file</text>
+  <text class="tiny" x="838" y="520">decide. The</text>
+  <text class="tiny" x="838" y="538">generated one copies</text>
+  <text class="tiny" x="838" y="556">the whole build</text>
+  <text class="tiny" x="838" y="574">directory.</text>
+
+  <!-- 4. Review -->
+  <rect class="success" x="1056" y="82" width="228" height="528" rx="10"/>
+  <text class="title-green" x="1072" y="110">4. Review the build</text>
+  <text class="title-green" x="1072" y="130">and public assets</text>
+  <text class="label" x="1072" y="166">Check <tspan class="inline-code">.ymir/build</tspan>, the</text>
+  <text class="label" x="1072" y="188">build artifact and the</text>
+  <text class="label" x="1072" y="210">public assets for</text>
+  <text class="label" x="1072" y="232">credentials and private</text>
+  <text class="label" x="1072" y="254">files, such as a service</text>
+  <text class="label" x="1072" y="276">account JSON file.</text>
+  <text class="label" x="1072" y="312">A file extension doesn't</text>
+  <text class="label" x="1072" y="334">make a private file safe</text>
+  <text class="label" x="1072" y="356">to publish.</text>
+  <text class="note" x="1072" y="518">Your own check, not a</text>
+  <text class="note" x="1072" y="540">deploy approval or a</text>
+  <text class="note" x="1072" y="562">security scan.</text>
+
+  <!-- Arrows, painted after every box so nothing covers them -->
+  <line x1="276" y1="232" x2="314" y2="232" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <path d="M556 232 H576 V252 H610" fill="none" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <path d="M576 252 V472 H610" fill="none" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <line x1="806" y1="252" x2="806" y2="278" stroke="#40594d" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+  <line x1="1000" y1="252" x2="1054" y2="252" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <line x1="1000" y1="472" x2="1054" y2="472" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <!-- Labels -->
+  <rect class="tag" x="250" y="650" width="360" height="32" rx="16"/>
+  <text class="tag-text" x="430" y="671" text-anchor="middle"><tspan class="inline-code">.gitignore</tspan> isn't a secrecy boundary</text>
+  <rect class="tag" x="650" y="650" width="420" height="32" rx="16"/>
+  <text class="tag-text" x="860" y="671" text-anchor="middle">Store credentials as secrets, not in your build</text>
+</svg>

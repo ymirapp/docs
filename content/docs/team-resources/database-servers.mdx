@@ -1,0 +1,222 @@
+---
+title: "Database servers"
+description: "Create and manage database servers, databases and database users, and connect to private database servers."
+---
+
+## Managing database servers
+
+Before you can create a database, you'll need a database server. You can do this using the [`database:server:create`][1] command. The command will prompt you to fill in some details about the database server that you're creating:
+
+- **Engine:** MySQL or PostgreSQL. WordPress projects (including Bedrock and Radicle) only support MySQL database servers.
+- **Aurora serverless:** Whether to create an Aurora serverless database cluster instead of a database server of a fixed type.
+- **Type and storage:** The database server type and the maximum amount of storage (50GB by default). Aurora serverless database clusters don't have these settings.
+- **Public access:** Whether the database server is publicly accessible. Aurora serverless database clusters are always private.
+
+<Callout type="warn" title="Can create a NAT gateway">
+
+Ymir will create a NAT gateway if you create a private database server or Aurora serverless database cluster and the network used by the database server doesn't have a NAT gateway already. A NAT gateway bills by the hour and for the data it processes, plus its public IPv4 address and data transfer. Prices vary by region. See the [Amazon VPC pricing page][26] and the [AWS costs guide][27].
+
+</Callout>
+
+```bash
+ymir database:server:create
+```
+
+After creating a database server, you can only change its type and maximum storage. You do this with the [`database:server:modify`][2] command. You can only increase the maximum storage, not reduce it. You can't modify an Aurora serverless database cluster, and you can't change the engine, network or public access of any database server.
+
+<Callout type="warn" title="Database unavailable during modification">
+
+Changing the type of a database server will make it unavailable for a few minutes. Increasing its maximum storage is an irreversible change.
+
+</Callout>
+
+Deleting a database server is as simple as creating one. Just use the [`database:server:delete`][3] command. This will start the database server deletion process.
+
+<Callout type="error" title="No final snapshot on deletion">
+
+Ymir doesn't take a final snapshot when it deletes a database server, and you can't cancel the deletion process once it starts. Make sure you've saved any data you need before deleting a database server.
+
+</Callout>
+
+## Managing databases
+
+By default, Ymir will create a `ymir` database whenever it creates a database server. (Database servers created by older versions of Ymir have a `wordpress` database instead.) That said, since each site needs its own database, you'll probably need to create more. You can create databases using your favourite MySQL or PostgreSQL client.
+
+That said, the Ymir CLI also has commands at your disposal to create databases without having to use another tool. The [`database:create`][4] and [`database:delete`][5] commands let you create and delete databases. You can also use the `database:list` command to see all the databases on a database server.
+
+## Managing database users
+
+Database users is another important aspect of database servers. By default, Ymir creates every database server with a `ymir` user as its [master user][6]. Ymir will only show the password for the `ymir` user once during the database server creation.
+
+<Callout type="warn" title="Make sure to preserve the master password">
+
+If you lose the master database password, you can use `database:server:rotate-password` to get a new master database password. This will break all currently deployed sites using the master database password. You will need to deploy those sites again to update the password.
+
+</Callout>
+
+It's good security practice to not use the master user for any of your WordPress sites. This is why Ymir makes it easy to create additional users on your database servers. You can just use the [`database:user:create`][7] command to create one.
+
+```bash
+ymir database:user:create
+```
+
+The command displays the password of the new user once, so make sure to store it somewhere safe. If the database server isn't publicly accessible, the command will also display the SQL queries that you need to run on the database server to create the user.
+
+<Callout type="warn" title="Do not give user full access">
+
+While Ymir offers the ability to give your user full access to your database server, this isn't recommended. Instead, you should only give the user access to the database(s) it needs. This is known as the [principle of least privilege][8].
+
+</Callout>
+
+You can view all the users on a database server using the [`database:user:list`][9] command. The command will only show the users that Ymir created and manages. If you created some manually, they won't show up in the list.
+
+You can also delete a user using the [`database:user:delete`][10] command. This command also only works for users managed by Ymir. If you want to delete a user that you created manually, you'll have to do it yourself.
+
+## Using databases in a project
+
+The magic of Ymir is how it ties all these database elements to your projects. In your `ymir.yml` configuration file, you can fill in all the database elements that we saw previously. Here's an example:
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  staging:
+    database:
+      server: my-database-server
+      name: environment_staging
+      user: new-user
+  production:
+    database:
+      server: my-database-server
+      name: environment_production
+      user: new-user
+```
+
+So our `ymir.yml` configuration file has two default environments: `staging` and `production`. Each environment has a `database` node. This is where you put all your database elements.
+
+We have `server` where you put the name of the server. `name` is the database name. And `user` which is the database user. We're using all values that we saw previously.
+
+Now when Ymir deploys your project, it'll convert these values into the proper environment variables. For the database user, it'll also inject its password for you. So no need to worry about that either!
+
+## Protecting your database server from accidental deletion
+
+A database server is a critical infrastructure component and deleting it by mistake can have dire consequences. To prevent this, you can use [`database:server:lock`][15] command to lock a database server. This will prevent someone from accidentally deleting it in Ymir or the AWS console.
+
+To delete a locked database server, you must first unlock it using the [`database:server:unlock`][16] command. Afterwards, you'll be able to use the [`database:server:delete`][3] to delete it.
+
+## Backing up and recovering databases [#backing-up-and-recovering-databases]
+
+Ymir doesn't restore databases for you. Its database servers are Amazon RDS DB instances and Aurora DB clusters in your AWS account, so you back them up and restore them with AWS features and your own exports. Plan and test your recovery before you need it.
+
+### What AWS backs up [#what-aws-backs-up]
+
+When Ymir creates a database server, it asks AWS to keep [automated backups][18] for seven days. That's only the setting at creation. It doesn't prove that backups exist for a database server or that its settings haven't changed since, and it isn't a recovery time promise. Check the backup retention of each database server in the AWS console.
+
+Within the retention period, AWS can restore a DB instance to a [point in time][19]. You can also take [manual snapshots][20], which AWS keeps until you delete them. Aurora DB clusters have [their own backup options][21]. AWS charges for backup storage.
+
+These backups only contain your database server's data. They don't contain your project code, your uploads, your environment variables or your secrets. A deployment [rollback][22] doesn't restore any data either.
+
+<Callout type="error" title="Don't count on automated backups after a deletion">
+
+Ymir doesn't take a final snapshot when it deletes a database server, and by default AWS removes automated backups when it deletes a DB instance or cluster. The exception is a DB cluster with an AWS Backup plan that has a point-in-time restore rule. So don't count on seven days of backups after a deletion. Manual snapshots and your own exports are separate and stay. Make one and check that you can restore it before you delete a database server.
+
+</Callout>
+
+### Restoring a backup [#restoring-a-backup]
+
+When you restore an RDS or Aurora snapshot or restore to a point in time, AWS [creates a new DB instance or DB cluster][23]. It doesn't overwrite the existing one. Ymir doesn't adopt the restored database server or attach it to your projects. Contact Ymir support before you rename, replace or reconfigure a database server that Ymir manages, and don't expect Ymir to recover from those changes automatically. Otherwise, you can copy the data you need from the restored database server into a database on a Ymir database server with a reviewed export and [`database:import`][24].
+
+<img src="/images/diagrams/database-restore.svg" alt="Diagram: your Ymir project, example-project, is connected to example-database-server, a database server that Ymir manages in your AWS account and that holds the database example_database. When backups of the server are available in AWS, they can include automated backups for point-in-time restores and manual snapshots that you take. An AWS restore from an available backup creates a separate new DB instance or DB cluster, restored-database-server, next to the original. It never overwrites or replaces example-database-server. Ymir doesn't adopt the restored server and your project isn't connected to it, so your project keeps using the original server. To recover data, make a reviewed data copy: export the data you need from the restored server with your own tools, review it, then import it into a database on a Ymir database server with database:import. Check in AWS that backups exist and how they're set up before you rely on them. Backups only contain database server data, not your project code, uploads, environment variables or secrets." width="1100" height="640" />
+
+<a href="/images/diagrams/database-restore.svg">Open the full-size diagram</a>
+
+### Exporting a database [#exporting-a-database]
+
+The [`database:export`][25] command saves a database to a SQL file on your computer. It's useful for a copy you control, such as before an import or a risky change. An export only contains one database, not its database users or their passwords. See the command reference for what else it leaves out.
+
+Your export contains your users' data, so keep it private and out of your project repository and public directories. Then check that the file isn't empty and that you can import it into a scratch database.
+
+### Checking your backups [#checking-your-backups]
+
+Whatever you use, check it yourself:
+
+* The retention period and backup settings of each database server.
+* Who can access, copy, share or delete your snapshots and exports, and how they're encrypted.
+* How long you keep them and what they cost.
+* That you can restore them. Restore one into a new database server or a scratch database from time to time.
+
+## Connecting to a private database server
+
+Because a private database server resides on your network's private subnet, it's not publicly accessible. To connect to it, you'll need to use the [`database:server:tunnel`][11] command. This command will create a [SSH tunnel][12] to your [bastion host][13] which allow you to connect to your database server. The network must have a bastion host, the database server must be available, and your computer needs the `ssh` command. You can't use it with a publicly accessible database server.
+
+```bash
+ymir database:server:tunnel my-database-server
+```
+
+The tunnel stays open as long as the command is running. Press `Ctrl+C` to close it. While it's open, connect with a database client such as [TablePlus][14] using these settings:
+
+| Setting | MySQL | PostgreSQL |
+| --- | --- | --- |
+| Connection type | MySQL | PostgreSQL |
+| Host | `127.0.0.1` | `127.0.0.1` |
+| Port | `3305`, or the port you passed with `--port` | `5433`, or the port you passed with `--port` |
+| User | `ymir` or a user you created | `ymir` or a user you created |
+| Password | The password of that user | The password of that user |
+| Database | The database you want to use, such as `ymir` | The database you want to use, such as `ymir` |
+
+TablePlus can also [import a connection URL][17] instead of these fields. The URL points at the local end of the Ymir tunnel, so keep the `database:server:tunnel` command running and don't configure a second SSH tunnel in TablePlus. For a MySQL database server, the URL looks like this:
+
+```
+mysql://app_user@127.0.0.1:3305/app_database
+```
+
+For a PostgreSQL database server:
+
+```
+postgresql://app_user@127.0.0.1:5433/app_database
+```
+
+Replace `app_user` and `app_database` with your database user and database, and URL-encode them if they contain special characters. If you passed `--port`, use that port instead of the default in the URL. Leave the password out of the URL and add it separately in TablePlus, so it doesn't end up in a saved URL or your shell history. On macOS, you can also open a connection URL from your terminal:
+
+```bash
+open -a TablePlus "postgresql://app_user@127.0.0.1:5433/app_database"
+```
+
+Once saved, TablePlus can copy the connection as a URL for reuse. If you use another database client, use the fields above since clients don't all handle connection URLs the same way.
+
+For example, with the `mysql` command-line client:
+
+```bash
+mysql -h 127.0.0.1 -P 3305 -u ymir -p
+```
+
+If the default port is already in use on your computer, pass a different one with `--port`. You can't use `3306` for MySQL or `5432` for PostgreSQL since those are the ports of the database server itself. The command prints the local endpoint to use once the tunnel is open.
+
+[1]: /reference/ymir-cli#database-server-create
+[2]: /reference/ymir-cli#database-server-modify
+[3]: /reference/ymir-cli#database-server-delete
+[4]: /reference/ymir-cli#database-create
+[5]: /reference/ymir-cli#database-delete
+[6]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.MasterAccounts.html
+[7]: /reference/ymir-cli#database-user-create
+[8]: https://en.wikipedia.org/wiki/Principle_of_least_privilege
+[9]: /reference/ymir-cli#database-user-list
+[10]: /reference/ymir-cli#database-user-delete
+[11]: /reference/ymir-cli#database-server-tunnel
+[12]: https://en.wikipedia.org/wiki/Ssh_tunnel
+[13]: /team-resources/networks#bastion-host
+[14]: https://tableplus.com
+[15]: /reference/ymir-cli#database-server-lock
+[16]: /reference/ymir-cli#database-server-unlock
+[17]: https://docs.tableplus.com/gui-tools/manage-connections
+[18]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html
+[19]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIT.html
+[20]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html
+[21]: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Managing.Backups.html
+[22]: /projects/deploy#rolling-back-a-deployment
+[23]: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_RestoreFromSnapshot.html
+[24]: /reference/ymir-cli#database-import
+[25]: /reference/ymir-cli#database-export
+[26]: https://aws.amazon.com/vpc/pricing/
+[27]: /guides/aws-costs#networks-nat-gateways-and-bastion-hosts

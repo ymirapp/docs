@@ -1,0 +1,72 @@
+---
+title: "Introduction"
+description: "What Ymir is, what it manages for your WordPress, Bedrock, Radicle and Laravel projects on AWS, and what stays in your hands."
+---
+
+## What is Ymir?
+
+Ymir is a serverless DevOps platform for running WordPress and Laravel projects on AWS. While the description sounds like something you'd hear playing [buzzword bingo][1], it's actually a really good description of what Ymir does for you! So let's expand on these terms and explain how they tie to Ymir.
+
+First, Ymir is a [DevOps][2] platform because it handles a lot of the tasks that fall under the DevOps umbrella. With Ymir, you get a platform that:
+
+ * Creates and configures the AWS resources of your project environments in your own AWS account
+ * Builds your project on your computer or CI server and deploys it to those environments
+ * Manages team resources, such as database servers, caches, networks, DNS zones and SSL certificates
+ * Gives you your environments' logs and usage metrics from the Ymir CLI
+
+Ymir supports four [project types][4]: WordPress, [Bedrock][5], Radicle and [Laravel][6]. Each one has its own build commands and Ymir integration: the Ymir WordPress plugin, the Ymir Laravel bridge or, for Radicle, both. Ymir doesn't have a generic project type for other PHP applications.
+
+The [serverless][3] element of Ymir is AWS Lambda. While serverless makes it sound like there are no servers, that isn't the case. There are still servers that have to execute your PHP code. It's just that AWS runs them, so you don't manage them.
+
+AWS Lambda also runs more copies of your functions as more requests come in. That scaling has limits, such as your AWS account's concurrency quota, your database server and how fast your code responds. The [scaling guide][7] explains them. And some team resources, such as database servers, cache clusters and NAT gateways, are still billed by the hour whether your sites get traffic or not.
+
+## What does Ymir do for you?
+
+Going more into the specifics, here are some of the things that Ymir will handle for you:
+
+ * Lambda functions for your website and console, and for the queues of Laravel applications
+ * Database servers on Amazon RDS, created with seven days of automated backups
+ * Deployments, redeploys and rollbacks of your project code and configuration
+ * Public assets stored on S3 and, by default, served by a CloudFront CDN that can also cache your pages. The Ymir WordPress plugin stores WordPress uploads on S3 too, while Laravel applications [configure their own file storage][14]
+ * `staging` and `production` environments when the `init` command creates your project, plus any you create, each with its own vanity domain
+ * DNS management including custom domain support
+ * SSL certificate management
+ * Emails sent using SES for better deliverability
+ * An optional AWS WAF firewall
+
+Ymir does all this in AWS accounts that you own, through your team's [cloud provider connections][8]. So some things stay in your hands:
+
+ * **Your AWS access:** You create the IAM role, or the IAM user and access key, that Ymir uses, and you decide who else can use it.
+ * **Your AWS bill:** AWS bills your AWS account directly, separately from your Ymir subscription. See [understanding your AWS costs][9].
+ * **Your code:** You choose your PHP version and keep WordPress, your plugins, themes and Composer packages up to date and secure. See the [PHP runtime reference][10].
+ * **Your data:** Deployments and rollbacks don't back up or restore your database or uploads. Plan and test your [backups and recovery][11]. If you're moving an existing site, follow the [migration guide][12].
+ * **Your isolation needs:** Separate environments don't guarantee that their data or network access is isolated. Environments that share a database server, cache cluster or network can reach it the same way, so isolation depends on the credentials, databases and cache configuration that each one uses. See [resources shared with other environments][13].
+
+<img src="/images/diagrams/introduction-architecture.svg" alt="Diagram: the Ymir CLI on your computer or CI server builds example-project, sends the deployment to Ymir and uploads the build directly to your AWS account. Ymir manages the AWS resources through the team's cloud provider connection. In your AWS account, the staging and production environments each have their own CloudFront distribution, Lambda functions and S3 buckets, and both use one shared database server, cache cluster and network. Visitors reach the environments in your AWS account directly. Your Ymir subscription and your AWS bill are separate." width="1100" height="640" />
+
+<a href="/images/diagrams/introduction-architecture.svg">Open the full-size diagram</a>
+
+## Why is all this important?
+
+As a WordPress or Laravel professional, you know how important hosting is. It's a critical part of your client's experience with your service. They'll call you if their site is slow, down or even hacked. They'll question the quality of your work because of it.
+
+You want to offer the best hosting experience to your client, but that comes with a price tag. You either have to pay a professional to manage servers for you or pay a premium hosting company. And it can be hard for your clients to justify the price.
+
+With Ymir, your projects run on AWS infrastructure in your own AWS account. AWS runs the servers behind Lambda, and Ymir creates the resources and deploys your projects. You still own your code, your data and your AWS account, but you don't have to build your own hosting platform to get there.
+
+Instead, you can focus on building the best possible solution for your clients.
+
+[1]: https://www.urbandictionary.com/define.php?term=buzzword%20bingo
+[2]: https://en.wikipedia.org/wiki/DevOps
+[3]: https://en.wikipedia.org/wiki/Serverless_computing
+[4]: /projects/manage#choosing-the-project-type
+[5]: /guides/bedrock
+[6]: /guides/laravel
+[7]: /guides/scaling
+[8]: /getting-started#connecting-a-team-to-aws
+[9]: /guides/aws-costs
+[10]: /reference/php-runtime#php-versions
+[11]: /team-resources/database-servers#backing-up-and-recovering-databases
+[12]: /guides/migration-to-ymir
+[13]: /projects/environments#shared-environment-resources
+[14]: /guides/laravel#files-and-storage

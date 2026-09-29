@@ -1,0 +1,137 @@
+---
+title: "Automating your deployments"
+navTitle: "Automated deployment"
+description: "Deploy Ymir projects from a continuous integration platform such as GitHub Actions."
+---
+
+## Why automate your deployment?
+
+In practice, it's not ideal to deploy your projects from your local development environment. That's because the Ymir CLI builds your project from the files in your project directory, including uncommitted changes and new files that Git doesn't ignore. This isn't something that you might want especially when deploying to production.
+
+In this scenario, you might want to look at automating your deployment. Ymir makes it easy for you to deploy your project using your favourite continuous integration platform. The deployment then builds a clean checkout of your repository.
+
+## Creating an API token
+
+All that you need is an API token. To create one, go to the [account management page][1] and scroll down to the **Manage API Tokens** section. Click **Create**, give the token a name that tells you where you use it, such as your continuous integration platform and repository, and create it. Ymir only shows you the API token once, so copy it before closing the window.
+
+The API token authenticates as your Ymir user, so it has the same access to your teams and projects as your account. It isn't limited to a project or team. On each team you're on, it has your permissions, or every permission on the teams that you own. API tokens don't expire. Anyone who gets your API token can do everything that your permissions allow on all those teams. Depending on those permissions, this can include deploying code, running commands on your environments and deleting projects.
+
+To limit what a leaked API token can do, you can create it with a separate Ymir account that's only on the team you're deploying, with only the permissions it needs. Keep in mind that a permission to deploy is also a permission to run any code with your environment's secrets. See [what team members can access][15].
+
+The Ymir CLI will look for the `YMIR_API_TOKEN` environment variable. So, once the API token created, you'll need to add it as an environment variable in your continuous integration workflow. Store it using your platform's secret storage and never commit it to your repository.
+
+### Revoking an API token [#revoking-an-api-token]
+
+The **Manage API Tokens** section lists your API tokens with when they were last used. To revoke an API token, delete it from that list. Any workflow using it stops working. Revoke an API token when you no longer use it or if it might have leaked, then create a new one and replace it in your continuous integration platform's secret storage. Removing a user from a team also stops their API tokens from working on that team.
+
+## Preparing your project [#preparing-your-project]
+
+The continuous integration job runs the same [build process][4] as your computer, but it starts from a fresh checkout of your repository. Before automating your deployment, check that your project has the following:
+
+* **Committed project files:** Your repository needs your `ymir.yml` file and every file the build uses. Files that Git ignores aren't in the checkout.
+* **Ymir integration:** The build fails if the Ymir integration isn't installed. For WordPress projects, commit the Ymir plugin. For Bedrock, Radicle and Laravel projects, require the integration package in `composer.json` and install it with a `composer install` build command.
+* **Laravel environment file:** Laravel builds need a `.env` or `.env.<environment>` file for the environment you're deploying. If Git ignores it, your workflow needs to create it before deploying.
+* **Build commands:** Install your dependencies and compile your assets using your environment's [build commands][5]. Running `composer install` or `npm install` in an earlier workflow step won't help if Git ignores `vendor` or `node_modules`, because the Ymir CLI doesn't copy ignored files to the build directory. A WordPress project doesn't need a `composer.json` or `package.json` file unless your build commands use them.
+* **Build tools:** The job needs PHP with the `zip` extension and Composer to install and run the Ymir CLI, plus every tool your build commands use. Build commands like `composer install` run with the job's PHP version, not the [`php`][6] version configured for your environment. If they differ, set Composer's [`platform`][7] configuration so Composer installs dependencies for your environment's PHP version.
+* **Container image builds:** If the environment uses [container image deployment][8], the job also needs Docker or Podman able to build an image for the environment's architecture.
+
+Always pass the environment name and the `--no-interaction` option to the `deploy` command. Without an environment name, the command fails instead of waiting for an answer that won't come.
+
+## Continuous integration platforms
+
+The following section explains how to set up a basic automated deployment workflow with different continuous integration platforms. These examples show the minimum needed to deploy an environment. Add the tools your build commands need, and test the workflow with a non-production environment first.
+
+### GitHub actions
+
+First, you're going to need to create a secret to store your API token. Secrets are encrypted environment variables that allow you to store sensitive information safely. You can read more about them and how to create them [here][2].
+
+You can name your secret whatever you want. That said, for this example, the secret name will be `YMIR_API_TOKEN` like the environment variable. You can see it in the same workflow below.
+
+```yml
+name: Deploy to production
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Ymir CLI
+        run: |
+          composer global require ymirapp/cli
+          composer global config bin-dir --absolute --quiet >> "$GITHUB_PATH"
+      - name: Deploy
+        run: ymir deploy production --no-interaction
+        env:
+          YMIR_API_TOKEN: ${{ secrets.YMIR_API_TOKEN }}
+```
+
+This sample workflow will deploy your project to `production` whenever a commit gets pushed to the `main` branch. You'll want to use `master` branch if you have an older GitHub repository. The `concurrency` setting prevents two runs of this workflow from deploying at the same time.
+
+The workflow uses the software already installed on the GitHub-hosted [runner image][9]. The `ubuntu-24.04` image includes PHP with the `zip` extension, Composer, Node.js, npm, Yarn, Docker and Podman. The workflow uses `ubuntu-24.04` instead of `ubuntu-latest` because GitHub changes the operating system that `ubuntu-latest` uses over time. If your build commands need a different PHP version, add a step using the `shivammathur/setup-php@v2` action before installing the Ymir CLI.
+
+#### Container image deployment on GitHub Actions [#github-actions-container-image]
+
+Because Podman is installed on GitHub-hosted Ubuntu runners, the Ymir CLI uses Podman instead of Docker to build and push the container image. You don't need to set up Docker or Buildx for the Ymir CLI.
+
+Use a runner with the same architecture as your environment. For `arm64` environments, use the `ubuntu-24.04-arm` [runner][10] in the `runs-on` option. For `x86_64` environments, use `ubuntu-24.04`.
+
+### Bitbucket Pipelines
+
+First, you're going to need to create a secret to store your API token as the `YMIR_API_TOKEN` environment variable. Secrets are encrypted environment variables that allow you to store sensitive information safely. You can read more about them and how to create them [here][3]. Make sure to mark the variable as **Secured**. You can store it as a deployment variable so that only steps deploying to that Bitbucket deployment environment can use it.
+
+```yml
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Deploy to production
+          deployment: production
+          image: composer:2
+          script:
+            - composer global require ymirapp/cli
+            - export PATH="$PATH:$(composer global config bin-dir --absolute --quiet)"
+            - ymir deploy production --no-interaction
+```
+
+This sample pipeline will deploy your project to `production` whenever a commit gets pushed to the `main` branch. The `deployment` option links the step to the Bitbucket deployment environment named `production`, which gives it access to that environment's deployment variables.
+
+The step uses the official [Composer image][11], which includes PHP with the `zip` extension, Composer and Git. It doesn't include Node.js or Docker. The Composer image also doesn't guarantee which PHP version it uses. If your build commands run Composer, set Composer's `platform` configuration or use an image with the PHP version and the tools your build needs.
+
+#### Container image deployment on Bitbucket Pipelines [#bitbucket-pipelines-container-image]
+
+The sample pipeline doesn't support container image deployment. Using it with Bitbucket Pipelines needs more than adding the `docker` service to the step:
+
+* The Ymir CLI always builds the image with the `--platform` option. Bitbucket Pipelines doesn't allow this option with its default [Docker service][12], so the step needs to use [Runtime v3][13].
+* With Runtime v3, Bitbucket Pipelines no longer adds the Docker CLI to the build container. The step image needs to include the Docker CLI as well as PHP and the tools your build needs.
+* For `arm64` environments, the step needs to run on Arm using the `arch: arm` [runtime option][14], which requires a Standard or Premium plan, or you need to use the `x86_64` architecture for the environment.
+
+[1]: https://ymirapp.com/dashboard/account/manage
+[2]: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets
+[3]: https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/
+[4]: /projects/deploy#build-process
+[5]: /projects/deploy#build-commands
+[6]: /reference/configuration#php
+[7]: https://getcomposer.org/doc/06-config.md#platform
+[8]: /guides/container-image-deployment
+[9]: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
+[10]: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+[11]: https://hub.docker.com/_/composer
+[12]: https://support.atlassian.com/bitbucket-cloud/docs/run-docker-commands-in-bitbucket-pipelines/
+[13]: https://support.atlassian.com/bitbucket-cloud/docs/enable-and-use-runtime-v3/
+[14]: https://support.atlassian.com/bitbucket-cloud/docs/step-options/
+[15]: /teams#team-member-access

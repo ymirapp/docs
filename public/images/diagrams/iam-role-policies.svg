@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580" role="img" aria-labelledby="title desc">
+  <title id="title">How the IAM role's trust policy and permissions policy work together</title>
+  <desc id="desc">On the left, Ymir's AWS account, YMIR_AWS_ACCOUNT_ID, requests temporary credentials for an IAM role with the connection's EXTERNAL_ID. On the right, your AWS account, YOUR_AWS_ACCOUNT_ID, holds the IAM role ymir-cloud-provider-42, which you create along with both of its policies. The request goes to the role's trust policy, which decides who can assume the role. The role's YmirPermissions permissions policy is a separate document that decides what the role can do to your AWS resources, such as Lambda functions, S3 buckets, CloudFront and databases. Ymir uses the role's temporary credentials to act as the role. Along the bottom edge of your AWS account, service control policies, permissions boundaries and explicit Deny statements can still block what the permissions policy allows. Connected proves that Ymir could use the role, not that every permission works.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2f7a54"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .panel { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1.25; }
+    .item { fill: #e9e7dc; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .item-light { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .trust { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .caution { fill: #f4f1e6; stroke: #d6a21f; stroke-width: 2; }
+    .tag { fill: #2f7a54; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .subheading { font-size: 16px; font-weight: 700; fill: #40594d; }
+    .title { font-size: 16px; font-weight: 700; }
+    .label { font-size: 16px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 16px; }
+    .code-small { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #40594d; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+    .note-green { font-size: 15px; font-style: italic; fill: #2f7a54; }
+    .note-ink { font-size: 15px; font-style: italic; }
+    .tag-text { font-size: 15px; font-weight: 700; fill: #f4f1e6; }
+  </style>
+
+  <rect width="1100" height="580" fill="#f4f1e6"/>
+
+  <!-- Ymir's AWS account -->
+  <rect class="area" x="20" y="136" width="220" height="228" rx="12"/>
+  <text class="heading" x="36" y="168">Ymir's AWS</text>
+  <text class="heading" x="36" y="192">account</text>
+  <rect class="item-light" x="36" y="204" width="188" height="60" rx="8"/>
+  <text class="title" x="130" y="228" text-anchor="middle">Ymir</text>
+  <text class="code-small" x="130" y="252" text-anchor="middle">YMIR_AWS_ACCOUNT_ID</text>
+  <text class="note" x="36" y="300">then uses the role's</text>
+  <text class="note" x="36" y="320">temporary credentials</text>
+  <text class="note" x="36" y="340">to act as the role</text>
+
+  <!-- Your AWS account -->
+  <rect class="area" x="400" y="60" width="680" height="420" rx="12"/>
+  <text class="heading" x="416" y="92">Your AWS account</text>
+  <text class="code-small" x="1064" y="92" text-anchor="end">YOUR_AWS_ACCOUNT_ID</text>
+  <text class="note" x="416" y="118">You create the role and both of its policies.</text>
+
+  <!-- The IAM role and its two policy documents -->
+  <rect class="panel" x="416" y="136" width="300" height="228" rx="10"/>
+  <text class="subheading" x="428" y="160">IAM role</text>
+  <text class="code" x="428" y="184">ymir-cloud-provider-42</text>
+
+  <rect class="trust" x="428" y="200" width="276" height="66" rx="8"/>
+  <text class="title" x="440" y="226">Trust policy</text>
+  <text class="small" x="440" y="250">who can assume the role</text>
+
+  <rect class="item" x="428" y="282" width="276" height="66" rx="8"/>
+  <text class="title" x="440" y="308">Permissions policy</text>
+  <text class="code-small" x="440" y="332">YmirPermissions</text>
+
+  <!-- Your AWS resources -->
+  <rect class="panel" x="840" y="136" width="224" height="228" rx="10"/>
+  <text class="subheading" x="852" y="160">Your AWS resources</text>
+  <rect class="item" x="852" y="176" width="200" height="36" rx="8"/>
+  <text class="label" x="952" y="199" text-anchor="middle">Lambda functions</text>
+  <rect class="item" x="852" y="220" width="200" height="36" rx="8"/>
+  <text class="label" x="952" y="243" text-anchor="middle">S3 buckets</text>
+  <rect class="item" x="852" y="264" width="200" height="36" rx="8"/>
+  <text class="label" x="952" y="287" text-anchor="middle">CloudFront</text>
+  <rect class="item" x="852" y="308" width="200" height="36" rx="8"/>
+  <text class="label" x="952" y="331" text-anchor="middle">Databases and more</text>
+
+  <!-- Trust: Ymir's account requests temporary credentials for the role -->
+  <line x1="224" y1="233" x2="426" y2="233" stroke="#2f7a54" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="320" y="178" text-anchor="middle">requests temporary</text>
+  <text class="note-green" x="320" y="198" text-anchor="middle">credentials with</text>
+  <text class="code-small" x="320" y="218" text-anchor="middle" style="fill: #2f7a54">EXTERNAL_ID</text>
+
+  <!-- Permissions: what the role can do to your resources -->
+  <line x1="704" y1="315" x2="838" y2="315" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="note-ink" x="772" y="283" text-anchor="middle">what the role</text>
+  <text class="note-ink" x="772" y="303" text-anchor="middle">can do</text>
+
+  <!-- Restrictions along the edge of your AWS account -->
+  <line x1="772" y1="322" x2="772" y2="384" stroke="#d6a21f" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect class="caution" x="416" y="384" width="648" height="80" rx="10"/>
+  <text class="title" x="432" y="412">Can still block what the permissions policy allows</text>
+  <text class="small" x="432" y="440">Service control policies, permissions boundaries and explicit Deny statements</text>
+
+  <!-- What connected proves -->
+  <rect class="panel" x="20" y="500" width="1060" height="56" rx="12"/>
+  <rect class="tag" x="36" y="512" width="110" height="32" rx="16"/>
+  <text class="tag-text" x="91" y="533" text-anchor="middle">Connected</text>
+  <text class="note-ink" x="162" y="534">proves that Ymir could use the role, not that every permission works.</text>
+</svg>

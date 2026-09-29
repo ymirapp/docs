@@ -1,0 +1,139 @@
+---
+title: "Networks"
+description: "Networks, subnets, NAT gateways and bastion hosts used by team resources such as database servers."
+---
+
+## What are networks?
+
+A network is a private network ([VPC][1]) that Ymir creates in a specific region of the AWS account behind one of your team's cloud provider connections. Some resources such as database servers and caches cannot exist without a network. Whenever you create one such resource with the Ymir CLI without passing it a network, it'll ask you to pick one of your team's networks or, if your team doesn't have any, to create one. For most, that will be the extent of their interaction with networks.
+
+### Subnets
+
+Ymir creates your network with two public [subnetworks][2] (also called subnets) and two to four private subnets, spread across the region's availability zones. A public subnet has a route to the internet. A private subnet doesn't, unless the network has a NAT gateway.
+
+Ymir places resources in these subnets as follows:
+
+ * Publicly accessible database servers use the public subnets.
+ * Private database servers and caches use the private subnets.
+ * The bastion host uses a public subnet.
+ * The NAT gateway, when there's one, sits in a public subnet and gives the private subnets outbound internet access.
+
+<img src="/images/diagrams/network-topology.svg" alt="Diagram: a network named example-network, a VPC in the region example-region-1, illustrated with two availability zones, A and B, each with a public subnet and a private subnet. The public subnets hold the network's one NAT gateway, shared by everything on the private subnets, and, as optional examples, a bastion host and a publicly accessible database server. The private subnets hold the network-connected Lambda functions of both the staging and production environments, which don't get a public IP address, and, as optional examples, a private database server and a cache cluster. The Lambda functions of both environments connect directly to the private database server and the cache cluster inside the network, not through the NAT gateway or the bastion host. Outbound traffic from the private subnets goes through the one NAT gateway to the internet, for external services and AWS services such as the parameter store. You connect with SSH to the bastion host and, through it, to the private database server. Visitors reach the Lambda functions through CloudFront or the API gateway, outside the network, and AWS invokes the functions without going through the NAT gateway or the bastion host. Several environments and team resources can share the same network and NAT gateway, but sharing a network doesn't isolate their data. Not every network has every resource shown, and some environments aren't connected to a network at all." width="1180" height="780" />
+
+<a href="/images/diagrams/network-topology.svg">Open the full-size diagram</a>
+
+### Lambda functions and the internet [#lambda-functions-and-the-internet]
+
+By default, your project environment's Lambda functions aren't connected to any network and can reach the internet. When Ymir connects an environment to a network, it places all the environment's Lambda functions in the network's private subnets. Lambda functions connected to a network never get a public IP address, so a public subnet wouldn't [give them internet access][3] either.
+
+Your Lambda functions need internet access to reach your PHP application's external services and AWS services such as the parameter store holding your [secrets][4]. That's why, during every deployment of an environment connected to a network, Ymir adds a NAT gateway to the network if it doesn't have one. The deployment waits for the NAT gateway to be available, which slows it down.
+
+A NAT gateway costs a fixed hourly amount plus a charge for each GB of data it processes. See the [Amazon VPC pricing page][5] for the current prices in your region.
+
+Ymir also adds a NAT gateway to a network when you create a private database server or a cache on it. The Ymir CLI asks you to confirm before doing so.
+
+<Callout type="warn" title="Not removed automatically">
+
+While Ymir will add a NAT gateway automatically, it won't remove it if you stop using a private subnet resource. You keep paying for it until you remove it using the `network:nat:remove` command. Ymir doesn't remove it for you because it doesn't know if you still have environments or custom private subnet resources that need it.
+
+</Callout>
+
+## Managing networks
+
+There are scenarios where you might want to create additional networks within the same region. You can use the `network:create` command to do so. It'll prompt you for the network name, cloud provider connection or region if it can't resolve them. Network names must be unique within a region of a cloud provider connection, so two networks can share a name if they're in different regions or on different cloud provider connections. Use `network:list` to see your team's networks with their cloud provider connection, region, status and whether they have a NAT gateway.
+
+### Delete a network [#delete-a-network]
+
+You can delete a network using the `network:delete` command. Ymir won't let you delete a network that still has a database server or cache on it.
+
+Deleting a [database server][10] or a [cache][11] to free up a network is destructive. Ymir doesn't take a final snapshot of a database server when deleting it. So before deleting either, migrate or back up any data you need and move every project environment and other application using them to a replacement.
+
+Ymir doesn't check whether project environments still use the network. Before deleting one, remove it from every environment that uses it (either through the `network` option or through a private database server or cache) and redeploy those environments. Otherwise, their Lambda functions will lose access to the network and stop working.
+
+Deleting a network also deletes its NAT gateway and bastion host. The deletion happens in the background and can take a while. If AWS can't delete some of the network's resources, the network will show a failed deletion status. [Contact support][6] if that happens.
+
+### Connect a network to an environment
+
+Ymir connects your environment to a network automatically if the environment uses a private database server or a cache. In that case, it uses the network of the database server or cache. A private database server and a cache used by the same environment must be on the same network. Publicly accessible database servers don't cause Ymir to connect the environment to a network.
+
+You might also want to connect a specific network to your project environment so that you can access private resources. To do so, add the [`network`][7] option to your environment configuration in the `ymir.yml` file. This will tell Ymir to connect that network to your environment during deployment.
+
+```yml
+id: 1
+name: project-name
+type: wordpress
+environments:
+  environment-name:
+    network: network-name
+```
+
+The `network` option overrides the network of your private database server or cache. So make sure those are reachable from the configured network.
+
+Use a network that's on the same cloud provider connection and in the same region as your project. Ymir looks up the `network` name across all your team's networks, on every cloud provider connection and in every region, and doesn't confirm that the network matches your project's cloud provider connection or region. If your team has networks with the same name on different cloud provider connections or in different regions, Ymir might pick the wrong one.
+
+<Callout type="warn" title="Can create a NAT gateway">
+
+If the configured `network` doesn't have a NAT gateway, a NAT gateway will be configured during deployment.
+
+</Callout>
+
+If you remove the `network` option and the environment doesn't use a private database server or cache, your next deployment disconnects the environment's Lambda functions from the network. The network and its NAT gateway stay in place.
+
+## Bastion host
+
+If you want to access private subnet resources, you'll need a [bastion host][8] to do so. A bastion host is a small (`t4g.nano`) SSH accessible EC2 instance that resides on your public subnet. You connect to it and then from there you can connect to resources on your private subnet. A bastion host is billed like any other EC2 instance, so you pay for it for as long as it exists. See the [Amazon EC2 pricing page][9] for current prices.
+
+You can add a bastion host to your network by using the `network:bastion:add` command. Once the bastion host created, the Ymir CLI will return the SSH private key used to connect to it.
+
+```bash
+ymir network:bastion:add network-name
+```
+
+<Callout type="warn" title="Keep the private key secret">
+
+Anyone with the SSH private key can connect to your bastion host. Don't paste it or the terminal output containing it into support requests, chat messages, issues or shared logs.
+
+</Callout>
+
+If you're not comfortable with SSH, don't worry! If you have a `~/.ssh` directory, the Ymir CLI will offer to save the private key as `~/.ssh/ymir-network-name` with permissions restricted to your user. If you have a `~/.ssh/config` file, it'll then offer to configure SSH for you by adding the following entry to it:
+
+```text title="~/.ssh/config"
+Host <bastion-host-domain-name>
+  User ec2-user
+  IdentitiesOnly yes
+  IdentityFile <home-directory>/.ssh/ymir-network-name
+```
+
+Once configured, you'll get the SSH command to connect to your bastion host.
+
+```bash
+ssh <bastion-host-domain-name>
+```
+
+If you decline these options, save the private key to a file only you can read (for example, with `chmod 600`) before using it with SSH.
+
+If you're done with your bastion host, you can remove it with the `network:bastion:remove` command. This deletes the EC2 instance, so any SSH sessions or tunnels going through it will stop working. Remove the matching entry from your `~/.ssh/config` file and delete the private key file once you no longer need them.
+
+## NAT gateway
+
+If you want to add custom private subnet resources such as ElasticSearch, you can manually add a NAT gateway to your network using the `network:nat:add` command. If you have no more private subnet resources, you can use the `network:nat:remove` command to remove the network's NAT gateway.
+
+<Callout type="error" title="Removing a NAT gateway affects every environment on the network">
+
+A network has a single NAT gateway shared by everything on its private subnets. Ymir doesn't check whether anything still needs it before removing it. Once it's gone, the Lambda functions of every environment connected to the network lose internet access, including access to the parameter store that holds their secrets, so they'll start failing. The next deployment or rollback of any of these environments adds the NAT gateway back. Custom resources that you added to the private subnets also lose their outbound internet access, and nothing adds it back for them.
+
+Only remove a NAT gateway once no environment is connected to the network and none of your custom private subnet resources need outbound internet access. Removing it doesn't affect connecting to your private resources through the bastion host.
+
+</Callout>
+
+[1]: https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
+[2]: https://en.wikipedia.org/wiki/Subnetwork
+[3]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-internet.html
+[4]: /projects/environments#secrets
+[5]: https://aws.amazon.com/vpc/pricing/
+[6]: mailto:support@ymirapp.com
+[7]: /reference/configuration#network
+[8]: https://en.wikipedia.org/wiki/Bastion_host
+[9]: https://aws.amazon.com/ec2/pricing/on-demand/
+[10]: /team-resources/database-servers#managing-database-servers
+[11]: /team-resources/caches#managing-cache-clusters

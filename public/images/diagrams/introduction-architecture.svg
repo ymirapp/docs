@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" role="img" aria-labelledby="title desc">
+  <title id="title">How Ymir, your computer and your AWS account fit together</title>
+  <desc id="desc">On the left, your computer or CI server, where the Ymir CLI builds example-project. The Ymir CLI sends the deployment to Ymir and uploads the build directly to your AWS account. In the middle, Ymir holds a team with example-project and a cloud provider connection, and manages the AWS resources through that connection. On the right, your AWS account holds a staging and a production environment, each with its own CloudFront distribution, Lambda functions and S3 buckets. Below them, one database server, cache cluster and network are shared and used by both environments. Visitors reach the environments in your AWS account directly, not through Ymir. You pay for your Ymir subscription and your AWS bill separately.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2f7a54"/>
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#40594d"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .panel { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1.25; }
+    .item { fill: #e9e7dc; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .item-light { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .shared { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .tag { fill: #071812; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .subheading { font-size: 16px; font-weight: 700; fill: #40594d; }
+    .label { font-size: 16px; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 16px; }
+    .code-heading { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 17px; font-weight: 700; }
+    .note { font-size: 16px; font-style: italic; fill: #40594d; }
+    .note-green { font-size: 16px; font-style: italic; fill: #2f7a54; }
+    .note-ink { font-size: 16px; font-style: italic; }
+    .tag-text { font-size: 15px; font-weight: 700; fill: #f4f1e6; }
+  </style>
+
+  <rect width="1100" height="640" fill="#f4f1e6"/>
+
+  <!-- Your computer or CI server -->
+  <rect class="area" x="20" y="90" width="200" height="290" rx="12"/>
+  <text class="heading" x="36" y="122">Your computer</text>
+  <text class="heading" x="36" y="146">or CI server</text>
+  <rect class="item-light" x="36" y="192" width="168" height="56" rx="8"/>
+  <text class="label" x="120" y="226" text-anchor="middle">Ymir CLI</text>
+  <line x1="120" y1="248" x2="120" y2="290" stroke="#40594d" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+  <text class="note" x="130" y="275">builds</text>
+  <rect class="item-light" x="36" y="292" width="168" height="64" rx="8"/>
+  <text class="code" x="120" y="320" text-anchor="middle">example-project</text>
+  <text class="note" x="120" y="342" text-anchor="middle">build</text>
+
+  <!-- Ymir -->
+  <rect class="area" x="300" y="90" width="220" height="290" rx="12"/>
+  <text class="heading" x="316" y="122">Ymir</text>
+  <rect class="panel" x="314" y="144" width="192" height="220" rx="10"/>
+  <text class="subheading" x="326" y="170">Team</text>
+  <rect class="item" x="326" y="192" width="168" height="56" rx="8"/>
+  <text class="code" x="410" y="226" text-anchor="middle">example-project</text>
+  <rect class="item" x="326" y="268" width="168" height="72" rx="8"/>
+  <text class="label" x="410" y="298" text-anchor="middle">Cloud provider</text>
+  <text class="label" x="410" y="320" text-anchor="middle">connection</text>
+
+  <!-- Your AWS account -->
+  <rect class="area" x="590" y="90" width="490" height="480" rx="12"/>
+  <text class="heading" x="608" y="122">Your AWS account</text>
+
+  <rect class="panel" x="608" y="170" width="218" height="230" rx="10"/>
+  <text class="code-heading" x="717" y="198" text-anchor="middle">staging</text>
+  <rect class="item" x="620" y="214" width="194" height="52" rx="8"/>
+  <text class="label" x="717" y="245" text-anchor="middle">CloudFront distribution</text>
+  <rect class="item" x="620" y="276" width="194" height="52" rx="8"/>
+  <text class="label" x="717" y="307" text-anchor="middle">Lambda functions</text>
+  <rect class="item" x="620" y="338" width="194" height="52" rx="8"/>
+  <text class="label" x="717" y="369" text-anchor="middle">S3 buckets</text>
+
+  <rect class="panel" x="844" y="170" width="218" height="230" rx="10"/>
+  <text class="code-heading" x="953" y="198" text-anchor="middle">production</text>
+  <rect class="item" x="856" y="214" width="194" height="52" rx="8"/>
+  <text class="label" x="953" y="245" text-anchor="middle">CloudFront distribution</text>
+  <rect class="item" x="856" y="276" width="194" height="52" rx="8"/>
+  <text class="label" x="953" y="307" text-anchor="middle">Lambda functions</text>
+  <rect class="item" x="856" y="338" width="194" height="52" rx="8"/>
+  <text class="label" x="953" y="369" text-anchor="middle">S3 buckets</text>
+
+  <rect class="shared" x="608" y="446" width="454" height="108" rx="10"/>
+  <text class="subheading" x="624" y="472" style="fill: #2f7a54">Shared by both environments</text>
+  <rect class="item-light" x="624" y="486" width="132" height="52" rx="8"/>
+  <text class="label" x="690" y="517" text-anchor="middle">Database server</text>
+  <rect class="item-light" x="769" y="486" width="132" height="52" rx="8"/>
+  <text class="label" x="835" y="517" text-anchor="middle">Cache cluster</text>
+  <rect class="item-light" x="914" y="486" width="132" height="52" rx="8"/>
+  <text class="label" x="980" y="517" text-anchor="middle">Network</text>
+
+  <!-- Both environments use the shared resources -->
+  <line x1="717" y1="400" x2="717" y2="444" stroke="#2f7a54" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="727" y="428">uses</text>
+  <line x1="953" y1="400" x2="953" y2="444" stroke="#2f7a54" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="963" y="428">uses</text>
+
+  <!-- Ymir CLI sends the deployment to Ymir -->
+  <line x1="204" y1="220" x2="324" y2="220" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="note-ink" x="260" y="210" text-anchor="middle">deploys</text>
+
+  <!-- Ymir CLI uploads the build directly to the AWS account -->
+  <path d="M196 90 V62 H640 V88" fill="none" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="note-ink" x="410" y="52" text-anchor="middle">uploads build directly to AWS</text>
+
+  <!-- Ymir manages the AWS resources through the cloud provider connection -->
+  <line x1="494" y1="304" x2="588" y2="304" stroke="#2f7a54" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="555" y="294" text-anchor="middle">manages</text>
+
+  <!-- Visitors reach the environments directly -->
+  <rect x="775" y="14" width="120" height="36" rx="18" fill="#f4f1e6" stroke="#40594d" stroke-width="1.5"/>
+  <text class="label" x="835" y="38" text-anchor="middle" font-weight="700">Visitors</text>
+  <path d="M835 50 V150 M717 150 H953 M717 150 V168 M953 150 V168" fill="none" stroke="#40594d" stroke-width="1.5"/>
+  <path d="M717 150 V168" fill="none" stroke="#40594d" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+  <path d="M953 150 V168" fill="none" stroke="#40594d" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+  <text class="note" x="845" y="76">visit your sites</text>
+
+  <!-- Billing -->
+  <rect class="tag" x="335" y="396" width="150" height="32" rx="16"/>
+  <text class="tag-text" x="410" y="417" text-anchor="middle">Ymir subscription</text>
+  <rect class="tag" x="785" y="586" width="100" height="32" rx="16"/>
+  <text class="tag-text" x="835" y="607" text-anchor="middle">AWS bill</text>
+</svg>

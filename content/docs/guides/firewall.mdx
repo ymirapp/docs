@@ -1,0 +1,195 @@
+---
+title: "How to configure a firewall for your project environment"
+navTitle: "Firewall"
+description: "Protect a project environment with an AWS WAF firewall configured by Ymir."
+---
+
+## Why use a firewall?
+
+AWS comes with some default [denial-of-service attack][1] (DoS) protection through [AWS Shield Standard][2]. If you want to filter more specific threats, such as common exploit attempts, unwanted bots or IPs sending too many requests, you can have Ymir configure a firewall for you. This firewall uses [AWS WAF][3] to inspect requests to your Ymir-managed project environment.
+
+A firewall reduces risk, but it doesn't protect against every attack. Keep your application, plugins and dependencies up to date.
+
+### What the firewall covers [#what-the-firewall-covers]
+
+Ymir creates an AWS WAF web ACL for your environment and associates it with the environment's CloudFront distribution. The rules Ymir configures apply to every request that goes through that distribution. You can't limit them to specific paths. If you need rules that only apply to some paths, use [your own web ACL](#custom-web-acl).
+
+Requests that don't go through CloudFront aren't inspected. This includes requests sent directly to your environment's API gateway or Lambda function URL, as well as your queues, console commands and cron.
+
+## Cost
+
+Enabling a firewall on your project environment will incur some additional costs. AWS charges a monthly amount for each web ACL and for each rule or rule group in it, plus a charge for every request the web ACL inspects. Because the firewall inspects every request CloudFront receives, including requests served from the CloudFront cache, this charge grows with all your environment's traffic. Bot protection costs extra on top of that, with both a monthly fee and a per-request fee.
+
+These prices vary and change over time. You can read about current costs on the [AWS WAF pricing page][6].
+
+## Caching required
+
+To use a firewall, your project environment must have the [`caching`][4] option set to `enabled`. If it isn't, Ymir will reject your configuration.
+
+## Basic environment firewall configuration
+
+To have Ymir configure a basic firewall for your project environment, you need to have a project configuration similar to the one below.
+
+```yml
+id: 42
+name: firewall-project
+type: wordpress
+environments:
+  production: ~
+  staging:
+    cdn:
+      caching: enabled
+    firewall: true
+```
+
+The `caching` option is set to `enabled` and `firewall` is set to `true`. This will configure the firewall for the `staging` environment with some basic managed rules. These rules are described below, but you can also read about them [here][5].
+
+| Managed Rule | Description |
+| --- | --- |
+| AWSManagedRulesAmazonIpReputationList | Amazon IP reputation list rule group contains rules that are based on Amazon internal threat intelligence |
+| AWSManagedRulesKnownBadInputsRuleSet | Known bad inputs rule group contains rules to block request patterns that are known to be invalid and are associated with exploitation or discovery of vulnerabilities |
+| AWSManagedRulesPHPRuleSet | PHP application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to the use of the PHP programming language, including injection of unsafe PHP functions |
+| AWSManagedRulesSQLiRuleSet | SQL database rule group contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks |
+| AWSManagedRulesWordPressRuleSet | WordPress application rule group contains rules that block request patterns associated with the exploitation of vulnerabilities specific to WordPress sites. Only added to WordPress, Bedrock and Radicle projects. |
+
+Setting `firewall` to `true` or `enabled` is a shortcut for setting the [`managed_rules`][8] option to `enabled`. If you configure `firewall` with options, as in the examples below, these managed rules are only added if you also set `managed_rules` to `enabled`.
+
+<Callout type="warn" title="false still creates a firewall">
+
+Setting `firewall` to `false`, `disabled` or an empty array doesn't remove the firewall. Ymir still creates a web ACL for the environment if it doesn't have one, and you still pay for it. A new web ACL won't have any rules. On an existing one, Ymir removes the managed rules, bot protection and rate limit rules that it manages, but not rules added outside of Ymir. To not have a firewall, leave out the `firewall` option. See [removing the firewall](#remove-or-replace-the-firewall) before doing that on a deployed environment.
+
+</Callout>
+
+## Advanced firewall configuration
+
+Ymir also offers advanced firewall configuration options if you want to protect yourself against more specific threats.
+
+### Bot protection
+
+With the `bots` option, you can turn on bot protection on your firewall. This adds the AWS WAF [Bot Control][9] managed rule group to your firewall. This comes at an additional cost (as discussed earlier) on top of your regular firewall cost. Here's an example configuration where we protect the staging environment against web scraping frameworks.
+
+```yml
+id: 42
+name: firewall-project
+type: wordpress
+environments:
+  production: ~
+  staging:
+    cdn:
+      caching: enabled
+    firewall:
+      bots:
+        - CategoryScrapingFramework
+```
+
+Below is a list of all bot categories you can block using bot protection. Ymir sets every category that you don't list to only count matching requests instead of blocking them.
+
+| Category | Description |
+| --- | --- |
+| CategoryAdvertising | Bots used for advertising purposes |
+| CategoryArchiver | Bots used for archiving purposes |
+| CategoryContentFetcher | Bots fetching content on behalf of an end-user |
+| CategoryHttpLibrary | HTTP libraries often used by bots |
+| CategoryLinkChecker | Bots that check for broken links |
+| CategoryMiscellaneous | Miscellaneous bots |
+| CategoryMonitoring | Bots used for monitoring purposes |
+| CategoryScrapingFramework | Web scraping frameworks |
+| CategorySecurity | Security\-related bots |
+| CategorySeo | Bots used for search engine optimization |
+| CategorySocialMedia | Bots used by social media platforms to provide content summaries |
+| CategorySearchEngine | Search engine bots |
+| SignalAutomatedBrowser | Automated web browser |
+| SignalKnownBotDataCenter | Data centers typically used by bots |
+| SignalNonBrowserUserAgent | User-agent strings that don't seem to be from a web browser |
+
+<Callout type="error" title="List bot categories explicitly">
+
+Setting `bots` to `true`, `enabled` or `disabled` doesn't block all bot categories. All three add the Bot Control rule group to your firewall, which you pay for, but set every category above to count instead of block. To block bot categories, list each one you want to block. To disable bot protection, set `bots` to `false` or to an empty list (`[]`), or leave it out.
+
+</Callout>
+
+For most categories, AWS identifies verified bots, such as major search engines and social media platforms, and doesn't block them. But this depends on the rule and on the version of the rule group that AWS applies. The Bot Control rule group can also contain rules that aren't in the table above, such as newer bot categories. Ymir doesn't change those, so they use the actions AWS gives them. Review the [Bot Control rule group documentation][9] to see what it currently does.
+
+### Rate limit
+
+Ymir can also configure a rate limit rule for your firewall. It blocks IP addresses that send more than a set number of requests in a 5 minute time span. This can help against [application layer][7] (layer 7) DDoS attacks and aggressive crawlers. For example, here's a configuration enabling a rate limit rule of 2,000 requests per IP in a 5 minute time span.
+
+```yml
+id: 42
+name: firewall-project
+type: wordpress
+environments:
+  production: ~
+  staging:
+    cdn:
+      caching: enabled
+    firewall:
+      rate_limit: 2000
+```
+
+The range of allowed values for `rate_limit` is between 100 and 20,000,000. It's always for 5 minute intervals.
+
+There's no value that suits every site. A single page view can make many requests, all of which go through CloudFront and count toward the limit. Many legitimate users can also share the same IP address, such as people in the same office, school or mobile network, and they'll get blocked together. Start with a value well above your normal traffic per IP, then lower it if needed.
+
+AWS WAF [estimates request rates][10] instead of counting them exactly. It won't block requests at exactly your limit, and it can take some time to start or stop blocking an IP. Changing `rate_limit` also resets the counts.
+
+## Use your own web ACL [#custom-web-acl]
+
+Instead of letting Ymir manage a web ACL for your environment, you can give it the ARN of an existing one with the [`acl`][11] option. Ymir then ignores all other `firewall` options and doesn't create a web ACL of its own.
+
+```yml
+id: 42
+name: firewall-project
+type: wordpress
+environments:
+  production: ~
+  staging:
+    cdn:
+      caching: enabled
+    firewall:
+      acl: arn:aws:wafv2:us-east-1:123456789012:global/webacl/example-web-acl/00000000-0000-0000-0000-000000000000
+```
+
+The web ACL must be in the same AWS account as your project's cloud provider connection and use the CloudFront scope. AWS keeps all web ACLs with the CloudFront scope in the `us-east-1` region, regardless of your project's region. Ymir checks that the web ACL exists when it validates your configuration.
+
+Ymir only associates your web ACL with the environment's CloudFront distribution. Deploying the environment never changes the web ACL's rules or deletes it. Your web ACL can also have rules that only apply to some paths. This means you're responsible for:
+
+ * **Its rules**. If several environments use the same web ACL, any change applies to all of them.
+ * **Its cost**. AWS bills it like any other web ACL.
+ * **Its lifecycle**. AWS won't let you delete a web ACL while a CloudFront distribution still uses it. Before deleting it, remove or replace the whole `firewall` option of every environment that uses it, deploy them, and check that no CloudFront distribution is still associated with it. Removing only the `acl` value while keeping other `firewall` values, or leaving an empty `firewall` array, makes Ymir create a new web ACL that you pay for.
+
+<Callout type="warn" title="Using another environment's firewall">
+
+If the ARN belongs to the Ymir-managed firewall of another environment, that environment still owns it. Deploying that environment can change the web ACL's rules, and removing or replacing its firewall deletes the web ACL, or fails to while your environment still uses it.
+
+</Callout>
+
+## Monitor your firewall [#monitor-your-firewall]
+
+Managed rule groups, bot protection and rate limits can all block legitimate requests. AWS also updates its managed rule groups over time, so the firewall's behaviour can change without any change on your end. After enabling or changing a firewall, test your application's important features, such as logging in, checking out or submitting forms.
+
+Blocked requests never reach your Lambda functions, so they don't show up in your environment logs. CloudFront returns a `403` error for them instead. CloudFront's default metrics only include an overall 4xx error rate, which includes `403` errors. If you enabled [CDN logs][12], you can look for `403` responses in them.
+
+An increase in these errors doesn't prove that your firewall is blocking legitimate traffic. An attack, errors from your application or access errors can cause it too. Check which requests got blocked and whether they came from real users before loosening your firewall rules.
+
+Ymir doesn't enable CloudWatch metrics, sampled requests or logging on the web ACLs it manages. If you need to see which rule blocked a request, use your own web ACL with these features enabled. Changes you make to a Ymir-managed web ACL outside of Ymir can get overwritten during your next deployment.
+
+## Remove or replace the firewall [#remove-or-replace-the-firewall]
+
+When you remove the `firewall` option, or switch from a Ymir-managed firewall to the `acl` option, Ymir deletes the environment's web ACL during the next deployment. It does this before it updates the CloudFront distribution. Because AWS doesn't allow deleting a web ACL that's still associated with a distribution, that deployment can fail.
+
+So [contact support][13] before removing or replacing the firewall of a deployed environment. Also keep in mind that once the firewall is gone, the environment has no firewall protection until you configure a new one.
+
+[1]: https://en.wikipedia.org/wiki/Denial-of-service_attack
+[2]: https://aws.amazon.com/shield/features/
+[3]: https://aws.amazon.com/waf/
+[4]: /reference/configuration#caching
+[5]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
+[6]: https://aws.amazon.com/waf/pricing/
+[7]: https://en.wikipedia.org/wiki/Application_layer
+[8]: /reference/configuration#managed-rules
+[9]: https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-bot.html
+[10]: https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-caveats.html
+[11]: /reference/configuration#acl
+[12]: /reference/configuration#logging
+[13]: mailto:support@ymirapp.com

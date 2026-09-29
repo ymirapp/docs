@@ -1,0 +1,117 @@
+---
+title: "Ymir documentation"
+navTitle: "Overview"
+description: "Deploy and operate serverless WordPress, Bedrock, Radicle and Laravel projects in your own AWS account."
+---
+
+New to Ymir? Start with the [introduction](/introduction), then follow [getting started](/getting-started) to install the CLI and connect your team to your AWS account with an IAM role.
+
+## Start here
+
+<Cards className="overview-rows">
+  <Card title="Getting started" href="/getting-started">
+    Install the Ymir CLI, connect your team to AWS with an IAM role and deploy your first project.
+  </Card>
+  <Card title="Managing projects" href="/projects/manage">
+    Create a WordPress, Bedrock, Radicle or Laravel project and choose its cloud provider connection and region.
+  </Card>
+  <Card title="Deploying a project" href="/projects/deploy">
+    Build, deploy, redeploy and roll back project environments.
+  </Card>
+  <Card title="Project environments" href="/projects/environments">
+    Environment variables, secrets and domain names for each environment.
+  </Card>
+</Cards>
+
+## Reference
+
+<Cards className="overview-columns">
+  <Card title="Configuration reference" href="/reference/configuration">
+    The `ymir.yml` options with their types, defaults and allowed values.
+  </Card>
+  <Card title="Ymir CLI reference" href="/reference/ymir-cli">
+    The Ymir CLI commands with their arguments, options and usage examples.
+  </Card>
+  <Card title="PHP runtime reference" href="/reference/php-runtime">
+    PHP versions, extensions, filesystem and limits of the PHP runtime on AWS Lambda.
+  </Card>
+</Cards>
+
+## Guides [#guides]
+
+<Cards className="overview-links">
+  <Card title="Connect a custom domain" href="/guides/domain-mapping">
+    Map a custom domain to a project environment instead of the ymirsites.com vanity domain.
+  </Card>
+  <Card title="Automate deployments" href="/guides/automated-deployment">
+    Deploy projects from a continuous integration platform such as GitHub Actions.
+  </Card>
+  <Card title="Configure Lambda scaling" href="/guides/scaling">
+    Configure an environment for high traffic that isn't served from the page cache.
+  </Card>
+  <Card title="Set up object caching" href="/guides/object-cache">
+    Add a persistent Valkey or Redis object cache to a WordPress site.
+  </Card>
+  <Card title="Configure a firewall" href="/guides/firewall">
+    Protect a project environment with an AWS WAF firewall.
+  </Card>
+  <Card title="Deploy a container image" href="/guides/container-image-deployment">
+    Deploy a project as a container image to raise the Lambda size limit or add PHP extensions.
+  </Card>
+  <Card title="Bedrock" href="/guides/bedrock">
+    How Ymir builds, configures and runs a Bedrock project.
+  </Card>
+  <Card title="Laravel" href="/guides/laravel">
+    How Ymir builds, configures and runs a Laravel application.
+  </Card>
+  <Card title="Migrating a site to Ymir" href="/guides/migration-to-ymir">
+    Plan, rehearse and cut over an existing site with a backup and a fallback.
+  </Card>
+  <Card title="AWS costs" href="/guides/aws-costs">
+    Read your AWS bill, attribute costs with tags and reduce them safely.
+  </Card>
+</Cards>
+
+## Team resources
+
+Manage the shared infrastructure behind your projects.
+
+<Cards className="overview-resources">
+  <Card title="Database servers" href="/team-resources/database-servers">
+    Database servers, databases, users and private connections.
+  </Card>
+  <Card title="Caches" href="/team-resources/caches">
+    Cache clusters for a persistent WordPress object cache.
+  </Card>
+  <Card title="DNS" href="/team-resources/dns">
+    DNS zones and records managed by Ymir.
+  </Card>
+  <Card title="Email" href="/team-resources/email">
+    Sending email with AWS SES.
+  </Card>
+  <Card title="Networks" href="/team-resources/networks">
+    Networks, subnets, NAT gateways and bastion hosts used by team resources.
+  </Card>
+  <Card title="SSL certificates" href="/team-resources/ssl-certificates">
+    Request and manage SSL certificates for domains not managed by Ymir.
+  </Card>
+</Cards>
+
+## Use these docs with AI agents
+
+The documentation is available to AI agents and tools as plain Markdown, from the same content as these pages:
+
+- [`/llms.txt`](/llms.txt) lists every page with a short description.
+- Add `.md` to any page URL to get its Markdown, for example [`/reference/configuration.md`](/reference/configuration.md).
+- [`/llms-full.txt`](/llms-full.txt) contains every page in a single file.
+- `https://docs.ymirapp.com/api/mcp` is a read-only [MCP](https://modelcontextprotocol.io) server with `list_pages`, `get_page` and `search` tools.
+
+To connect an MCP client, add the server to its configuration:
+
+```json title="MCP configuration"
+{
+  "mcpServers": {
+    "ymir-docs": { "url": "https://docs.ymirapp.com/api/mcp" }
+  }
+}
+```

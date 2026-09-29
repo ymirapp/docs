@@ -1,0 +1,110 @@
+---
+title: "Teams"
+description: "Create teams, manage team members and their permissions, switch your active team and delete teams safely."
+---
+
+Teams are how you organize your work with Ymir. Every project, cloud provider connection and team resource, such as a database server or DNS zone, belongs to a team. You can be on several teams and invite other people to collaborate with you on yours. The person who creates a team is its owner.
+
+## Team ownership and billing [#team-ownership-and-billing]
+
+The team owner's Ymir subscription is the one that pays for the team. Deployments and resource management need the owner to have an active subscription. The AWS resources themselves are in the AWS accounts connected to the team, and AWS bills those accounts directly.
+
+Ymir doesn't currently offer a way to move a project to another team or to change the owner of a team. If you work for an agency or a company, have the person or account that will hold the Ymir subscription long term create the team. Plan this before creating projects, because you can't move them later yourself.
+
+## Creating a team
+
+You can create a team from the team dropdown on the [dashboard][1] or with the [`team:create`][3] command. The dashboard only offers to create a team when your account has an active subscription that isn't a personal subscription.
+
+Creating a team doesn't connect it to AWS. Its owner, or a member allowed to, connects a [cloud provider connection][4] from the [team management][2] page or with the `provider:connect` command. On the team management page, only the team owner has the option to rename the team.
+
+## Inviting team members
+
+You can invite people to your team from the [team management][2] page. The team management page only shows the button to invite team members to the team owner. An invitation includes the permissions that the person gets once they accept it.
+
+<Callout type="info" title="No Ymir account required">
+
+You can invite anyone to your Ymir team using their email address. If they don't already have an account, they have to create one with the same email address and then accept the team invitation.
+
+</Callout>
+
+The team owner can cancel a pending invitation and change its permissions from the team management page.
+
+### Permissions
+
+Whenever you invite someone to a team, you choose their permissions. Ymir offers two presets, **Administrator** and **Contributor**, and a **Custom** option.
+
+* **Administrator:** Has every permission on the team's projects and resources, including deleting them and deleting cloud provider connections. An administrator isn't the team owner. On the team management page, only the team owner sees the controls to invite and remove members, change permissions, rename the team and delete it.
+* **Contributor:** Has every permission except the ones whose names end with `:delete`, such as `project:delete`, `environment:delete` or `database:delete`. A contributor can still create and change resources, deploy, connect and update cloud provider connections, and run commands on your environments. Some of these can still destroy data, as explained below.
+* **Custom:** You pick individual permissions from a list, such as `project:create`, `environment:update`, `deployment:create` or `dns:delete`. Permissions on cloud provider connections aren't in this list.
+
+The team owner can change someone's permissions at any time from the team management page.
+
+### What team members can access [#team-member-access]
+
+Permissions decide what a team member can change. They don't decide what a team member can see. Every team member, whatever their permissions, can view the team's projects, environments, deployments and logs. This includes downloading the values of an environment's [environment variables][5].
+
+Some permissions also give access to data and to things outside Ymir:
+
+* **Running commands:** With `invocation:create`, a member can run commands such as WP-CLI, Artisan or `php:info` on your environments. Those commands run with your environment's secrets and its IAM role, so they can read your secrets, change or delete your database and access your AWS resources.
+* **Deploying:** With `deployment:create`, a member can deploy any code they want to your environments. That code also runs with your environment's secrets and its IAM role.
+* **Changing secrets:** With `environment:update`, a member can change and delete your environment variables and [secrets][6]. Even contributors can delete secrets, because Ymir only requires `environment:update` for it.
+* **Changing configuration:** Deployments, command invocations and configuration changes, such as uploading environment variables, can overwrite or delete data even without a delete permission.
+
+So use presets and custom permissions to limit mistakes, not to keep information from someone. If someone shouldn't see an environment's configuration and data, don't add them to its team.
+
+## Your active team
+
+You can only have one active team at a time. Your active team is the one where Ymir creates projects and resources, and it's the one commands use when they look up team resources. Check your active team before creating anything.
+
+The dashboard and the Ymir CLI each keep their own active team:
+
+* **Dashboard:** The team dropdown on the dashboard shows your active team. Use it to switch to another team.
+* **Ymir CLI:** The Ymir CLI stores its active team in its configuration file on your computer. When you run the `login` command, it uses your dashboard's active team at that moment. After that, use the [`team:current`][7] command to see it and the [`team:select`][8] command to change it. Switching teams on the dashboard doesn't change the Ymir CLI's active team, and `team:select` doesn't change the dashboard's active team.
+
+Inside a project directory, the Ymir CLI checks that its active team is the team of the project in your `ymir.yml` file. If they're different, most commands stop with an error that tells you which team to select.
+
+Switching teams never moves projects or resources. It only changes where Ymir looks for them and where it creates new ones.
+
+## Removing a team member
+
+The team owner can remove a team member from the [team management][2] page. Team members can leave a team themselves from the team management page or the team dropdown. The team owner doesn't have the option to leave their own team.
+
+Removing someone from a team removes their access to the team in Ymir. This includes Ymir CLI sessions and [API tokens][9] they use, because those authenticate as their user. Removing them doesn't change anything they had access to outside Ymir. When someone leaves your team, review the following:
+
+* **Credentials they've seen:** Rotate database passwords, secrets, API keys and other credentials that they could read or that your application exposed to them.
+* **AWS access:** Remove the IAM users, roles or access keys that they have in your AWS accounts. Removing them from the team doesn't change these.
+* **Other copies:** Revoke access to any code, `.env` files, database exports or backups that they could have copied.
+* **Your CI:** Replace API tokens that belong to them in your continuous integration platform. Their API tokens stop working on the team once they're removed, so automated deployments using them fail.
+
+## Deleting a team [#deleting-a-team]
+
+Only the team owner sees the option to delete a team on the [team management][2] page, and the page doesn't show it for a locked team. Deleting a team is irreversible. It deletes the team and its data on Ymir, including its projects, cloud provider connections and team resources.
+
+<Callout type="warn" title="Resources aren't deleted on AWS">
+
+Deleting a team doesn't delete anything in your AWS accounts. Your resources, such as Lambda functions, S3 buckets, CloudFront distributions, database servers and caches, keep running and AWS keeps billing them. Ymir also doesn't revoke the IAM role or access key that the team used to connect to AWS. Ymir can't manage or delete these resources for you once the team is gone.
+
+</Callout>
+
+Deleting a team isn't a way to clean up your AWS accounts. Once the team is gone, Ymir has no way to finish deleting resources for you. Before deleting a team:
+
+1. **Take an inventory:** List the team's projects and team resources, and find everything that uses them, including projects on other teams and systems outside Ymir. Back up the databases, uploads and other data you want to keep, and check that you can restore them.
+2. **Delete the projects:** [Delete each project][10] with its resources. Ymir deletes them in the background, so wait until the `project:list` command no longer shows them. If a project stays listed, contact Ymir support instead of deleting its resources yourself.
+3. **Delete the team resources:** Delete the team resources you no longer need, such as [database servers][11], [caches][12] and [networks][13], and wait until they're gone.
+4. **Check your AWS accounts:** Make sure that nothing you meant to delete is left.
+5. **Delete the team:** Only then delete the team.
+6. **Remove Ymir's access:** Remove the IAM role or access key that Ymir used in your AWS accounts. Doing this earlier would stop Ymir from finishing the deletions.
+
+[1]: https://ymirapp.com/dashboard
+[2]: https://ymirapp.com/dashboard/team/manage
+[3]: /reference/ymir-cli#team-create
+[4]: /getting-started#connecting-a-team-to-aws
+[5]: /projects/environments#environment-variables
+[6]: /projects/environments#secrets
+[7]: /reference/ymir-cli#team-current
+[8]: /reference/ymir-cli#team-select
+[9]: /guides/automated-deployment#creating-an-api-token
+[10]: /projects/manage#deleting-a-project
+[11]: /team-resources/database-servers
+[12]: /team-resources/caches
+[13]: /team-resources/networks

@@ -1,0 +1,161 @@
+---
+title: "How to deploy a Bedrock project with Ymir"
+navTitle: "Bedrock"
+description: "How Ymir detects, builds, configures and runs a Bedrock project, and what to check before your first deployment."
+---
+
+## Setting up a Bedrock project [#setting-up-a-bedrock-project]
+
+A [Bedrock][1] project on Ymir uses the `bedrock` project [`type`][2]. You create one by running the [`init`][3] command at the root of your Bedrock project. That's the directory with the `web/app` directory, the `web/wp-config.php` file and the `config/application.php` file. The Ymir CLI uses these three paths to detect a Bedrock project. If you run the `init` command in an empty directory, it offers to create a new Bedrock project with Composer's `create-project roots/bedrock` command.
+
+[Radicle][4] is also built on Bedrock, but it uses a different directory structure, with `public/content` and `bedrock/application.php`. It's a separate `radicle` project type with its own build commands and runtime support. This guide doesn't cover it. See [Radicle projects][27] instead.
+
+The `init` command creates your Ymir project, its `ymir.yml` file and, if you accept, a `Dockerfile` for [container image deployment][5]. [Managing projects][6] explains each step. The `init` and `deploy` commands don't install WordPress in your database, and they don't copy an existing site's database or uploads. To bring those over, see the [`database:import`][7] and [`media:import`][8] commands.
+
+### Matching your PHP version [#matching-your-php-version]
+
+The `init` command sets the environment's PHP version to `8.2` for Bedrock projects. That's the [`php`][9] option for zip archive deployment, or the runtime image tag, such as `php-82`, in the generated `Dockerfile` for container image deployment. That version might not satisfy your project's dependencies. For example, Bedrock 1.31.6 requires PHP 8.3 or later in its `composer.json` file.
+
+Before your first deployment, check the `php` requirement in your `composer.json` file and in your dependencies, and choose a PHP version that satisfies all of them. Then set it for each environment, either with the `php` option or the image tag in your `Dockerfile`. Don't downgrade your dependencies to fit the default. If the deployed PHP version is too old for your dependencies, Composer's platform check can stop every request with an error.
+
+A dependency's minimum PHP version doesn't tell you whether the PHP project still fixes security issues in that version. The [PHP runtime reference][10] lists the security support of each version. Your build commands also run with the PHP installed on the machine running the build, so it needs to be able to install the same dependencies.
+
+## The Ymir WordPress plugin [#ymir-wordpress-plugin]
+
+The Ymir integration for Bedrock is the `ymirapp/wordpress-plugin` Composer package. The [`install-integration`][11] command installs it with `composer require ymirapp/wordpress-plugin`, and the `init` command offers to run it for you. Bedrock projects don't use the Laravel bridge, even if your theme uses Acorn.
+
+A build fails if the plugin isn't installed after your build commands run. You don't need to activate it yourself. The build adds a must-use plugin to `web/app/mu-plugins` that activates it if it isn't active.
+
+The plugin is a dependency of your project, like any other Composer package. It's installed from your `composer.lock` file during your build, so:
+
+ * Commit your `composer.json` and `composer.lock` changes after installing or updating the plugin.
+ * To update the plugin, update it with Composer and `deploy`. A [redeploy][12] reuses the build of the environment's most recent deployment, and a rollback reuses an earlier one, so neither picks up a new `composer.lock` file or any other change to your project files.
+
+## Building your project [#building-a-bedrock-project]
+
+### The default build command [#default-build-command]
+
+The `init` command adds a Composer build command to each Bedrock environment. The `production` environment installs your dependencies without development packages. The `staging` environment also gets `cron` and `warmup` set to `false`.
+
+```yml
+environments:
+  production:
+    build:
+      - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
+  staging:
+    build:
+      - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install'
+    cron: false
+    warmup: false
+```
+
+This command installs WordPress, your plugins and themes, and the Ymir plugin in the build directory from your `composer.lock` file. Keep it in your build commands, and keep committing your `composer.lock` file so that each build installs the same versions.
+
+ * **Private packages:** Bedrock's `.gitignore` file ignores `auth.json`, so the build doesn't copy it. Give Composer its credentials on the machine running the build, such as with Composer's global authentication or the `COMPOSER_AUTH` environment variable. Don't add `auth.json` to your build.
+ * **Path repositories:** `COMPOSER_MIRROR_PATH_REPOS=1` makes Composer copy packages from [path repositories][13] instead of creating symlinks to them. It doesn't make a missing path available. The build runs in the `.ymir/build` directory, so keep path packages inside your project, in files the build copies. A relative path to a directory outside your project doesn't resolve from the build directory.
+
+### What your build contains [#what-your-bedrock-build-contains]
+
+The build starts by copying your project files. [What gets copied][14] explains the rules. For a Bedrock project, they mean:
+
+ * The build doesn't copy files that your `.gitignore` file ignores, even if you committed them. Bedrock's `.gitignore` file ignores `vendor`, `web/wp`, everything in `web/app/plugins` and the directories in `web/app/mu-plugins`. That's fine for code that the Composer build command installs.
+ * If you keep your own plugins, must-use plugin directories or packages inside an ignored directory, add a negation rule such as `!web/app/plugins/my-plugin` to your `.gitignore` file so that the build copies them. Don't remove all the ignore rules or commit `vendor` instead.
+ * Your `.env` files aren't copied, since they're hidden files and Bedrock ignores them. Neither is `web/app/uploads`.
+
+The build then extracts your assets. For a Bedrock project, every file under `web` that isn't a PHP, `.mo` or `.po` file is uploaded to your environment's public asset storage, except hidden files. Don't keep credentials or private files, such as a service account JSON file, under `web`.
+
+What goes into the build artifact depends on the environment's deployment type:
+
+ * **Zip archive:** The archive only contains PHP files, `.mo` translation files, WordPress core and the few plugin and theme files that WordPress reads on the server. If a plugin or theme reads other files from disk, add them with the [`include`][15] build option. The Ymir CLI stops the build if the archive is too large, and [container image deployment][16] raises that limit.
+ * **Container image:** Your `Dockerfile` and `.dockerignore` file decide what goes into the image. The generated `Dockerfile` copies the whole build directory.
+
+<img src="/images/diagrams/bedrock-build.svg" alt="Diagram: a left-to-right build flow for a fictional Bedrock project, example-bedrock-project, showing default behavior for illustration only. First, the initial copy to .ymir/build leaves out Git-ignored paths, such as vendor, web/wp and web/app/plugins, except negated paths such as !web/app/plugins/acme. It also leaves out hidden files, such as .env, and web/app/uploads. These are only initial-copy defaults: they shape the initial copy, but they don't decide what ends up in the final build artifact, and they don't guarantee secrecy. Next, build commands run in .ymir/build. composer install installs WordPress, your plugins and the Ymir plugin from composer.lock, and other build commands can generate files, such as theme assets. Build commands, include paths and your Dockerfile can add files back, even ignored ones. Then two separate selections from the built .ymir/build directory, which can overlap. The public asset files, files under web by default except PHP, .mo, .po and hidden files, are selected for upload to the environment's public asset storage when you deploy. The build itself doesn't upload them. The build artifact is one of two alternatives, depending on the environment's deployment type: a zip archive, which by default contains server files such as PHP and .mo files, WordPress core and a few plugin and theme files, plus include paths, or a container image, where your Dockerfile and .dockerignore file decide what goes in and the generated Dockerfile copies the whole build directory. Last, review the build and public assets: check .ymir/build, the build artifact and the public assets for credentials and private files, such as a service account JSON file. A file extension doesn't make a private file safe to publish. This review is your own check, not a deploy approval or a security scan. Your .gitignore file isn't a secrecy boundary, so store credentials as secrets, not in your build." width="1320" height="706" />
+
+<a href="/images/diagrams/bedrock-build.svg">Open the full-size diagram</a>
+
+### Adding your own build commands [#adding-bedrock-build-commands]
+
+To build a theme's frontend assets or add `include` paths, change the environment's `build` option and keep the Composer command. Once you use `include`, the commands go under the [`commands`][17] build option. In this example, the theme also reads Twig templates from its `views` directory, which a zip archive wouldn't contain otherwise. It only shows the `production` environment's `build` option. Change the options you need in your existing `ymir.yml` file, and keep the rest of it.
+
+```yml
+environments:
+  production:
+    build:
+      commands:
+        - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
+        - 'cd web/app/themes/my-theme && npm ci && npm run build'
+      include:
+        - web/app/themes/my-theme/views
+```
+
+Use the package manager and lock file that your theme uses. `npm ci` installs the versions in a `package-lock.json` file and fails if it doesn't match your `package.json` file. Yarn and pnpm have their own options for this, which depend on their version. The tools your build commands use must be installed on the machine running the build.
+
+## Configuration and environment variables [#bedrock-configuration]
+
+Bedrock reads its configuration from environment variables. On Ymir, those come from your environment's [environment variables and secrets][18], not from a `.env` file.
+
+### Values Ymir sets [#bedrock-values-ymir-sets]
+
+On every deployment, Ymir sets `WP_HOME`, `WP_SITEURL`, `WP_ENV`, `WP_ENVIRONMENT_TYPE`, `DOMAIN_CURRENT_SITE` and `DISABLE_WP_CRON`, and it adds `/wp` to `WP_SITEURL` for Bedrock's directory structure. These values replace any environment variable with the same name that you set yourself. Don't override them in your Bedrock configuration files either.
+
+Ymir also manages these values:
+
+ * **Database:** When the environment uses a [database][19] on a Ymir database server, Ymir stores its connection information, `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_PASSWORD`, as [secrets][21] when you deploy. If you set a `DATABASE_URL` environment variable or secret, Bedrock's `config/application.php` file uses it instead of these values.
+ * **Salts:** Ymir generates the eight WordPress salts if the environment doesn't have them. Once all eight exist, Ymir keeps them. If even one is missing, the next deployment replaces all eight, which logs everyone out.
+
+See the [reserved environment variables][20] for the full list.
+
+### Your .env file [#bedrock-env-file]
+
+Your `.env` file isn't deployed. Bedrock's current `config/application.php` file only loads a `.env` file if one exists, so your configuration works without it. If your project uses an older version of that file that always loads a `.env` file, update it before you deploy.
+
+Set the values your project needs as environment variables, and store sensitive values, such as API keys, as [secrets][21]. Never commit a `.env` file with real credentials or add one to your build with the `include` option.
+
+### WP_ENV and custom environments [#wp-env-and-custom-environments]
+
+Ymir sets `WP_ENV` and `WP_ENVIRONMENT_TYPE` to the name of the Ymir environment. Bedrock then loads `config/environments/<WP_ENV>.php` if that file exists:
+
+ * In the `staging` environment, Bedrock loads `config/environments/staging.php`. Bedrock's version of that file blocks search engines from indexing the site.
+ * In the `production` environment, Bedrock uses the configuration in `config/application.php`.
+ * An environment with another name, such as `preview`, doesn't become a staging environment. Bedrock doesn't load an environment file unless you create one with that name. WordPress also treats an environment type it doesn't recognize as `production`.
+
+## Running on AWS Lambda [#bedrock-on-aws-lambda]
+
+Your project files are read-only on AWS Lambda, and the `/tmp` directory is the only writable directory. See the [PHP runtime reference][22] for what this means.
+
+ * **Uploads:** The Ymir plugin stores your uploads in your environment's S3 storage, not in `web/app/uploads`. See [WordPress uploads][28] for the upload size limit and how attachments get processed.
+ * **Email:** The Ymir plugin sends email with Amazon SES. See [email][23].
+ * **Logs:** When logging is enabled, PHP errors and anything your code writes to `stderr` go to CloudWatch. See the [logging guide][24].
+ * **Queues:** The PHP runtime doesn't process queued jobs for Bedrock projects, even if they use Acorn. The [queues guide][25] covers Laravel applications.
+ * **Acorn and Sage:** The PHP runtime doesn't prepare Acorn's storage directories for Bedrock projects. If your theme uses Sage 10, see the [Sage 10 guide][26].
+
+Deploy to your `staging` environment first and check your site before you deploy to `production`.
+
+[1]: https://roots.io/bedrock/
+[2]: /reference/configuration#type
+[3]: /reference/ymir-cli#project-init-init
+[4]: https://roots.io/radicle/
+[5]: /guides/container-image-deployment
+[6]: /projects/manage#creating-a-project
+[7]: /reference/ymir-cli#database-import
+[8]: /reference/ymir-cli#media-import
+[9]: /reference/configuration#php
+[10]: /reference/php-runtime#php-versions
+[11]: /reference/ymir-cli#install-integration
+[12]: /projects/deploy#redeploying-a-project
+[13]: https://getcomposer.org/doc/05-repositories.md#path
+[14]: /projects/deploy#what-gets-copied
+[15]: /reference/configuration#include
+[16]: /guides/container-image-deployment#why-deploy-with-a-container-image
+[17]: /reference/configuration#commands
+[18]: /projects/environments#environment-variables
+[19]: /reference/configuration#database
+[20]: /projects/environments#reserved-environment-variables
+[21]: /projects/environments#secrets
+[22]: /reference/php-runtime#runtime-filesystem
+[23]: /team-resources/email
+[24]: /guides/logging-service
+[25]: /guides/queues
+[26]: /compatibility/sage-10
+[27]: /projects/manage#radicle-projects
+[28]: /reference/php-runtime#wordpress-uploads

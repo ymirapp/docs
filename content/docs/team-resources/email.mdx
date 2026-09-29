@@ -1,0 +1,222 @@
+---
+title: "Email"
+description: "Send WordPress email through AWS SES, manage email identities, get your AWS account approved for sending email and troubleshoot email sending."
+---
+
+## How does email work with Ymir?
+
+Because there are no servers to send emails from, all emails sent from your WordPress sites have to go through a transactional email service. The Ymir plugin automatically configures WordPress to send email through [AWS SES][1]. That said, there are a few things you need to do yourself to get up and running.
+
+The Ymir plugin replaces the WordPress `wp_mail` function and sends every email with SES. It uses the AWS account and region of your project, so everything below happens in that account and region. You can find them with the [`project:info`][2] command. The provider is the cloud provider connection to your project's AWS account.
+
+```bash
+ymir project:info
+```
+
+For SES to accept an email from your WordPress site, you need:
+
+* A verified [email identity](#managing-email-identities) that covers the email address that the email is from.
+* An AWS account that's [approved for sending email](#getting-your-aws-account-approved-for-sending-email) in the project region. Until then, SES only accepts emails sent to verified email addresses and domains.
+
+The Ymir plugin doesn't send email through SES when:
+
+* WordPress uses a `ymirsites.com` [vanity domain][3] for your site address. You need to [map a domain][4] to your environment.
+* Another plugin replaced the `wp_mail` function first. The Ymir plugin displays a warning in the WordPress admin when this happens.
+* You [disabled the SES integration](#using-another-email-service).
+
+### Which email address your emails are from [#which-email-address-your-emails-are-from]
+
+Unless something else sets it, the Ymir plugin sends emails from `wordpress@` followed by the domain of your site address. With multisite, it's the domain of the main site. The plugin removes a leading `www.` from the domain. So a site at `https://www.example.com` sends emails from `wordpress@example.com`, and a site at `https://blog.example.com` sends them from `wordpress@blog.example.com`.
+
+The WordPress administration email (**Settings > General**) isn't the address that emails are from. It only receives some WordPress notifications. Plugins and themes can also change the address that emails are from with a `From` header or the `wp_mail_from` filter. For example, a form plugin might send emails from an address that you entered in its settings.
+
+The address that emails are from is the one that needs an email identity. With a domain identity for `example.com`, you can send from any address at `example.com` and its subdomains, such as `wordpress@blog.example.com`. With an email address identity, you can only send from that exact address.
+
+## Getting your AWS account approved for sending email
+
+New AWS accounts are in the SES sandbox. The sandbox is separate for each AWS region. So you need to request production access in your project region, even if your account has it in another region. While your account is in the sandbox in a region, SES:
+
+* Only accepts emails sent to verified email addresses and domains, or to the [SES mailbox simulator][5].
+* Limits you to 200 messages per 24-hour period and one message per second.
+
+To request production access, open the [SES console][6] and select your project region in the region selector. Then:
+
+1. In the navigation pane, choose **Account dashboard**.
+2. In the warning box that says your SES account is in the sandbox, choose **View Get set up page** and then **Request production access**.
+3. Select **Transactional** unless most of the emails you send are marketing emails, such as newsletters.
+4. Enter your website URL, any additional contacts and your preferred contact language.
+5. In **Acknowledgement**, agree that you only send email to people who explicitly requested it and that you have a process for handling bounce and complaint notifications. Make sure both are true for your site before you agree. Then choose **Submit request**.
+
+You can't edit your request while AWS reviews it. AWS says that it provides an initial response within 24 hours. But AWS can ask you for more information, and approval isn't guaranteed. The [AWS documentation][7] has the latest steps, including how to submit the request with the AWS CLI.
+
+While your account is in the sandbox in the project region, the Ymir plugin displays an error in the WordPress admin saying that sending emails with SES is disabled. The plugin still sends emails through SES. SES accepts emails sent to verified email addresses and domains, so you can test by sending emails to an address that you created an [email identity](#managing-email-identities) for. SES rejects emails sent to other recipients until AWS approves your request.
+
+Production access doesn't remove the need for an email identity. You still need a verified email identity for the address that your emails are from.
+
+### Sending status and quotas [#sending-status-and-quotas]
+
+Production access isn't the only thing that controls email sending. SES can also pause your account's ability to send email, such as when it finds issues with the emails you send. AWS notifies the email address associated with your AWS account when this happens. Your account also has a daily sending quota and a maximum sending rate for each region.
+
+The **Account dashboard** in the SES console shows these for the selected region. If SES paused your account, the account status is **Paused**. Your sending quotas are under **Sending Limits**, and the emails you sent in the last 24 hours are under **Daily email usage**.
+
+## Managing email identities
+
+The other aspect of sending emails with SES is email identities. SES will only let you send emails with valid email identities. What is an email identity? It's a domain or email address that SES verified and approved for sending email.
+
+Email identities are also separate for each AWS region. Create your email identity in the same AWS account and region as your project.
+
+### Creating an email identity [#creating-an-email-identity]
+
+Creating email identities is painless with the Ymir CLI. You can use the `email:identity:create` command to create an email identity. You can pass it a domain or an email address and it'll create the correct email identity for you.
+
+```bash
+# Create an email identity for the "example.com" domain
+ymir email:identity:create example.com
+
+# Create an email identity for the "person@example.com" email address
+ymir email:identity:create person@example.com
+```
+
+When you run the command from your project directory, the Ymir CLI uses the project's cloud provider connection and region. Outside a project directory, it asks you to choose them. You can also pass them with the `--provider` and `--region` options, but the explicit values replace the project's values. The cloud provider connection must be connected. Otherwise, the command stops without creating the email identity.
+
+If the email identity already exists in SES in that AWS account and region, Ymir uses it instead of creating a new one.
+
+If the command fails, check [`email:identity:list`][8] for the email identity before trying again.
+
+### Verifying an email address identity [#verifying-an-email-address-identity]
+
+For an email address, AWS sends a verification email to that address. Click the link in that email to verify the email identity. The link expires after 24 hours. If it expired, you can send a new verification email from the email identity's page in the SES console.
+
+### Verifying a domain identity [#verifying-a-domain-identity]
+
+For a domain, the command displays the DKIM DNS records that you need to add to your DNS provider. AWS verifies the email identity once it finds all these records. It uses them to authenticate the DKIM signature of your emails, so keep them on your DNS server for as long as you use the email identity.
+
+```text title="Example output"
+Email identity created
+
+Important: The following DNS records needs to exist on your DNS server at all times to verify the email identity and authenticate its DKIM signature:
+
+ ----------------------------------------- ------- ------------------------------------
+  Name                                      Type    Value
+ ----------------------------------------- ------- ------------------------------------
+  <token-1>._domainkey.example.com          CNAME   <token-1>.dkim.amazonses.com
+  <token-2>._domainkey.example.com          CNAME   <token-2>.dkim.amazonses.com
+  <token-3>._domainkey.example.com          CNAME   <token-3>.dkim.amazonses.com
+ ----------------------------------------- ------- ------------------------------------
+```
+
+The `<token-1>`, `<token-2>` and `<token-3>` placeholders are unique values that AWS generates for your email identity. Copy the exact records that the command displays. The records are different in each region.
+
+If the command doesn't display the DNS records, it doesn't mean that the domain is verified. Use the [`email:identity:info`][9] command to display them.
+
+```bash
+ymir email:identity:info example.com
+```
+
+If [Ymir manages the DNS][10] of the domain, Ymir adds the DNS records to the domain's DNS zone for you and doesn't display them. The email identity shows as managed. But the records only work if your domain's name servers point to that DNS zone.
+
+When you deploy a project, Ymir also creates an email identity in the project region for each root domain, such as `example.com`, that it maps to the environment when Ymir manages its DNS. It doesn't do this for subdomains or domains whose DNS Ymir doesn't manage.
+
+### Checking your email identities [#checking-your-email-identities]
+
+You can view all the email identities that Ymir manages with the `email:identity:list` command. The `Verified` column shows if AWS verified the email identity.
+
+```text title="Example output"
+ ---- -------------------- -------- -------------- ----------- ---------- ---------
+  Id   Name                 Type     Provider       Region      Verified   Managed
+ ---- -------------------- -------- -------------- ----------- ---------- ---------
+  7    example.com          domain   Personal AWS   us-east-1   no         no
+  8    person@example.com   email    Personal AWS   us-east-1   yes        no
+ ---- -------------------- -------- -------------- ----------- ---------- ---------
+```
+
+If a domain identity isn't verified after you added its DNS records, check that:
+
+* Your DNS provider didn't add your domain to the end of the record names. Some DNS providers do this without telling you. You end up with a record for `<token-1>._domainkey.example.com.example.com`.
+* You added the records for the correct region. Compare them with the records that `email:identity:info` displays.
+
+DNS changes can take up to 72 hours to reach AWS.
+
+### Deleting an email identity [#deleting-an-email-identity]
+
+To delete an email identity, you use the [`email:identity:delete`][11] command. Pass it the ID from `email:identity:list`, especially if you have email identities with the same name in more than one region. In the example below, replace `7` with the ID of the email identity that you want to delete.
+
+```bash
+ymir email:identity:delete 7
+```
+
+Ymir deletes the email identity in the background after the command finishes. Deleting it:
+
+* Deletes the email identity from SES, along with the SES configuration set that Ymir created for it, if there's one.
+* Deletes its DKIM DNS records from the DNS zone associated with it in Ymir, if there's one. Ymir doesn't delete records that you added to another DNS provider. Remove them yourself if you no longer need them.
+
+The email identity belongs to the AWS account and region, not to a project. **Every project and site that sends email from that AWS account and region with the email identity is affected.** Emails from addresses that no other verified email identity covers will fail. Ymir can't restore a deleted email identity. You need to create it again, and it has to go through verification again.
+
+## Using another email service [#using-another-email-service]
+
+Ymir doesn't require that you use SES as your transactional email service. WordPress only allows one plugin to replace the `wp_mail` function. So if you want to use another email service or another SES plugin, disable Ymir's SES integration and then configure the other service with its own plugin.
+
+To disable the integration, define the `YMIR_DISABLE_EMAIL_SENDING` constant as `true` in your `wp-config.php` file.
+
+```php
+define('YMIR_DISABLE_EMAIL_SENDING', true);
+```
+
+You can also set the `YMIR_DISABLE_EMAIL_SENDING` environment variable to `1` with the [`environment:variables:change`][12] command. Don't set it to `false` to enable the integration. Any value other than an empty string or `0` disables it. Remove the environment variable instead. You must deploy or redeploy your project for environment variable changes to take effect.
+
+```bash
+ymir environment:variables:change production YMIR_DISABLE_EMAIL_SENDING 1
+```
+
+Disabling the integration doesn't configure another email service for you. WordPress uses its own `wp_mail` function until another plugin replaces it or configures it.
+
+## Troubleshooting email sending [#troubleshooting-email-sending]
+
+When SES rejects an email, the WordPress `wp_mail` function returns `false` and fires the `wp_mail_failed` action. The error message includes the error that AWS returned. To see it, you can temporarily log it with a must-use plugin. Create a file such as `log-email-errors.php` in your must-use plugins directory, which is `wp-content/mu-plugins` by default.
+
+```php title="wp-content/mu-plugins/log-email-errors.php"
+<?php
+
+add_action('wp_mail_failed', function (WP_Error $error): void {
+    error_log($error->get_error_message());
+});
+```
+
+You can then find the errors in your environment's logs with the [`environment:logs:query`][13] command. The [SES documentation][14] explains the errors that SES returns, such as an email address that isn't verified or a paused account.
+
+Error messages can contain email addresses, so only log them while you troubleshoot and remove the plugin afterwards. Don't log the error data of the `WP_Error`. It contains the whole email, including its recipients and message.
+
+When `wp_mail` returns `true`, it only means that SES accepted the email. It doesn't mean that the email reached the recipient's inbox. If SES accepted an email that never arrived:
+
+* Ask the recipient to check their spam folder and that they use the correct email address.
+* Check the address that your emails are from for bounce messages, if it can receive email.
+* Check the account-level suppression list in the SES console for the project region. Depending on your suppression settings, SES accepts emails sent to addresses on this list because of earlier bounces or complaints, but doesn't send them.
+* Wait a while, since some email providers delay emails from senders they don't know.
+
+The [SES documentation][15] has more steps for emails that SES accepted but didn't deliver.
+
+If emails aren't arriving, check the following:
+
+* **AWS account and region:** Your email identity and production access are in the AWS account and region of your project.
+* **Production access:** Your account has production access in the project region. In the sandbox, SES rejects emails sent to recipients that aren't verified.
+* **Sending status:** Your account's ability to send email isn't paused and you haven't reached your sending quota.
+* **Email address:** The address that your emails are from is covered by a verified email identity. Check what your plugins and themes use, not only the default `wordpress@` address.
+* **Site address:** Your site uses a mapped domain and not the `ymirsites.com` vanity domain.
+* **`wp_mail` function:** No other plugin replaced the `wp_mail` function and you didn't disable the SES integration.
+* **DNS records:** The DKIM DNS records of your domain identity still exist on the DNS server that your domain uses.
+
+[1]: https://aws.amazon.com/ses/
+[2]: /reference/ymir-cli#project-info-info
+[3]: /projects/environments#vanity-domain-name
+[4]: /guides/domain-mapping
+[5]: https://docs.aws.amazon.com/ses/latest/dg/send-an-email-from-console.html
+[6]: https://console.aws.amazon.com/ses/home
+[7]: https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html
+[8]: /reference/ymir-cli#email-identity-list
+[9]: /reference/ymir-cli#email-identity-info
+[10]: /team-resources/dns
+[11]: /reference/ymir-cli#email-identity-delete
+[12]: /reference/ymir-cli#environment-variables-change
+[13]: /reference/ymir-cli#environment-logs-query
+[14]: https://docs.aws.amazon.com/ses/latest/dg/troubleshoot-error-messages.html
+[15]: https://docs.aws.amazon.com/ses/latest/dg/troubleshoot-delivery.html

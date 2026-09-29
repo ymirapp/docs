@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="820" viewBox="0 0 1100 820" role="img" aria-labelledby="title desc">
+  <title id="title">How an HTTPS request for example.com goes through Cloudflare and AWS with caching: enabled</title>
+  <desc id="desc">This only shows caching: enabled. A visitor sends an HTTPS request for example.com to the Cloudflare edge, secured by Cloudflare's edge certificate. Cloudflare then connects to CloudFront in your AWS account over HTTPS, secured by the AWS SSL certificate, which Full (strict) checks. CloudFront then forwards the request to your environment. You set up Cloudflare in your Cloudflare account, not Ymir. Redirecting HTTP visitors to HTTPS is a separate Cloudflare edge setting, such as Always Use HTTPS, and Full (strict) alone doesn't redirect. Cloudflare and CloudFront each have their own cache, which caches based on its own rules and your cache headers, and each has its own purge: purge the Cloudflare cache in Cloudflare, and the CloudFront cache with environment:invalidate-cache. Each purge only clears its own cache. A dashed second path shows any client going straight to &lt;vanity-domain&gt;.ymirsites.com. It skips only Cloudflare, still goes through CloudFront to your environment, and can send any CF-Connecting-IP header. Only trust that header if every request comes through Cloudflare. Ymir doesn't restrict your environment to Cloudflare traffic.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#40594d"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .item { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.35; stroke-width: 1; }
+    .path { fill: #f4f1e6; stroke: #071812; stroke-width: 1.5; }
+    .setting { fill: #f4f1e6; stroke: #071812; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .cache { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .tag { fill: #071812; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .title { font-size: 16px; font-weight: 700; }
+    .label { font-size: 16px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .cert { font-size: 15px; font-weight: 700; fill: #2f7a54; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; }
+    .tag-text { font-size: 14px; font-weight: 700; fill: #f4f1e6; }
+    .tag-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; fill: #f4f1e6; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+  </style>
+
+  <rect width="1100" height="820" fill="#f4f1e6"/>
+
+  <text class="heading" x="20" y="40">An HTTPS request for example.com</text>
+  <rect class="tag" x="370" y="20" width="200" height="28" rx="14"/>
+  <text class="tag-code" x="470" y="39" text-anchor="middle">caching: enabled only</text>
+  <text class="small" x="20" y="68">Cloudflare and AWS each secure and cache separately. Each purge only clears its own cache.</text>
+
+  <!-- Clients -->
+  <rect class="item" x="20" y="90" width="260" height="56" rx="8"/>
+  <text class="title" x="150" y="114" text-anchor="middle">Any client</text>
+  <text class="small" x="150" y="134" text-anchor="middle">without Cloudflare</text>
+
+  <rect class="path" x="570" y="90" width="200" height="56" rx="8"/>
+  <text class="title" x="670" y="114" text-anchor="middle">Visitor</text>
+  <text class="code" x="670" y="134" text-anchor="middle">example.com</text>
+
+  <!-- Cloudflare -->
+  <rect class="area" x="340" y="220" width="740" height="240" rx="12"/>
+  <text class="heading" x="360" y="252">Cloudflare</text>
+  <text class="small" x="1060" y="251" text-anchor="end">Set up in your Cloudflare account, not by Ymir</text>
+
+  <!-- Visitor to Cloudflare -->
+  <line x1="670" y1="146" x2="670" y2="276" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="title" x="686" y="182">HTTPS</text>
+  <text class="cert" x="686" y="204">Cloudflare's edge certificate</text>
+
+  <rect class="setting" x="360" y="278" width="190" height="162" rx="8"/>
+  <text class="small" x="376" y="304">Separate edge setting</text>
+  <text class="title" x="376" y="330">Always Use HTTPS</text>
+  <text class="label" x="376" y="356">Redirects HTTP</text>
+  <text class="label" x="376" y="378">visitors to HTTPS</text>
+  <text class="note" x="376" y="408">Full (strict) alone</text>
+  <text class="note" x="376" y="428">doesn't redirect</text>
+
+  <rect class="path" x="580" y="278" width="180" height="64" rx="8"/>
+  <text class="title" x="670" y="316" text-anchor="middle">Cloudflare edge</text>
+
+  <rect class="cache" x="790" y="278" width="270" height="162" rx="8"/>
+  <text class="title" x="806" y="304">Cloudflare cache</text>
+  <text class="small" x="806" y="330">Caches by its own rules</text>
+  <text class="small" x="806" y="350">and your cache headers</text>
+  <text class="small" x="806" y="384">Its own purge:</text>
+  <rect class="tag" x="806" y="396" width="244" height="28" rx="14"/>
+  <text class="tag-text" x="928" y="415" text-anchor="middle">Purge in Cloudflare</text>
+
+  <!-- AWS -->
+  <rect class="area" x="20" y="550" width="1060" height="250" rx="12"/>
+  <text class="heading" x="40" y="582">Your AWS account</text>
+
+  <!-- Cloudflare to AWS -->
+  <line x1="670" y1="342" x2="670" y2="588" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="title" x="686" y="494">HTTPS</text>
+  <text class="cert" x="686" y="516">AWS SSL certificate, checked by Full (strict)</text>
+
+  <rect class="path" x="580" y="590" width="180" height="64" rx="8"/>
+  <text class="title" x="670" y="628" text-anchor="middle">CloudFront</text>
+
+  <line x1="670" y1="654" x2="670" y2="710" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <rect class="path" x="580" y="712" width="180" height="64" rx="8"/>
+  <text class="title" x="670" y="750" text-anchor="middle">Your environment</text>
+
+  <rect class="cache" x="790" y="590" width="270" height="162" rx="8"/>
+  <text class="title" x="806" y="616">CloudFront cache</text>
+  <text class="small" x="806" y="642">Caches by its own rules</text>
+  <text class="small" x="806" y="662">and your cache headers</text>
+  <text class="small" x="806" y="696">Its own purge:</text>
+  <rect class="tag" x="806" y="708" width="244" height="28" rx="14"/>
+  <text class="tag-code" x="928" y="727" text-anchor="middle">environment:invalidate-cache</text>
+
+  <!-- Bypass -->
+  <polyline points="250,146 250,622 578,622" fill="none" stroke="#40594d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow-muted)"/>
+  <text class="title" x="40" y="196">Skips only Cloudflare</text>
+  <text class="small" x="40" y="222">can send any</text>
+  <text class="code" x="40" y="244">CF-Connecting-IP</text>
+  <text class="small" x="40" y="266">header</text>
+  <text class="code" x="270" y="610">&lt;vanity-domain&gt;.ymirsites.com</text>
+
+  <text class="note" x="40" y="680">Only trust CF-Connecting-IP if every request</text>
+  <text class="note" x="40" y="702">comes through Cloudflare. Ymir doesn't restrict</text>
+  <text class="note" x="40" y="724">your environment to Cloudflare traffic.</text>
+</svg>

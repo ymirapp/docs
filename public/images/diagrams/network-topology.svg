@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="780" viewBox="0 0 1180 780" role="img" aria-labelledby="title desc">
+  <title id="title">What's inside a Ymir network and how traffic reaches it</title>
+  <desc id="desc">A network named example-network, a VPC in the region example-region-1, illustrated with two availability zones, A and B. Each availability zone has a public subnet and a private subnet. The public subnets hold the network's one NAT gateway, shared by everything on the private subnets, and, as optional examples, a bastion host and a publicly accessible database server. The private subnets hold the network-connected Lambda functions of both the staging and production environments, which don't get a public IP address, and, as optional examples, a private database server and a cache cluster. The Lambda functions of both environments connect directly to the private database server and the cache cluster inside the network, not through the NAT gateway or the bastion host. Outbound traffic from the private subnets goes through the one NAT gateway to the internet, for external services and AWS services such as the parameter store. You connect with SSH to the bastion host and, through it, to the private database server. Visitors reach the Lambda functions through CloudFront or the API gateway, outside the network, and AWS invokes the functions without going through the NAT gateway or the bastion host. Several environments and team resources can share the same network and NAT gateway, but sharing a network doesn't isolate their data. Not every network has every resource shown, and some environments aren't connected to a network at all.</desc>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#071812"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2f7a54"/>
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#40594d"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .area { fill: #e9e7dc; stroke: #40594d; stroke-width: 1.5; }
+    .vpc { fill: #f4f1e6; stroke: #2f7a54; stroke-width: 2; }
+    .zone { fill: none; stroke: #40594d; stroke-opacity: 0.6; stroke-width: 1.25; stroke-dasharray: 6 4; }
+    .subnet { fill: #e9e7dc; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1.25; }
+    .item { fill: #f4f1e6; stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1; }
+    .example { fill: #f4f1e6; stroke: #40594d; stroke-width: 1.25; stroke-dasharray: 5 4; }
+    .shared { fill: #dde7da; stroke: #2f7a54; stroke-width: 1.5; }
+    .outside { fill: #f4f1e6; stroke: #40594d; stroke-width: 1.5; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .code-heading { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 18px; font-weight: 700; }
+    .subheading { font-size: 15px; font-weight: 700; fill: #40594d; }
+    .title { font-size: 16px; font-weight: 700; }
+    .label { font-size: 16px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; }
+    .tag { font-size: 14px; font-style: italic; fill: #40594d; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+    .note-green { font-size: 15px; font-style: italic; fill: #2f7a54; }
+    .note-ink { font-size: 15px; font-style: italic; }
+  </style>
+
+  <rect width="1180" height="780" fill="#f4f1e6"/>
+
+  <!-- Region and network -->
+  <rect class="area" x="190" y="20" width="690" height="640" rx="12"/>
+  <text class="small" x="206" y="46">Region <tspan class="code">example-region-1</tspan></text>
+  <rect class="vpc" x="204" y="60" width="662" height="586" rx="10"/>
+  <text class="code-heading" x="220" y="88">example-network</text>
+  <text class="small" x="390" y="88">network (VPC)</text>
+
+  <!-- Availability zones -->
+  <rect class="zone" x="216" y="102" width="316" height="532" rx="8"/>
+  <text class="subheading" x="228" y="124">Availability zone A</text>
+  <rect class="zone" x="540" y="102" width="314" height="532" rx="8"/>
+  <text class="subheading" x="552" y="124">Availability zone B</text>
+
+  <!-- Public subnets -->
+  <rect class="subnet" x="226" y="136" width="296" height="160" rx="8"/>
+  <text class="subheading" x="510" y="158" text-anchor="end">Public subnet</text>
+  <rect class="subnet" x="550" y="136" width="294" height="160" rx="8"/>
+  <text class="subheading" x="562" y="158">Public subnet</text>
+
+  <!-- Private subnets -->
+  <rect class="subnet" x="226" y="320" width="296" height="302" rx="8"/>
+  <text class="subheading" x="510" y="342" text-anchor="end">Private subnet</text>
+  <rect class="subnet" x="550" y="320" width="294" height="302" rx="8"/>
+  <text class="subheading" x="562" y="342">Private subnet</text>
+
+  <!-- Bastion host -->
+  <rect class="example" x="238" y="172" width="128" height="84" rx="8"/>
+  <text class="title" x="302" y="200" text-anchor="middle">Bastion host</text>
+  <text class="tag" x="302" y="242" text-anchor="middle">example</text>
+
+  <!-- Publicly accessible database server -->
+  <rect class="example" x="376" y="172" width="138" height="84" rx="8"/>
+  <text class="title" x="445" y="198" text-anchor="middle">Public</text>
+  <text class="title" x="445" y="218" text-anchor="middle">database server</text>
+  <text class="tag" x="445" y="242" text-anchor="middle">example</text>
+
+  <!-- NAT gateway -->
+  <rect class="shared" x="650" y="172" width="180" height="96" rx="8"/>
+  <text class="title" x="740" y="200" text-anchor="middle">NAT gateway</text>
+  <text class="small" x="740" y="222" text-anchor="middle">one per network,</text>
+  <text class="small" x="740" y="242" text-anchor="middle">shared, outbound only</text>
+
+  <!-- Private database server -->
+  <rect class="example" x="240" y="374" width="128" height="72" rx="8"/>
+  <text class="title" x="304" y="398" text-anchor="middle">Private</text>
+  <text class="title" x="304" y="418" text-anchor="middle">database server</text>
+  <text class="tag" x="304" y="438" text-anchor="middle">example</text>
+
+  <!-- Cache cluster -->
+  <rect class="example" x="566" y="374" width="128" height="72" rx="8"/>
+  <text class="title" x="630" y="406" text-anchor="middle">Cache cluster</text>
+  <text class="tag" x="630" y="430" text-anchor="middle">example</text>
+
+  <!-- Network-connected Lambda functions of both environments -->
+  <rect class="shared" x="240" y="494" width="530" height="116" rx="10"/>
+  <text class="subheading" x="254" y="516" style="fill: #2f7a54">Lambda functions in both private subnets, no public IP</text>
+  <rect class="item" x="254" y="528" width="502" height="32" rx="6"/>
+  <text class="code" x="505" y="549" text-anchor="middle">staging</text>
+  <rect class="item" x="254" y="568" width="502" height="32" rx="6"/>
+  <text class="code" x="505" y="589" text-anchor="middle">production</text>
+
+  <!-- Direct connections to the shared private resources -->
+  <line x1="304" y1="494" x2="304" y2="450" stroke="#2f7a54" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="314" y="477">direct</text>
+  <line x1="630" y1="494" x2="630" y2="450" stroke="#2f7a54" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text class="note-green" x="640" y="477">direct</text>
+
+  <!-- Outbound traffic through the NAT gateway -->
+  <path d="M770 520 H806 V272" fill="none" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="note-ink" x="796" y="410" text-anchor="end">outbound</text>
+  <line x1="830" y1="220" x2="926" y2="220" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+
+  <!-- Internet -->
+  <rect class="outside" x="930" y="136" width="230" height="186" rx="12"/>
+  <text class="heading" x="946" y="168">Internet</text>
+  <rect class="item" x="946" y="184" width="198" height="44" rx="8"/>
+  <text class="label" x="1045" y="212" text-anchor="middle">External services</text>
+  <rect class="item" x="946" y="238" width="198" height="66" rx="8"/>
+  <text class="label" x="1045" y="264" text-anchor="middle">AWS services, such as</text>
+  <text class="label" x="1045" y="288" text-anchor="middle">the parameter store</text>
+
+  <!-- Your SSH connection through the bastion host -->
+  <rect class="outside" x="20" y="172" width="150" height="84" rx="12"/>
+  <text class="title" x="95" y="204" text-anchor="middle">You</text>
+  <text class="small" x="95" y="230" text-anchor="middle">SSH connection</text>
+  <line x1="170" y1="214" x2="236" y2="214" stroke="#40594d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow-muted)"/>
+  <line x1="304" y1="256" x2="304" y2="370" stroke="#40594d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow-muted)"/>
+  <text class="note" x="314" y="313">through the bastion host</text>
+
+  <!-- Visitor requests through the managed front doors -->
+  <rect class="outside" x="45" y="374" width="100" height="40" rx="20"/>
+  <text class="title" x="95" y="399" text-anchor="middle">Visitors</text>
+  <line x1="95" y1="414" x2="95" y2="466" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <rect class="outside" x="20" y="470" width="150" height="80" rx="12"/>
+  <text class="title" x="95" y="500" text-anchor="middle">CloudFront or</text>
+  <text class="title" x="95" y="522" text-anchor="middle">API gateway</text>
+  <line x1="170" y1="510" x2="236" y2="510" stroke="#071812" stroke-width="2" marker-end="url(#arrow-ink)"/>
+  <text class="note" x="95" y="576" text-anchor="middle">outside the network,</text>
+  <text class="note" x="95" y="596" text-anchor="middle">invoke the functions</text>
+  <text class="note" x="95" y="616" text-anchor="middle">through AWS</text>
+
+  <!-- Summary -->
+  <text class="note-ink" x="590" y="694" text-anchor="middle"><tspan class="code">staging</tspan> and <tspan class="code">production</tspan> share one network and its one NAT gateway. Sharing a network doesn't isolate their data.</text>
+  <text class="note" x="590" y="722" text-anchor="middle">NAT gateway: outbound traffic only. Bastion host: your SSH connection. CloudFront or API gateway: visitor requests.</text>
+  <text class="note" x="590" y="750" text-anchor="middle">Resources marked example are optional. Some environments aren't connected to a network at all.</text>
+</svg>

@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="610" viewBox="0 0 1100 610" role="img" aria-labelledby="title desc">
+  <title id="title">Tags only cover part of an AWS account's monthly bill</title>
+  <desc id="desc">A conceptual composite, not a single Cost Explorer result, and not to scale: segment sizes aren't amounts. One AWS account's monthly bill is shown as a stacked bar. The top segments are the tagged costs of example-project, its staging and production environments, which have values for the project and environment tag keys. The rest of the bar has no value for those tag keys, although those costs can still have other tags such as managed-by. It's made of a shared NAT gateway, a shared database server and a shared cache cluster used by both environments, charges not tied to a resource, and unrelated workloads in the same AWS account. An arrow labeled your allocation rule starts only from the shared Ymir team resources and splits their cost into an assigned share for staging and an assigned share for production. This is your own cost analysis, done by you and not by Ymir or AWS. The shares aren't tag values or extra charges, and they don't have to be equal. Charges not tied to a resource and unrelated workloads stay outside this allocation and stay on your bill, and this rule doesn't assign unrelated workloads to the project. Filtering on example-project's tags only shows the top segments. Tags only cover part of the bill, so identify the rest before you attribute it and apply the same rule every month.</desc>
+
+  <defs>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2f7a54"/>
+    </marker>
+    <clipPath id="bar">
+      <rect x="210" y="110" width="280" height="384" rx="10"/>
+    </clipPath>
+  </defs>
+
+  <style>
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #071812; }
+    .tagged { fill: #dde7da; }
+    .shared { fill: #e9e7dc; }
+    .other { fill: #f4f1e6; }
+    .divider { stroke: #40594d; stroke-opacity: 0.45; stroke-width: 1; }
+    .bracket { fill: none; stroke: #40594d; stroke-width: 1.5; }
+    .share { fill: #f4f1e6; stroke: #2f7a54; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .heading { font-size: 20px; font-weight: 700; }
+    .title { font-size: 16px; font-weight: 700; }
+    .title-green { font-size: 16px; font-weight: 700; fill: #2f7a54; }
+    .label { font-size: 16px; }
+    .small { font-size: 15px; fill: #40594d; }
+    .code-small { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #40594d; }
+    .note-ink { font-size: 16px; font-style: italic; }
+    .note { font-size: 15px; font-style: italic; fill: #40594d; }
+  </style>
+
+  <rect width="1100" height="610" fill="#f4f1e6"/>
+
+  <text class="heading" x="20" y="40">Attributing one AWS account's monthly bill</text>
+  <text class="note" x="20" y="66">Conceptual composite, not a single Cost Explorer result. Not to scale: segment sizes aren't amounts.</text>
+
+  <!-- Stacked bar -->
+  <text class="title" x="350" y="98" text-anchor="middle">One AWS account's monthly bill</text>
+  <g clip-path="url(#bar)">
+    <rect class="tagged" x="210" y="110" width="280" height="112"/>
+    <rect class="shared" x="210" y="222" width="280" height="156"/>
+    <rect class="other" x="210" y="378" width="280" height="116"/>
+    <line class="divider" x1="210" y1="166" x2="490" y2="166"/>
+    <line class="divider" x1="210" y1="274" x2="490" y2="274"/>
+    <line class="divider" x1="210" y1="326" x2="490" y2="326"/>
+    <line class="divider" x1="210" y1="436" x2="490" y2="436"/>
+    <line x1="210" y1="378" x2="490" y2="378" stroke="#071812" stroke-width="1.5"/>
+  </g>
+  <!-- Inset by half of each stroke so the shared outline sits inside the bar border and the dividers -->
+  <rect x="212.25" y="224.25" width="275.5" height="151.5" fill="none" stroke="#2f7a54" stroke-width="3"/>
+  <rect x="210" y="110" width="280" height="384" rx="10" fill="none" stroke="#071812" stroke-width="1.5"/>
+  <line x1="210" y1="222" x2="490" y2="222" stroke="#071812" stroke-width="1.5"/>
+
+  <text class="title" x="226" y="134">staging</text>
+  <text class="code-small" x="226" y="154">example-project</text>
+  <text class="title" x="226" y="190">production</text>
+  <text class="code-small" x="226" y="210">example-project</text>
+  <text class="label" x="226" y="253">Shared NAT gateway</text>
+  <text class="label" x="226" y="305">Shared database server</text>
+  <text class="label" x="226" y="357">Shared cache cluster</text>
+  <text class="label" x="226" y="412">Charges not tied to a resource</text>
+  <text class="label" x="226" y="460">Unrelated workloads</text>
+  <text class="small" x="226" y="480">in the same AWS account</text>
+
+  <!-- Tag value context -->
+  <path class="bracket" d="M202 114 h-8 V218 h8"/>
+  <text class="title" x="184" y="148" text-anchor="end">Tagged</text>
+  <text class="small" x="184" y="170" text-anchor="end">project and</text>
+  <text class="small" x="184" y="190" text-anchor="end">environment tag values</text>
+
+  <path class="bracket" d="M202 226 h-8 V490 h8"/>
+  <text class="title" x="184" y="314" text-anchor="end">No tag value</text>
+  <text class="small" x="184" y="336" text-anchor="end">for the project and</text>
+  <text class="small" x="184" y="356" text-anchor="end">environment tag keys.</text>
+  <text class="small" x="184" y="384" text-anchor="end">Can still have other</text>
+  <text class="small" x="184" y="404" text-anchor="end">tags, like managed-by.</text>
+
+  <!-- Shared Ymir team resources -->
+  <path class="bracket" d="M500 226 h8 V374 h-8"/>
+  <text class="title" x="522" y="244">Shared Ymir team resources</text>
+  <text class="small" x="522" y="264">used by both environments</text>
+
+  <!-- Excluded costs -->
+  <path class="bracket" d="M500 382 h8 V490 h-8"/>
+  <text class="title" x="522" y="414">Outside this allocation</text>
+  <text class="small" x="522" y="436">Still on your bill. Identify them before</text>
+  <text class="small" x="522" y="456">you attribute them. This rule doesn't</text>
+  <text class="small" x="522" y="476">assign unrelated workloads to the project.</text>
+
+  <!-- Assigned shares -->
+  <text class="title" x="810" y="128">Your cost analysis</text>
+  <text class="small" x="810" y="150">Done by you, not by Ymir or AWS.</text>
+  <text class="small" x="810" y="170">Not tag values or extra charges.</text>
+  <text class="small" x="810" y="190">Shares don't have to be equal.</text>
+  <rect class="share" x="810" y="214" width="270" height="66" rx="8"/>
+  <text class="title" x="826" y="242">staging</text>
+  <text class="small" x="826" y="264">assigned share of shared costs</text>
+  <rect class="share" x="810" y="316" width="270" height="66" rx="8"/>
+  <text class="title" x="826" y="344">production</text>
+  <text class="small" x="826" y="366">assigned share of shared costs</text>
+
+  <!-- Allocation rule, painted last so nothing covers it -->
+  <text class="title-green" x="636" y="292" text-anchor="middle">Your allocation rule</text>
+  <text class="small" x="636" y="328" text-anchor="middle">you choose and document it</text>
+  <path d="M508 304 H770 V247 H806" fill="none" stroke="#2f7a54" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <path d="M770 304 V349 H806" fill="none" stroke="#2f7a54" stroke-width="3" marker-end="url(#arrow-green)"/>
+
+  <text class="note-ink" x="550" y="548" text-anchor="middle">Tags only cover part of the bill. Identify the rest before you attribute it, and apply the same rule every month.</text>
+  <text class="note" x="550" y="578" text-anchor="middle">Filtering on example-project's tags only shows the top segments.</text>
+</svg>

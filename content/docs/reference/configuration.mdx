@@ -6,7 +6,7 @@ description: "Every project and environment option in the ymir.yml configuration
 
 ## Sample configuration file
 
-The sample configuration file shows all possible configuration options with their defaults for the `ymir.yml` file:
+The sample below shows every `ymir.yml` configuration option, using defaults where available and example values otherwise.
 
 ```yml
 id: 1
@@ -51,8 +51,13 @@ environments:
       type: zip
       commands: []
     domain: []
-    # firewall: optional, see the firewall section below
+    firewall:
+      acl: arn:aws:wafv2:us-east-1:123456789012:global/webacl/acl-name/acl-id
+      bots: []
+      managed_rules: disabled
+      rate_limit: 2000
     gateway: http
+    layers: []
     logging:
       retention: 7
       status: enabled
@@ -487,7 +492,7 @@ The SSL certificate that Ymir requests during deployment covers your vanity doma
 
 This is the array of values to configure the environment's firewall. If the `firewall` value is a boolean or `enabled`/`disabled`, it'll be used as the `managed_rules` value. If the `firewall` value is any other string, it'll be used as the `acl` value.
 
-Whenever the `firewall` option is present without an `acl` value, Ymir creates an AWS WAF web ACL for the environment, if it doesn't have one yet, and associates it with the environment's CloudFront distribution. This is true even if `firewall` is `false`, `disabled` or an empty array, and you pay for the web ACL either way. With these values, a new web ACL has no rules. On an existing Ymir-managed web ACL, Ymir removes the managed rules, bot protection and rate limit rules that it manages, but doesn't remove rules added outside of Ymir. If you don't want a firewall, leave out the `firewall` option entirely. The sample configuration above doesn't include it for that reason.
+Whenever the `firewall` option is present without an `acl` value, Ymir creates an AWS WAF web ACL for the environment, if it doesn't have one yet, and associates it with the environment's CloudFront distribution. This is true even if `firewall` is `false`, `disabled` or an empty array, and you pay for the web ACL either way. With these values, a new web ACL has no rules. On an existing Ymir-managed web ACL, Ymir removes the managed rules, bot protection and rate limit rules that it manages, but doesn't remove rules added outside of Ymir. If you don't want a firewall, leave out the `firewall` option entirely.
 
 The firewall only inspects requests that go through the environment's CloudFront distribution. Requests sent directly to the environment's API gateway or Lambda function URL don't go through it. The rules Ymir configures apply to every request the distribution receives. A [custom web ACL](#acl) can have rules that only apply to some paths.
 

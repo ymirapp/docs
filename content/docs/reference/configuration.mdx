@@ -50,6 +50,7 @@ environments:
     deployment:
       type: zip
       commands: []
+      healthcheck: false
     domain: []
     firewall:
       acl: arn:aws:wafv2:us-east-1:123456789012:global/webacl/acl-name/acl-id
@@ -467,6 +468,39 @@ Looking for more information on how to deploy using container images? Check out 
 **type**: `array`
 
 The list of commands to run on the project environment during the project deployment.
+
+#### healthcheck
+
+**type**: `string | false` **default**: `false`
+
+The path of a readiness endpoint that Ymir checks when you deploy or redeploy. After running the deployment [`commands`](#commands-2), Ymir invokes the new version of the environment's website function with an HTTPS `GET` request for this path using the environment's primary domain name. For normal HTTP handling, the check requires a `200` status code. Redirects, other status codes, PHP errors and request timeouts fail the check. Setting this option to `false` or removing it disables the health check. Rollbacks don't run this check.
+
+If the `YMIR_MAINTENANCE_MODE` environment variable of the new website function version is exactly `true` or `1`, the Ymir runtime answers every HTTP request with a `503` maintenance response. Ymir still sends the health check request, but the deployment then fails unless the response is a `503`. That only checks the maintenance response, not that your application is ready. Any other value or no value requires a `200` again, so the first deployment after you exit maintenance mode checks your endpoint as usual. Ymir's maintenance mode only affects HTTP requests to the website function. Cron jobs and queue workers keep running.
+
+The path must start with a single `/` and can't contain a query string, fragment, whitespace or control characters.
+
+```yaml
+environments:
+  production:
+    deployment:
+      healthcheck: /up
+```
+
+Ymir doesn't retry an unhealthy HTTP response. Each health check request has a 10-second connection timeout and a total request timeout of the website function [`timeout`](#timeout) plus 30 seconds. A deployment worker can stop before that request timeout. The health check doesn't change the worker's timeout or add recovery protection if it stops before recording the result. Each health check invocation counts towards your Lambda usage.
+
+<Callout type="warn" title="Use a fast endpoint without side effects">
+
+Ymir can request the health check endpoint again every time you deploy or redeploy. The endpoint should only check that your application is ready to handle requests. It shouldn't change data, require authentication or redirect.
+
+</Callout>
+
+<Callout type="info" title="What the health check covers">
+
+Ymir sends the request straight to the new website function version, not through your domain, CloudFront distribution or API gateway. So the health check works on a first deployment, but it doesn't check that your environment is publicly available. It also doesn't check your console function or queue workers.
+
+A failed health check stops the deployment before Ymir switches your functions to the new version. It doesn't undo the deployment commands, such as database migrations, or the infrastructure changes that ran before it. To recover, fix the endpoint or your configuration and deploy again.
+
+</Callout>
 
 ### domain
 

@@ -204,6 +204,16 @@ You should also be aware that you can't add and edit any environment variable th
 
 **Generated keys:** If the environment doesn't have them, Ymir generates the WordPress salts (`AUTH_KEY`, `SECURE_AUTH_KEY`, `LOGGED_IN_KEY`, `NONCE_KEY`, `AUTH_SALT`, `SECURE_AUTH_SALT`, `LOGGED_IN_SALT` and `NONCE_SALT`) and Laravel's [`APP_KEY`][26] when it deploys. You can change these, but don't remove them. If even one of the eight WordPress salts is missing, the next deployment replaces all eight with new ones, which logs out everyone. If `APP_KEY` is missing, the next deployment generates one, which can make data encrypted with your old key unreadable.
 
+### Maintenance mode
+
+Use the [`environment:down`][39] command to request maintenance mode and the [`environment:up`][40] command to request its removal. These are convenience wrappers for two existing operations: changing the `YMIR_MAINTENANCE_MODE` environment variable to `true` or `false`, then redeploying the environment's last deployment. They don't build or upload your project, change other environment variables or edit your local configuration.
+
+In interactive mode, both commands ask for confirmation before changing variables or starting a redeployment. The default is no; declining leaves the environment unchanged. In non-interactive mode, you must pass the environment and no confirmation is requested.
+
+The variable change runs asynchronously. The commands start the redeployment without separately confirming that the variable change finished, so the redeployment can publish before the new value is ready. Success reflects redeployment monitoring, not verification that maintenance mode changed. Check the environment's HTTP response after the command finishes.
+
+Maintenance mode only affects HTTP requests that reach the PHP runtime, which returns a `503` response. The content delivery network can still serve cached responses and assets. Cron and queues keep running. Deployment commands and health checks are unchanged, so the redeployment runs your deployment commands again.
+
 ## Secrets
 
 Secrets are similar to environment variables, but Ymir doesn't show their values when you list them. This makes them the place to store sensitive information, such as API keys and passwords. When your environment uses a [database][18] on a Ymir database server, Ymir also stores its connection information, such as `DB_PASSWORD`, as secrets when you deploy. These don't appear when you list your secrets. Ymir doesn't move other credentials into secrets for you.
@@ -329,3 +339,5 @@ Looking for more detailed walkthrough on how to map a domain to your project env
 [36]: /guides/queues#changing-removing-and-rolling-back-queues
 [37]: /reference/ymir-cli#environment-list
 [38]: /reference/configuration#caching
+[39]: /reference/ymir-cli#environment-down
+[40]: /reference/ymir-cli#environment-up

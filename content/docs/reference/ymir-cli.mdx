@@ -1669,6 +1669,40 @@ ymir environment:delete testing
 ymir environment:delete testing --delete-resources
 ```
 
+### environment:down [#environment-down]
+
+```bash
+ymir environment:down [<environment>]
+```
+
+Put an environment in maintenance mode.
+
+The command requests an environment variable change to set `YMIR_MAINTENANCE_MODE` to `true`, then redeploys the environment's last deployment using the existing deployment monitor. It doesn't build or upload your project, change other environment variables or edit your local configuration.
+
+In interactive mode, it asks for confirmation before changing variables or starting the redeployment. The default is no; declining leaves the environment unchanged. In non-interactive mode, you must pass the environment and no confirmation is requested.
+
+The variable change runs asynchronously and isn't separately confirmed before redeployment starts. Success reflects redeployment monitoring, not verification that the variable change finished; the redeployment can publish before the new value is ready. Check the environment's HTTP response after the command finishes.
+
+Maintenance mode only affects HTTP requests that reach the PHP runtime, which returns a `503` response. The content delivery network can still serve cached responses and assets. Cron and queues keep running. Deployment commands and health checks are unchanged, so the redeployment runs your deployment commands again. Failed redeployments use the existing deployment errors; the command doesn't undo the variable request. Use [`environment:up`](#environment-up) to request maintenance mode removal.
+
+#### Arguments [#arguments-environment-down]
+
+##### `environment` [#environment-optional-environment-down]
+
+**optional**
+
+The name of the environment to put in maintenance mode. In non-interactive mode, you must pass it.
+
+#### Usage [#usage-environment-down]
+
+```bash
+# Put an environment in maintenance mode with prompt to choose the environment
+ymir environment:down
+
+# Put the "production" environment in maintenance mode
+ymir environment:down production
+```
+
 ### environment:info [#environment-info]
 
 ```bash
@@ -2043,6 +2077,40 @@ ymir environment:secret:list
 
 # List the secrets used by the "production" environment
 ymir environment:secret:list production
+```
+
+### environment:up [#environment-up]
+
+```bash
+ymir environment:up [<environment>]
+```
+
+Take an environment out of maintenance mode.
+
+The command requests an environment variable change to set `YMIR_MAINTENANCE_MODE` to `false`, then redeploys the environment's last deployment using the existing deployment monitor. It doesn't build or upload your project, change other environment variables or edit your local configuration.
+
+In interactive mode, it asks for confirmation before changing variables or starting the redeployment. The default is no; declining leaves the environment unchanged. In non-interactive mode, you must pass the environment and no confirmation is requested.
+
+The variable change runs asynchronously and isn't separately confirmed before redeployment starts. Success reflects redeployment monitoring, not verification that the variable change finished; the redeployment can publish before the new value is ready. Check the environment's HTTP response after the command finishes.
+
+Removing maintenance mode lets the PHP runtime handle HTTP requests again. Cron, queues and the content delivery network are unaffected. Deployment commands and health checks are unchanged, so the redeployment runs your deployment commands again. Failed redeployments use the existing deployment errors; the command doesn't undo the variable request. Use [`environment:down`](#environment-down) to request maintenance mode again.
+
+#### Arguments [#arguments-environment-up]
+
+##### `environment` [#environment-optional-environment-up]
+
+**optional**
+
+The name of the environment to take out of maintenance mode. In non-interactive mode, you must pass it.
+
+#### Usage [#usage-environment-up]
+
+```bash
+# Take an environment out of maintenance mode with prompt to choose the environment
+ymir environment:up
+
+# Take the "production" environment out of maintenance mode
+ymir environment:up production
 ```
 
 ### environment:url [#environment-url]

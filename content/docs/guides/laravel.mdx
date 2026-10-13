@@ -20,7 +20,7 @@ The bridge is a dependency of your application, like any other Composer package.
  * To update the bridge, update it with Composer and deploy. A redeploy or rollback doesn't pick up a new `composer.lock` file.
  * Updating the PHP runtime, such as by changing your Docker image, doesn't update the bridge.
 
-The bridge only changes your application's configuration when it runs on Ymir. Your local environment and tests aren't affected.
+The bridge's runtime-specific configuration changes only apply when your application runs on Ymir. They don't affect your local environment or tests. The [health endpoint](#health-endpoint) is registered outside Ymir too, but it only responds to Ymir health checks.
 
 ### Laravel and PHP versions [#laravel-and-php-versions]
 
@@ -32,6 +32,53 @@ How you choose the PHP version depends on your environment's [deployment type][6
  * **Container image:** The runtime image tag in your `Dockerfile` sets the PHP version, and the `php` option is ignored.
 
 Your build commands, such as `composer install`, run with the PHP installed on the machine running the build, not the environment's PHP version. Make sure your local PHP version can install dependencies that work on the environment's PHP version.
+
+### Health endpoint [#health-endpoint]
+
+The upcoming Laravel bridge release adds a `GET /ymir/health` endpoint for Laravel 8.47 and newer. Bridge 1.2.0 doesn't include this endpoint. The endpoint also needs an upcoming Ymir PHP runtime release that marks health check invocations.
+
+The endpoint is enabled by default, but it's private. It only runs for the deployment health check, which Ymir sends by invoking your function directly with the AWS Lambda API. The runtime marks those invocations, and the bridge responds with a `404` status code to every other request without running any diagnostics. This includes requests to your domain names and requests from your local environment. Request headers, query strings and bodies can't mark a request as a health check. The endpoint also responds with a `404` on a runtime that doesn't mark health check invocations.
+
+The protection relies on your function's AWS invoke permissions instead of a secret, so there's nothing to configure. Anyone allowed to invoke your function in your AWS account can also send a health check.
+
+To disable the endpoint, set the `ymir.health.enabled` configuration option to `false` or use this environment variable:
+
+```dotenv
+YMIR_HEALTH_ENABLED=false
+```
+
+The option uses [PHP's boolean filter][22], including `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off` and empty strings. Values that can't be interpreted as a boolean throw an `UnexpectedValueException` when the application boots.
+
+If you cache your configuration or routes, make the setting available when you build the caches, then rebuild them with `php artisan config:cache` and `php artisan route:cache`. Changing only the deployed environment variable doesn't override a cached configuration value. The bridge registers the endpoint outside Ymir too, so your build includes it in the route cache unless you disable it.
+
+The endpoint dispatches the `Ymir\Bridge\Laravel\Events\DiagnosingHealth` event. Register a synchronous listener in your application's service provider to add your own checks. For example, this listener checks the database connection:
+
+```php
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Ymir\Bridge\Laravel\Events\DiagnosingHealth;
+
+Event::listen(DiagnosingHealth::class, function () {
+    DB::connection()->getPdo();
+});
+```
+
+The `/ymir/health` endpoint responds with a `200` status code and `{"status":"up"}` when all listeners succeed. If a listener throws, the bridge tries to report the exception and responds with a `500` status code and `{"status":"down"}` without exception details. Don't queue these listeners: their failure must reach the health request. Without listeners, the endpoint only confirms that Laravel booted and handled the request. It doesn't check your database, cache or queues on its own. Keep checks fast and free of side effects.
+
+On Laravel 11 and newer, `/ymir/health` dispatches Laravel's `Illuminate\Foundation\Events\DiagnosingHealth` event and the bridge forwards it to its own event. While the bridge health option is enabled, which is the default, a configured native `/up` route also runs the bridge listeners. Laravel still owns `/up` and its response format, and the bridge doesn't make it private: any request to `/up` runs your native and bridge listeners. Disabling the bridge health option stops forwarding to bridge listeners, but doesn't remove `/up` or disable your native listeners. Older application bootstraps don't automatically get `/up` by upgrading Laravel.
+
+The endpoint goes through your application's global middleware. Authentication and maintenance middleware can therefore prevent it from running. The bridge doesn't bypass them or replace an application-owned `GET /ymir/health` route, including one limited to a domain. Laravel's native `/up` maintenance exemption depends on the framework version and application configuration; the bridge leaves that policy unchanged. Ymir's runtime maintenance mode intercepts HTTP requests before Laravel, so neither endpoint bypasses it.
+
+The endpoint doesn't enable deployment health checks on its own. To have Ymir check it before activating a deployment, upgrade the bridge and runtime first, then set the separate [`deployment.healthcheck`][21] option:
+
+```yaml
+environments:
+  production:
+    deployment:
+      healthcheck: /ymir/health
+```
+
+If the deployed bridge or runtime doesn't support the private endpoint, the check gets a `404` response and the deployment isn't activated. A rollback to a deployment with an older bridge or runtime doesn't have the private endpoint. You can instead use a configured native `/up` route or an application-owned readiness endpoint. The deployment check requires a `200` response outside Ymir maintenance mode, so don't select a route that requires authentication or redirects. See the [configuration reference][21] for maintenance responses, timeouts and what the deployment check covers.
 
 ## Environment configuration [#environment-configuration]
 
@@ -152,3 +199,5 @@ Laravel projects created with the `init` command have a `default` queue. See the
 [18]: /reference/ymir-cli#artisan
 [19]: /projects/deploy#rolling-back-a-deployment
 [20]: /team-resources/email#getting-your-aws-account-approved-for-sending-email
+[21]: /reference/configuration#healthcheck
+[22]: https://www.php.net/manual/en/filter.constants.php

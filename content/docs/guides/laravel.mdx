@@ -35,7 +35,7 @@ Your build commands, such as `composer install`, run with the PHP installed on t
 
 ### Health endpoint [#health-endpoint]
 
-The upcoming Laravel bridge release adds a `GET /ymir/health` endpoint for Laravel 8.47 and newer. Bridge 1.2.0 doesn't include this endpoint. The endpoint also needs an upcoming Ymir PHP runtime release that marks health check invocations.
+The Laravel bridge provides a `GET /ymir/health` endpoint for Laravel 8.47 and newer. Bridge 1.2.0 and earlier don't include this endpoint. The endpoint needs Ymir PHP runtime 1.22.0 or newer, which marks health check invocations.
 
 The endpoint is enabled by default, but it's private. It only runs for the deployment health check, which Ymir sends by invoking your function directly with the AWS Lambda API. The runtime marks those invocations, and the bridge responds with a `404` status code to every other request without running any diagnostics. This includes requests to your domain names and requests from your local environment. Request headers, query strings and bodies can't mark a request as a health check. The endpoint also responds with a `404` on a runtime that doesn't mark health check invocations.
 
@@ -77,6 +77,8 @@ environments:
     deployment:
       healthcheck: /ymir/health
 ```
+
+You can also set the option to `true`, and Ymir selects `/ymir/health` when it runs the deployment health check.
 
 If the deployed bridge or runtime doesn't support the private endpoint, the check gets a `404` response and the deployment isn't activated. A rollback to a deployment with an older bridge or runtime doesn't have the private endpoint. You can instead use a configured native `/up` route or an application-owned readiness endpoint. The deployment check requires a `200` response outside Ymir maintenance mode, so don't select a route that requires authentication or redirects. See the [configuration reference][21] for maintenance responses, timeouts and what the deployment check covers.
 

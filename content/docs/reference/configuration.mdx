@@ -471,7 +471,7 @@ The list of commands to run on the project environment during the project deploy
 
 #### healthcheck
 
-**type**: `string | false` **default**: `false`
+**type**: `string | boolean` **default**: `false`
 
 The path of a readiness endpoint that Ymir checks when you deploy or redeploy. After running the deployment [`commands`](#commands-2), Ymir invokes the new version of the environment's website function with an HTTPS `GET` request for this path using the environment's primary domain name. For normal HTTP handling, the check requires a `200` status code. Redirects, other status codes, PHP errors and request timeouts fail the check. Setting this option to `false` or removing it disables the health check. Rollbacks don't run this check.
 
@@ -485,6 +485,8 @@ environments:
     deployment:
       healthcheck: /up
 ```
+
+On Laravel projects, you can set this option to `true` to check the Laravel bridge's [`/ymir/health` endpoint][35]. Ymir selects the endpoint when it runs the health check. Other project types don't have a default endpoint yet, so `true` fails at the health check step, after deployment commands have run. Set an explicit path instead.
 
 Ymir doesn't retry an unhealthy HTTP response. Each health check request has a 10-second connection timeout and a total request timeout of the website function [`timeout`](#timeout) plus 30 seconds. A deployment worker can stop before that request timeout. The health check doesn't change the worker's timeout or add recovery protection if it stops before recording the result. Each health check invocation counts towards your Lambda usage.
 
@@ -1132,3 +1134,4 @@ A rollback doesn't restore deleted messages. Rolling back reapplies the queue `t
 [32]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html#limits-web-distributions
 [33]: /guides/aws-costs#custom-tags
 [34]: /guides/aws-costs#lambda-memory-and-architecture
+[35]: /guides/laravel#health-endpoint

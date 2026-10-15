@@ -1,0 +1,122 @@
+---
+title: "How to deploy a WordPress site with Ymir"
+navTitle: "WordPress"
+description: "How Ymir builds, configures and runs a standard WordPress site, and the Ymir WordPress plugin's private /ymir/health endpoint."
+---
+
+## Setting up a WordPress project [#setting-up-a-wordpress-project]
+
+A standard WordPress site on Ymir uses the `wordpress` project [`type`][1]. You create one by running the [`init`][2] command at the root of your WordPress installation. That's the directory with the `wp-admin` and `wp-content` directories and the `wp-config-sample.php` file. If [WP-CLI][3] is installed and doesn't detect WordPress in the directory, the `init` command offers to download WordPress for you. [Managing projects][4] explains each step of the `init` command.
+
+[Bedrock][5] and [Radicle][6] projects have their own project types and pages.
+
+## The Ymir WordPress plugin [#ymir-wordpress-plugin]
+
+The Ymir integration for WordPress is the Ymir WordPress plugin. For a WordPress project, the [`install-integration`][7] command downloads its latest release into `wp-content/plugins/ymir-wordpress-plugin`, and the `init` command offers to run it for you. Bedrock and Radicle projects install the plugin with Composer instead.
+
+A build fails if the plugin isn't in your `wp-content/plugins` or `wp-content/mu-plugins` directory. You don't need to activate it yourself. The build adds a must-use plugin that activates it if it isn't active. The plugin only changes how WordPress works when it runs on Ymir.
+
+The plugin is part of your project files, so commit it with the rest of your site. To update it, replace its files with a newer release and `deploy`. A [redeploy][8] or rollback doesn't pick up the change.
+
+## Building your project [#building-a-wordpress-project]
+
+The `init` command doesn't add build commands for a WordPress project, and it sets the environment's PHP version to `8.2`. Add [build commands][9] if your theme or plugins need them, such as to build frontend assets. [What gets copied][10] explains which files go into your build.
+
+The build changes its copy of your `wp-config.php` file, or of `wp-config-sample.php` if you don't have one. Your project's own file doesn't change:
+
+ * It disables the definitions of the WordPress salts, `WP_HOME`, `WP_SITEURL`, `DOMAIN_CURRENT_SITE`, `DISABLE_WP_CRON`, `AUTOMATIC_UPDATER_DISABLED`, `DISALLOW_FILE_EDIT` and `DISALLOW_FILE_MODS`. When the environment uses a [database][11], it also disables `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_PASSWORD`.
+ * It loads a `ymir-config.php` file that defines these constants from the environment's [environment variables and secrets][12] instead.
+ * It disables automatic updates, the plugin and theme file editors, and installing or updating plugins and themes from the WordPress admin. Your project files are read-only on AWS Lambda, so make these changes in your project and deploy them.
+
+Ymir sets the values these constants use on every deployment. See [reserved environment variables][13].
+
+## Running on AWS Lambda [#wordpress-on-aws-lambda]
+
+Your project files are read-only on AWS Lambda, and the `/tmp` directory is the only writable directory. See the [PHP runtime reference][14] for what this means.
+
+ * **Uploads:** The Ymir plugin stores your uploads in your environment's S3 storage, not in `wp-content/uploads`. See [WordPress uploads][15] for the upload size limit and how attachments get processed.
+ * **Email:** The Ymir plugin sends email with Amazon SES. See [email][16].
+ * **Cron:** The [`cron`][17] option runs your due WP-Cron events with the plugin's `wp ymir run-all-cron` command on the `console` function. The `init` command disables `cron` for the `staging` environment.
+ * **Object cache:** See the [object cache guide][18] to add a persistent object cache.
+
+## Health endpoint [#health-endpoint]
+
+This section applies to WordPress and Bedrock projects. Radicle projects also have the Laravel bridge's endpoint, and Acorn's routing decides which one responds. See the [Radicle health endpoint][19] instead.
+
+The Ymir WordPress plugin has a `GET /ymir/health` endpoint. The endpoint needs plugin 1.29.0 or newer and [Ymir PHP runtime][20] 1.22.0 or newer, which marks health check invocations.
+
+The endpoint is enabled by default on Ymir, but it's private. The plugin doesn't register it in your local environment. It only runs for the deployment health check, which Ymir sends by invoking your website function directly with the AWS Lambda API. The runtime marks those invocations, and the plugin leaves every other request to WordPress without running any diagnostics. WordPress then responds as it does for any other path, usually with a `404` status code. This includes requests to your domain names and requests from your local environment. Request headers, query strings and bodies can't mark a request as a health check. On a runtime that doesn't mark health check invocations, the plugin doesn't run its diagnostics for any request.
+
+The protection relies on your function's AWS invoke permissions instead of a secret, so there's nothing to configure. Anyone allowed to invoke your function in your AWS account can also send a health check.
+
+### Disabling the endpoint [#disabling-the-endpoint]
+
+To disable the endpoint, define the `YMIR_HEALTH_ENABLED` constant in your `wp-config.php` file. On Bedrock, use `Config::define()` in `config/application.php` instead:
+
+```php
+define('YMIR_HEALTH_ENABLED', false);
+```
+
+You can also set the `YMIR_HEALTH_ENABLED` environment variable to `false`. The constant takes precedence over the environment variable. Both use [PHP's boolean filter][21], including `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off` and empty strings. A value that can't be interpreted as a boolean disables the endpoint instead of interrupting WordPress.
+
+### Adding your own checks [#adding-your-own-checks]
+
+The endpoint runs the `ymir_diagnosing_health` action. Add a callback to it in a must-use plugin, a plugin or your theme to add your own checks. A callback fails the health check by throwing an exception. For example, this callback checks the database connection:
+
+```php
+add_action('ymir_diagnosing_health', function () {
+    global $wpdb;
+
+    if (false === $wpdb->query('SELECT 1')) {
+        throw new RuntimeException('The database query failed.');
+    }
+});
+```
+
+The `/ymir/health` endpoint responds with a `200` status code and `{"status":"up"}` when all callbacks succeed. If a callback throws, the plugin writes the exception to the PHP error log and responds with a `500` status code and `{"status":"down"}` without exception details. Callbacks run during the health check request, so don't defer them to WP-Cron or a background job: their failure must reach the health request. Without callbacks, the endpoint only confirms that WordPress loaded and handled the request. It doesn't check your database, object cache or other services on its own. Keep checks fast and free of side effects.
+
+### Routing and maintenance [#routing-and-maintenance]
+
+The endpoint goes through WordPress's normal loading and routing, with any permalink setting. On a multisite network or a site in a subdirectory, the path is relative to each site's address, such as `/site2/ymir/health`. The plugin responds late in the request, after WordPress finishes routing it and during the `template_redirect` action at the highest priority. Plugins and themes that redirect the request, require a login or show a maintenance page before then can prevent the endpoint from running, and the plugin doesn't bypass them.
+
+The plugin only responds if WordPress didn't find anything to show for `/ymir/health`, which means a `404` response, or, with plain permalinks, a request that nothing routed. It doesn't replace content that your site serves at that path, such as a page with that address or search results that a plugin routes to it. In that case, WordPress serves your content without running the health checks. For a health check that the plugin responds to, WordPress doesn't redirect the path to a similar post or add a trailing slash. Redirects to another domain name or scheme still apply. The endpoint also needs WordPress to load the theme templates, which the standard `index.php` file of WordPress and Bedrock does.
+
+While WordPress is in maintenance mode during an update, it responds with a `503` status code before plugins load. Ymir's runtime maintenance mode intercepts HTTP requests before WordPress, so the endpoint doesn't bypass it either.
+
+### Enabling the deployment health check [#enabling-the-deployment-health-check]
+
+The endpoint doesn't enable deployment health checks on its own. To have Ymir check it before activating a deployment, upgrade the plugin and runtime first, then set the separate [`deployment.healthcheck`][22] option to `true`:
+
+```yaml
+environments:
+  production:
+    deployment:
+      healthcheck: true
+```
+
+Ymir selects `/ymir/health` when it runs the health check. You can also set the option to `/ymir/health` explicitly or use a different path for your own endpoint. Ymir sends the health check to your environment's primary domain name, so on a multisite network it checks the main site.
+
+The deployment check only looks at the status code: it requires a `200` response outside Ymir maintenance mode. If the deployed plugin or runtime doesn't support the private endpoint, the plugin doesn't run your checks, and the check gets WordPress's normal response for the path. That's usually a `404`, which fails the check. But if your site serves content at `/ymir/health` with a `200` status code, the check passes without running the plugin's diagnostics. A rollback to a deployment with an older plugin or runtime doesn't have the private endpoint. See the [configuration reference][22] for maintenance responses, timeouts and what the deployment check covers.
+
+[1]: /reference/configuration#type
+[2]: /reference/ymir-cli#project-init-init
+[3]: https://wp-cli.org/
+[4]: /projects/manage#creating-a-project
+[5]: /applications/bedrock
+[6]: /applications/radicle
+[7]: /reference/ymir-cli#install-integration
+[8]: /projects/deploy#redeploying-a-project
+[9]: /reference/configuration#build
+[10]: /projects/deploy#what-gets-copied
+[11]: /reference/configuration#database
+[12]: /projects/environments#environment-variables
+[13]: /projects/environments#reserved-environment-variables
+[14]: /reference/php-runtime#runtime-filesystem
+[15]: /reference/php-runtime#wordpress-uploads
+[16]: /team-resources/email
+[17]: /reference/configuration#cron
+[18]: /guides/object-cache
+[19]: /applications/radicle#health-endpoint
+[20]: /reference/php-runtime
+[21]: https://www.php.net/manual/en/filter.constants.php
+[22]: /reference/configuration#healthcheck

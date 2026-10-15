@@ -1,0 +1,105 @@
+---
+title: "How to deploy a Radicle project with Ymir"
+navTitle: "Radicle"
+description: "How Ymir builds and runs a Radicle project with both the Ymir WordPress plugin and the Ymir Laravel bridge, and which health endpoint responds."
+---
+
+## Setting up a Radicle project [#setting-up-a-radicle-project]
+
+[Radicle][1] combines Bedrock, Sage and Acorn in its own directory structure, and it's a separate `radicle` project [`type`][2]. The Ymir CLI detects it by the `public/content` directory, the `public/wp-config.php` file and the `bedrock/application.php` file. A Bedrock project with a Sage theme isn't a Radicle project, and the [Bedrock][3] and [Sage 10][4] pages don't cover Radicle.
+
+You create a Radicle project by running the [`init`][5] command at the root of your Radicle project. The `init` command doesn't install Radicle for you. [Managing projects][6] explains each step of the `init` command.
+
+Radicle is a WordPress site that also runs Acorn, Roots' Laravel integration. Much of what Ymir does for it comes from the [WordPress][7] and [Laravel][8] integrations, and this page covers what's specific to Radicle.
+
+## The two Ymir integrations [#radicle-integrations]
+
+A Radicle project needs two Composer packages: the Ymir WordPress plugin, `ymirapp/wordpress-plugin`, and the Ymir Laravel bridge, `ymirapp/laravel-bridge`. The plugin handles the WordPress side, such as uploads, email and WP-Cron. The bridge runs your Acorn queued jobs. The [`install-integration`][9] command requires both, and the `init` command offers to run it for you. A build fails if either package isn't installed after your build commands run.
+
+The default Radicle build commands start with `composer install`, which installs your Composer dependencies, including both packages, from your `composer.lock` file. If you change your build commands, they still need to install both packages. Commit your `composer.json` and `composer.lock` changes, and `deploy` to pick up an update. A [redeploy][10] or rollback doesn't.
+
+## Building your project [#building-a-radicle-project]
+
+The `init` command adds these build commands to each Radicle environment and sets its PHP version to `8.2`. The `production` environment installs your dependencies without development packages. The `staging` environment also gets `cron` and `warmup` set to `false`.
+
+```yml
+environments:
+  production:
+    build:
+      - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
+      - 'yarn install && yarn build'
+```
+
+Check that this PHP version satisfies your `composer.json` file and your dependencies, and change the build commands if your project uses another package manager. The tools your build commands use must be installed on the machine running the build. [What gets copied][11] explains which files go into your build.
+
+The build selects every file under `public` that isn't a PHP, `.mo` or `.po` file as a public asset, except hidden files and `public/wp/wp-content`. Ymir uploads these assets to your environment's public asset storage when you deploy, not when you build. Don't keep credentials or private files under `public`.
+
+## Acorn on AWS Lambda [#radicle-acorn-on-aws-lambda]
+
+Your project files are read-only on AWS Lambda, and the `/tmp` directory is the only writable directory. See the [PHP runtime reference][12].
+
+ * **Storage:** Ymir sets the `ACORN_STORAGE_PATH` environment variable to `/tmp/storage` on every deployment. When a function starts, the Ymir PHP runtime creates Acorn's cache directories there and runs `wp acorn config:cache`. If that command fails, the function can't start, and the runtime logs the error. Don't add the Sage 10 guide's storage code to a Radicle project. Files in `/tmp` aren't shared between functions, and Lambda deletes them when it shuts an execution environment down, so store anything you need to keep somewhere else.
+ * **Configuration:** Ymir also sets the [environment variables it sets for Laravel projects][13], such as the cache store, the `stderr` log channel and the queue connection. Check that your Radicle configuration files read them. See [reserved environment variables][14].
+ * **Uploads and email:** The Ymir plugin handles them as it does for WordPress. See [WordPress uploads][15] and [email][16].
+
+## Running Acorn commands [#radicle-acorn-commands]
+
+The [`artisan`][17] command only works with Laravel projects. Run Acorn commands through WP-CLI with the [`wp`][18] command instead. They run on the environment's `console` function.
+
+```bash
+# List the Acorn commands available on the staging environment
+ymir wp --environment=staging acorn list
+```
+
+If the Acorn command has its own options or quoted values, wrap the whole command in double quotes, as the [`wp`][18] reference explains. Commands that write to your project files don't work, since those files are read-only.
+
+## Queued jobs [#radicle-queues]
+
+When an environment has [`queues`][19], each queue function runs your Acorn jobs with the bridge's `wp acorn ymir:queue:work` command. Ymir sets `QUEUE_CONNECTION` to `sqs` and gives your application each queue's URL, as it does for Laravel. The [queues guide][20] explains queue configuration, retries, idempotency and the risks of changing, removing or rolling back queues. Its `ymir artisan` examples don't work for Radicle projects.
+
+After deploying to a staging environment, check that `ymir wp --environment=staging acorn list` lists the `ymir:queue:work` command. If it doesn't, Acorn hasn't loaded the bridge, and your queue functions can't run your jobs.
+
+## Scheduled tasks [#radicle-scheduled-tasks]
+
+For Radicle projects, the [`cron`][21] option runs WP-Cron, as it does for WordPress and Bedrock projects. Ymir runs the plugin's `wp ymir run-all-cron` command on the `console` function, which runs your due WP-Cron events. It doesn't run Acorn's `schedule:run` command, so the `cron` option doesn't run tasks you schedule with Acorn's scheduler. The `init` command disables `cron` for the `staging` environment.
+
+## Health endpoint [#health-endpoint]
+
+The Laravel bridge and the WordPress plugin each have a private `GET /ymir/health` endpoint, and a Radicle project has both packages. Only one of them responds to a health check, and only its own diagnostics run. Ymir doesn't combine them. Which one responds depends on how your project boots Acorn's routing:
+
+ * **Default Acorn routing:** When `withRouting()` doesn't set `wordpress: true`, such as `withRouting(web: base_path('routes/web.php'))`, the bridge's endpoint responds. Acorn handles the request before WordPress loads its templates. The endpoint dispatches Laravel's diagnostic event, as it does on a [Laravel project][22], so add your checks as listeners of the `Illuminate\Foundation\Events\DiagnosingHealth` or `Ymir\Bridge\Laravel\Events\DiagnosingHealth` event. Callbacks of the plugin's `ymir_diagnosing_health` action don't run.
+ * **`withRouting(wordpress: true)`:** Acorn's WordPress route takes precedence over the bridge's endpoint, which is a fallback route. WordPress handles the request, and the plugin's endpoint responds, as it does on a [WordPress project][23]. Add your checks as `ymir_diagnosing_health` callbacks. The bridge's diagnostic listeners don't run.
+
+A check in the integration that doesn't respond is ignored, even if it throws, and the health check can still pass. Put your checks in the integration that responds, and move them if you change Acorn's routing. Acorn versions can route requests differently, so after you upgrade Acorn or change its routing, deploy to a staging environment and check your logs to confirm that your checks ran.
+
+The endpoints need bridge 1.3.0 or newer, plugin 1.29.0 or newer and [Ymir PHP runtime][24] 1.22.0 or newer, which marks health check invocations. Like on Laravel and WordPress projects, they only run diagnostics for Ymir's deployment health check. Every other request, including requests to your domain names, gets a `404` response or your site's normal response without running any diagnostics. Request headers, query strings and bodies can't mark a request as a health check.
+
+Both packages read the `YMIR_HEALTH_ENABLED` environment variable. Set it before building Acorn's configuration and route caches, and rebuild any existing caches when you change it, as the [Laravel health endpoint][22] explains. The plugin's `YMIR_HEALTH_ENABLED` constant, which you set with `Config::define()` in `bedrock/application.php`, takes precedence over the environment variable for the plugin only. It doesn't affect the bridge.
+
+To have Ymir check the endpoint before activating a deployment, set the [`deployment.healthcheck`][25] option to `true`, and Ymir selects `/ymir/health`. See the [Laravel][22] and [WordPress][23] health endpoints for the response format, routing and maintenance details of each one.
+
+[1]: https://roots.io/radicle/
+[2]: /reference/configuration#type
+[3]: /applications/bedrock
+[4]: /compatibility/sage-10
+[5]: /reference/ymir-cli#project-init-init
+[6]: /projects/manage#creating-a-project
+[7]: /applications/wordpress
+[8]: /applications/laravel
+[9]: /reference/ymir-cli#install-integration
+[10]: /projects/deploy#redeploying-a-project
+[11]: /projects/deploy#what-gets-copied
+[12]: /reference/php-runtime#runtime-filesystem
+[13]: /applications/laravel#configuration-values-ymir-sets
+[14]: /projects/environments#reserved-environment-variables
+[15]: /reference/php-runtime#wordpress-uploads
+[16]: /team-resources/email
+[17]: /reference/ymir-cli#artisan
+[18]: /reference/ymir-cli#wp
+[19]: /reference/configuration#queues
+[20]: /guides/queues
+[21]: /reference/configuration#cron
+[22]: /applications/laravel#health-endpoint
+[23]: /applications/wordpress#health-endpoint
+[24]: /reference/php-runtime
+[25]: /reference/configuration#healthcheck

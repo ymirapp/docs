@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 const baseUrl = process.argv[2] ?? 'http://127.0.0.1:3000';
 const quickLinks = ['/'];
-const groups = ['Start here', 'Projects', 'Team resources', 'Guides', 'Compatibility', 'Reference'];
+const groups = ['Start here', 'Projects', 'Applications', 'Team resources', 'Guides', 'Compatibility', 'Reference'];
 
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
 
@@ -23,9 +23,9 @@ async function sidebar(path) {
   };
 }
 
-// The canonical page list, from the unchanged page tree.
+// The canonical page list comes from the page tree.
 const pages = [...(await get('/llms.txt')).matchAll(/\]\((\/[^)]*)\)/g)].map((match) => match[1]);
-assert.equal(new Set(pages).size, 36, 'canonical pages');
+assert.equal(new Set(pages).size, 38, 'canonical pages');
 
 const home = await sidebar('/');
 assert.deepEqual(home.links.map((link) => link.href), quickLinks, 'home shows only the quick link');
@@ -39,12 +39,49 @@ assert.deepEqual(home.groups, groups.map((name) => ({ name, open: false })), 'ho
 const configuration = await sidebar('/reference/configuration');
 assert.deepEqual(configuration.links.slice(quickLinks.length).map((link) => link.label), ['CLI', 'PHP runtime', 'ymir.yml'], 'Reference labels');
 
-const bedrock = await sidebar('/guides/bedrock');
+const bedrock = await sidebar('/applications/bedrock');
+assert.deepEqual(bedrock.links.slice(quickLinks.length).map((link) => link.label), ['Bedrock', 'Laravel', 'Radicle', 'WordPress'], 'Applications labels');
+
+const queues = await sidebar('/guides/queues');
 assert.deepEqual(
-  bedrock.links.slice(quickLinks.length).map((link) => link.label),
-  ['Automated deployment', 'AWS costs', 'Bedrock', 'Cloudflare', 'Container image deployment', 'Domain mapping', 'Firewall', 'GD PHP extension', 'Lambda scaling', 'Laravel', 'Logging service', 'Migrating to Ymir', 'New Relic', 'Object cache', 'Queues'],
+  queues.links.slice(quickLinks.length).map((link) => link.label),
+  ['Automated deployment', 'AWS costs', 'Cloudflare', 'Container image deployment', 'Domain mapping', 'Firewall', 'GD PHP extension', 'Lambda scaling', 'Logging service', 'Migrating to Ymir', 'New Relic', 'Object cache', 'Queues'],
   'Guides labels',
 );
+
+// The application pages moved out of Guides. Their old URLs redirect without a fragment, so the
+// browser keeps an old link's `#fragment`, and the new pages keep the old section ids.
+const redirects = {
+  '/projects': ['/projects/manage', 307, []],
+  '/guides/bedrock': ['/applications/bedrock', 308, ['setting-up-a-bedrock-project', 'matching-your-php-version', 'ymir-wordpress-plugin', 'building-a-bedrock-project', 'default-build-command', 'what-your-bedrock-build-contains', 'adding-bedrock-build-commands', 'bedrock-configuration', 'bedrock-values-ymir-sets', 'bedrock-env-file', 'wp-env-and-custom-environments', 'bedrock-on-aws-lambda']],
+  '/guides/laravel': ['/applications/laravel', 308, ['setting-up-a-laravel-project', 'laravel-bridge', 'laravel-and-php-versions', 'health-endpoint', 'environment-configuration', 'env-files', 'configuration-values-ymir-sets', 'application-key', 'running-on-aws-lambda', 'files-and-storage', 'cache-sessions-logs-and-mail', 'scheduler', 'deploying-your-application', 'queues']],
+  '/guides/wordpress-health-endpoint': ['/applications/wordpress', 308, ['health-endpoint', 'disabling-the-endpoint', 'adding-your-own-checks', 'routing-and-maintenance', 'enabling-the-deployment-health-check']],
+};
+for (const [from, [to, status, ids]] of Object.entries(redirects)) {
+  const response = await fetch(new URL(from, baseUrl), { redirect: 'manual' });
+  assert.deepEqual([response.status, response.headers.get('location')], [status, to], `${from} redirect`);
+  const html = await get(to);
+  for (const id of ids) assert.match(html, new RegExp(`<h[2-6] id="${id}"`), `${to} keeps #${id}`);
+  if (from.startsWith('/guides/')) {
+    const markdownRedirect = await fetch(new URL(`${from}.md`, baseUrl), { redirect: 'manual' });
+    assert.deepEqual([markdownRedirect.status, markdownRedirect.headers.get('location')], [308, `${to}.md`], `${from}.md redirect`);
+    const markdown = await fetch(new URL(`${from}.md`, baseUrl));
+    assert.equal(markdown.status, 200, `${from}.md resolves`);
+    assert.match(markdown.headers.get('content-type'), /^text\/markdown\b/, `${from}.md stays Markdown`);
+    const legacyHtml = await fetch(new URL(`${from}.html`, baseUrl));
+    assert.equal(legacyHtml.status, 200, `${from}.html resolves`);
+    assert.equal(new URL(legacyHtml.url).pathname, to, `${from}.html destination`);
+  }
+}
+// Old Managing projects fragments lead to links for the corresponding moved Radicle sections.
+const radicle = await get('/applications/radicle');
+const manage = await get('/projects/manage');
+for (const id of ['radicle-integrations', 'radicle-acorn-on-aws-lambda', 'radicle-acorn-commands', 'radicle-queues', 'radicle-scheduled-tasks']) {
+  assert.match(radicle, new RegExp(`<h2 id="${id}"`), `/applications/radicle keeps #${id}`);
+  assert.match(manage, new RegExp(`<a id="${id}" href="/applications/radicle#${id}"`), `/projects/manage keeps #${id}`);
+}
+assert.match(radicle, /<h2 id="health-endpoint"/, '/applications/radicle health endpoint');
+assert.match(manage, /<h2 id="radicle-projects"[\s\S]*?href="\/applications\/radicle"/, '/projects/manage#radicle-projects');
 
 const seen = new Set();
 

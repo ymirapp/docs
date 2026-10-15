@@ -18,7 +18,7 @@ assert.ok(image.length < 300_000, `image is ${image.length} bytes`);
 const paths = (await readdir('content/docs', { recursive: true }))
   .filter((file) => file.endsWith('.mdx'))
   .map((file) => `/${file.replace(/\.mdx$/, '').replace(/(^|\/)index$/, '')}`);
-assert.equal(paths.length, 36, 'pages');
+assert.equal(paths.length, 38, 'pages');
 
 for (const path of paths) {
   const response = await fetch(new URL(path, baseUrl));

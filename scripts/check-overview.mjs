@@ -7,6 +7,7 @@ const get = async (path) => (await fetch(new URL(path, baseUrl))).text();
 
 const sections = [
   ['overview-rows', ['/getting-started', '/projects/manage', '/projects/deploy', '/projects/environments']],
+  ['overview-links', ['/applications/bedrock', '/applications/laravel', '/applications/radicle', '/applications/wordpress']],
   ['overview-columns', ['/reference/configuration', '/reference/ymir-cli', '/reference/php-runtime']],
   [
     'overview-links',
@@ -17,8 +18,6 @@ const sections = [
       '/guides/object-cache',
       '/guides/firewall',
       '/guides/container-image-deployment',
-      '/guides/bedrock',
-      '/guides/laravel',
       '/guides/migration-to-ymir',
       '/guides/aws-costs',
     ],
@@ -42,7 +41,7 @@ const body = home.match(/<div class="prose flex-1 overview"[\s\S]*?<footer\b/)?.
 assert.ok(body, 'home body has the overview class');
 assert.deepEqual(
   [...body.matchAll(/<h2 [^>]*id="([^"]*)"/g)].map((match) => match[1]),
-  ['start-here', 'reference', 'guides', 'team-resources', 'use-these-docs-with-ai-agents'],
+  ['start-here', 'applications', 'reference', 'guides', 'team-resources', 'use-these-docs-with-ai-agents'],
   'home section order',
 );
 

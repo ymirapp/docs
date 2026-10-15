@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 const baseUrl = process.argv[2] ?? 'http://127.0.0.1:3000';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 
-const pages = ['/', '/introduction', '/getting-started', '/reference/configuration', '/reference/ymir-cli', '/guides/bedrock', '/guides/scaling', '/team-resources/dns'];
+const pages = ['/', '/introduction', '/getting-started', '/reference/configuration', '/reference/ymir-cli', '/applications/bedrock', '/guides/scaling', '/team-resources/dns'];
 // Code blocks whose fence opts in to the Copy button with the `copy` flag (source.config.ts). Every
 // other block, including configuration, output and CLI reference examples, has none.
 const copyableCodeBlocks = { '/getting-started': 5 };

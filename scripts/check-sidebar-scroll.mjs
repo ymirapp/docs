@@ -13,7 +13,7 @@ async function openGroups(root) {
   const closed = page.locator(`${root} [data-closed] > button`);
   while (await closed.count()) await closed.first().click();
   await page.waitForFunction((selector) => document.querySelector(selector).getAnimations({ subtree: true }).every((animation) => animation.playState !== 'running'), root);
-  assert.equal(await page.locator(`${root} a[data-active]`).count(), 36, 'expanded navigation contains all pages');
+  assert.equal(await page.locator(`${root} a[data-active]`).count(), 38, 'expanded navigation contains all pages');
 }
 
 try {

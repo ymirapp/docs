@@ -26,6 +26,8 @@ The Ymir integration for Bedrock is the `ymirapp/wordpress-plugin` Composer pack
 
 A build fails if the plugin isn't installed after your build commands run. You don't need to activate it yourself. The build adds a must-use plugin to `web/app/mu-plugins` that activates it if it isn't active.
 
+The plugin also provides the private `/ymir/health` endpoint for [deployment health checks][29]. It works the same way as on a WordPress project. To disable it on Bedrock, use `Config::define('YMIR_HEALTH_ENABLED', false)` in `config/application.php`.
+
 The plugin is a dependency of your project, like any other Composer package. It's installed from your `composer.lock` file during your build, so:
 
  * Commit your `composer.json` and `composer.lock` changes after installing or updating the plugin.
@@ -157,5 +159,6 @@ Deploy to your `staging` environment first and check your site before you deploy
 [24]: /guides/logging-service
 [25]: /guides/queues
 [26]: /compatibility/sage-10
-[27]: /projects/manage#radicle-projects
+[27]: /applications/radicle
 [28]: /reference/php-runtime#wordpress-uploads
+[29]: /applications/wordpress#health-endpoint

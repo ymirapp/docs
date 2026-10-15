@@ -486,7 +486,7 @@ environments:
       healthcheck: /up
 ```
 
-On Laravel projects, you can set this option to `true` to check the Laravel bridge's [`/ymir/health` endpoint][35]. Ymir selects the endpoint when it runs the health check. Other project types don't have a default endpoint yet, so `true` fails at the health check step, after deployment commands have run. Set an explicit path instead.
+On Laravel, WordPress, Bedrock and Radicle projects, you can set this option to `true` to check `/ymir/health`. Ymir selects the endpoint when it runs the health check. On Laravel projects, the [Laravel bridge][35] 1.3.0 or newer provides it. On WordPress and Bedrock projects, the [Ymir WordPress plugin][36] 1.29.0 or newer provides it. Radicle projects have both packages, but only one of them responds, depending on Acorn's routing. By default, it's the bridge. See the [Radicle health endpoint][37]. Both endpoints need Ymir PHP runtime 1.22.0 or newer. You can still set an explicit path to check a different endpoint.
 
 Ymir doesn't retry an unhealthy HTTP response. Each health check request has a 10-second connection timeout and a total request timeout of the website function [`timeout`](#timeout) plus 30 seconds. A deployment worker can stop before that request timeout. The health check doesn't change the worker's timeout or add recovery protection if it stops before recording the result. Each health check invocation counts towards your Lambda usage.
 
@@ -1119,7 +1119,7 @@ A rollback doesn't restore deleted messages. Rolling back reapplies the queue `t
 [17]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
 [18]: https://roots.io/radicle/
 [19]: https://aws.amazon.com/lambda/pricing/
-[20]: /guides/laravel
+[20]: /applications/laravel
 [21]: /guides/queues
 [22]: /guides/queues#standard-and-fifo-queues
 [23]: https://aws.amazon.com/vpc/pricing/
@@ -1134,4 +1134,6 @@ A rollback doesn't restore deleted messages. Rolling back reapplies the queue `t
 [32]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html#limits-web-distributions
 [33]: /guides/aws-costs#custom-tags
 [34]: /guides/aws-costs#lambda-memory-and-architecture
-[35]: /guides/laravel#health-endpoint
+[35]: /applications/laravel#health-endpoint
+[36]: /applications/wordpress#health-endpoint
+[37]: /applications/radicle#health-endpoint

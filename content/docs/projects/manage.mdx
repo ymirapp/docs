@@ -26,7 +26,7 @@ The `init` command first asks for your project type: WordPress, Bedrock, Radicle
 
 * **WordPress:** If [WP-CLI][4] is installed and doesn't detect WordPress in the directory, the `init` command offers to download WordPress using WP-CLI.
 * **Bedrock** and **Laravel:** If the directory is empty, the `init` command offers to create a new project using Composer.
-* **Radicle:** The `init` command doesn't install Radicle projects. [Radicle projects](#radicle-projects) explains how Ymir runs them.
+* **Radicle:** The `init` command doesn't install Radicle projects. The [Radicle page][15] explains how Ymir runs them.
 
 The `init` command then asks for the project name, the cloud provider connection and the AWS region of your project. It only lists connected cloud provider connections.
 
@@ -63,41 +63,13 @@ The `ymir.yml` has dozens of configuration options. You can learn more about the
 
 ## Radicle projects [#radicle-projects]
 
-[Radicle][13] combines Bedrock, Sage and Acorn in its own directory structure, and it's a separate `radicle` project [`type`][14]. The Ymir CLI detects it by the `public/content` directory, the `public/wp-config.php` file and the `bedrock/application.php` file. A Bedrock project with a Sage theme isn't a Radicle project, and the [Bedrock][15] and [Sage 10][16] guides don't cover Radicle.
+[Radicle][13] is a separate `radicle` project [`type`][14] that needs both the Ymir WordPress plugin and the Ymir Laravel bridge. The [Radicle page][15] explains how Ymir builds and runs it:
 
-### The two Ymir integrations [#radicle-integrations]
-
-A Radicle project needs two Composer packages: the Ymir WordPress plugin, `ymirapp/wordpress-plugin`, and the Ymir Laravel bridge, `ymirapp/laravel-bridge`. The plugin handles the WordPress side, such as uploads, email and WP-Cron. The bridge runs your Acorn queued jobs. The [`install-integration`][17] command requires both, and the `init` command offers to run it for you. A build fails if either package isn't installed after your build commands run.
-
-The default Radicle build commands start with `composer install`, which installs your Composer dependencies, including both packages, from your `composer.lock` file. If you change your build commands, they still need to install both packages. Commit your `composer.json` and `composer.lock` changes, and `deploy` to pick up an update. A [redeploy][18] or rollback doesn't.
-
-### Acorn on AWS Lambda [#radicle-acorn-on-aws-lambda]
-
-Your project files are read-only on AWS Lambda, and the `/tmp` directory is the only writable directory. See the [PHP runtime reference][19].
-
- * **Storage:** Ymir sets the `ACORN_STORAGE_PATH` environment variable to `/tmp/storage` on every deployment. When a function starts, the Ymir PHP runtime creates Acorn's cache directories there and runs `wp acorn config:cache`. If that command fails, the function can't start, and the runtime logs the error. Don't add the Sage 10 guide's storage code to a Radicle project. Files in `/tmp` aren't shared between functions, and Lambda deletes them when it shuts an execution environment down, so store anything you need to keep somewhere else.
- * **Configuration:** Ymir also sets the [environment variables it sets for Laravel projects][20], such as the cache store, the `stderr` log channel and the queue connection. Check that your Radicle configuration files read them. See [reserved environment variables][21].
-
-### Running Acorn commands [#radicle-acorn-commands]
-
-The [`artisan`][22] command only works with Laravel projects. Run Acorn commands through WP-CLI with the [`wp`][23] command instead. They run on the environment's `console` function.
-
-```bash
-# List the Acorn commands available on the staging environment
-ymir wp --environment=staging acorn list
-```
-
-If the Acorn command has its own options or quoted values, wrap the whole command in double quotes, as the [`wp`][23] reference explains. Commands that write to your project files don't work, since those files are read-only.
-
-### Queued jobs [#radicle-queues]
-
-When an environment has [`queues`][24], each queue function runs your Acorn jobs with the bridge's `wp acorn ymir:queue:work` command. Ymir sets `QUEUE_CONNECTION` to `sqs` and gives your application each queue's URL, as it does for Laravel. The [queues guide][25] explains queue configuration, retries, idempotency and the risks of changing, removing or rolling back queues. Its `ymir artisan` examples don't work for Radicle projects.
-
-After deploying to a staging environment, check that `ymir wp --environment=staging acorn list` lists the `ymir:queue:work` command. If it doesn't, Acorn hasn't loaded the bridge, and your queue functions can't run your jobs.
-
-### Scheduled tasks [#radicle-scheduled-tasks]
-
-For Radicle projects, the [`cron`][26] option runs WP-Cron, as it does for WordPress and Bedrock projects. Ymir runs the plugin's `wp ymir run-all-cron` command on the `console` function, which runs your due WP-Cron events. It doesn't run Acorn's `schedule:run` command, so the `cron` option doesn't run tasks you schedule with Acorn's scheduler. The `init` command disables `cron` for the `staging` environment.
+ * <a id="radicle-integrations" href="/applications/radicle#radicle-integrations">The two Ymir integrations</a>
+ * <a id="radicle-acorn-on-aws-lambda" href="/applications/radicle#radicle-acorn-on-aws-lambda">Acorn on AWS Lambda</a>
+ * <a id="radicle-acorn-commands" href="/applications/radicle#radicle-acorn-commands">Running Acorn commands</a>
+ * <a id="radicle-queues" href="/applications/radicle#radicle-queues">Queued jobs</a>
+ * <a id="radicle-scheduled-tasks" href="/applications/radicle#radicle-scheduled-tasks">Scheduled tasks</a>
 
 ## Deleting a project
 
@@ -136,15 +108,4 @@ Resources that you keep, or that Ymir doesn't delete, stay in your AWS account a
 [12]: /projects/environments#before-deleting-an-environment
 [13]: https://roots.io/radicle/
 [14]: /reference/configuration#type
-[15]: /guides/bedrock
-[16]: /compatibility/sage-10
-[17]: /reference/ymir-cli#install-integration
-[18]: /projects/deploy#redeploying-a-project
-[19]: /reference/php-runtime#runtime-filesystem
-[20]: /guides/laravel#configuration-values-ymir-sets
-[21]: /projects/environments#reserved-environment-variables
-[22]: /reference/ymir-cli#artisan
-[23]: /reference/ymir-cli#wp
-[24]: /reference/configuration#queues
-[25]: /guides/queues
-[26]: /reference/configuration#cron
+[15]: /applications/radicle

@@ -24,9 +24,7 @@ Lambda freezes the execution environment between invocations. A New Relic daemon
 
 ## Configuring your Ymir project to use New Relic
 
-Earlier versions of this guide had a `Dockerfile` and an `entrypoint.sh` script that installed New Relic. Don't use them. They downloaded the agent over unencrypted HTTP from a package repository for an old Linux version, stored your license key in the `Dockerfile`, and their entrypoint script mixed a PHP function call into a shell script.
-
-If you build your own New Relic setup, you'll need to validate it yourself. Keep the following in mind:
+If you build your own New Relic setup, you'll need to validate it yourself. Download the agent over HTTPS from a source compatible with the runtime's operating system, architecture and PHP version. Keep the following in mind:
 
  * Don't put your New Relic license key in your `Dockerfile`, your repository or your shell history. Anyone with access to your container image can read it.
  * The runtime only loads Ymir [secrets][6] into its PHP process and the processes it starts. A process that Lambda starts separately, such as a Lambda extension, doesn't get them automatically. Regular [environment variables][7] are readable by anyone who can view the Lambda function configuration.

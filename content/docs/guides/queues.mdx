@@ -74,7 +74,7 @@ ymir artisan --environment=production queue:failed
 
 <Callout type="warn" title="Some failures aren't retried">
 
-With Ymir Laravel bridge version 1.1.0, the current Ymir PHP runtime and the SQS event source mapping that Ymir creates, not every failure is retried:
+With the Ymir Laravel bridge, PHP runtime and SQS event source mapping that Ymir creates, not every failure is retried:
 
  * If a job's PHP process fails, such as when the job reaches its timeout or exits with a fatal error, the queue function still finishes successfully, so the job can be removed from the queue without being retried. Laravel only records a timed out job as failed if the job sets `$failOnTimeout` to `true`.
  * If the queue function invocation itself fails, such as when the whole function runs out of memory or reaches the queue's `timeout`, the job becomes eligible for delivery again when its SQS visibility timeout ends. Ymir sets that timeout to 90 minutes from receipt of the message. Polling, throttling or other failures can delay delivery further; this isn't a retry deadline. Laravel counts repeated deliveries as attempts.
@@ -115,7 +115,7 @@ Ymir doesn't have a command to pause or drain a queue. To empty a queue, stop yo
 
 ## Large job payloads [#large-job-payloads]
 
-Amazon SQS limits a message to 1 MiB, and a queue can be configured with a lower maximum message size, such as an older queue created when the SQS limit was lower. Laravel 13 can store larger job payloads in a cache store and send a pointer through SQS, using [SQS overflow storage][13]. Overflow storage needs Laravel 13 and [Ymir Laravel bridge][2] version 1.2.0 or later.
+Amazon SQS limits a message to 1 MiB, and a queue can be configured with a lower maximum message size, such as an older queue created when the SQS limit was lower. Laravel 13 can store larger job payloads in a cache store and send a pointer through SQS, using [SQS overflow storage][13]. The [Ymir Laravel bridge][2] supports this feature.
 
 To enable overflow storage, add the `overflow` option to the `sqs` connection in your `config/queue.php` file and keep the connection's other options. Set `store` to a named cache store that meets the requirements below. Leaving it out uses your default cache store, which is DynamoDB unless your environment uses a cache cluster. With a cache cluster, you can use the `redis` store from Laravel's default `config/cache.php` file.
 

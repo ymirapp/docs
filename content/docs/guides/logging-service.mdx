@@ -98,7 +98,7 @@ Once it's installed, check that logs from each of your functions arrive in your 
 
 #### Axiom Lambda extension [#axiom-lambda-extension]
 
-Earlier versions of this guide installed the Axiom Lambda extension by copying it into a container image and suggested storing the `AXIOM_TOKEN` environment variable as a secret. That recipe was removed. Lambda starts the extension as a separate process, so it doesn't automatically get the secrets that the Ymir runtime loads into PHP.
+Lambda starts the extension as a separate process, so it doesn't automatically get the secrets that the Ymir runtime loads into PHP.
 
 This guide doesn't currently include a verified recipe for the extension. According to [Axiom's documentation][13], the extension reads the token from an environment variable. With Ymir, the direct way to set one is a regular environment variable, which anyone who can view your Lambda function configuration can read. The extension also keeps logs in memory and drops the oldest ones when it can't reach Axiom. For workloads where losing logs matters, Axiom recommends keeping CloudWatch logging enabled and using the CloudWatch forwarder instead.
 

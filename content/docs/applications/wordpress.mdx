@@ -43,9 +43,9 @@ Your project files are read-only on AWS Lambda, and the `/tmp` directory is the 
 
 This section applies to WordPress and Bedrock projects. Radicle projects also have the Laravel bridge's endpoint, and Acorn's routing decides which one responds. See the [Radicle health endpoint][19] instead.
 
-The Ymir WordPress plugin has a `GET /ymir/health` endpoint. The endpoint needs plugin 1.29.0 or newer and [Ymir PHP runtime][20] 1.22.0 or newer, which marks health check invocations.
+The Ymir WordPress plugin has a `GET /ymir/health` endpoint.
 
-The endpoint is enabled by default on Ymir, but it's private. The plugin doesn't register it in your local environment. It only runs for the deployment health check, which Ymir sends by invoking your website function directly with the AWS Lambda API. The runtime marks those invocations, and the plugin leaves every other request to WordPress without running any diagnostics. WordPress then responds as it does for any other path, usually with a `404` status code. This includes requests to your domain names and requests from your local environment. Request headers, query strings and bodies can't mark a request as a health check. On a runtime that doesn't mark health check invocations, the plugin doesn't run its diagnostics for any request.
+The endpoint is enabled by default on Ymir, but it's private. The plugin doesn't register it in your local environment. It only runs for the deployment health check, which Ymir sends by invoking your website function directly with the AWS Lambda API. The [Ymir PHP runtime][20] marks those invocations, and the plugin leaves every other request to WordPress without running any diagnostics. WordPress then responds as it does for any other path, usually with a `404` status code. This includes requests to your domain names and requests from your local environment. Request headers, query strings and bodies can't mark a request as a health check.
 
 The protection relies on your function's AWS invoke permissions instead of a secret, so there's nothing to configure. Anyone allowed to invoke your function in your AWS account can also send a health check.
 
@@ -85,7 +85,7 @@ While WordPress is in maintenance mode during an update, it responds with a `503
 
 ### Enabling the deployment health check [#enabling-the-deployment-health-check]
 
-The endpoint doesn't enable deployment health checks on its own. To have Ymir check it before activating a deployment, upgrade the plugin and runtime first, then set the separate [`deployment.healthcheck`][22] option to `true`:
+The endpoint doesn't enable deployment health checks on its own. To have Ymir check it before activating a deployment, set the separate [`deployment.healthcheck`][22] option to `true`:
 
 ```yaml
 environments:
@@ -96,7 +96,7 @@ environments:
 
 Ymir selects `/ymir/health` when it runs the health check. You can also set the option to `/ymir/health` explicitly or use a different path for your own endpoint. Ymir sends the health check to your environment's primary domain name, so on a multisite network it checks the main site.
 
-The deployment check only looks at the status code: it requires a `200` response outside Ymir maintenance mode. If the deployed plugin or runtime doesn't support the private endpoint, the plugin doesn't run your checks, and the check gets WordPress's normal response for the path. That's usually a `404`, which fails the check. But if your site serves content at `/ymir/health` with a `200` status code, the check passes without running the plugin's diagnostics. A rollback to a deployment with an older plugin or runtime doesn't have the private endpoint. See the [configuration reference][22] for maintenance responses, timeouts and what the deployment check covers.
+The deployment check only looks at the status code: it requires a `200` response outside Ymir maintenance mode. If your site serves content at `/ymir/health` with a `200` status code, the check passes without running the plugin's diagnostics. See the [configuration reference][22] for maintenance responses, timeouts and what the deployment check covers.
 
 [1]: /reference/configuration#type
 [2]: /reference/ymir-cli#project-init-init

@@ -4,7 +4,7 @@ navTitle: "PHP runtime"
 description: "PHP versions, architectures, extensions, filesystem and limits of the Ymir PHP runtime on AWS Lambda."
 ---
 
-Ymir runs your PHP code on AWS Lambda with the open source [Ymir PHP runtime][1]. This page covers what the runtime provides and where its boundaries are. It describes the runtime as built from the source of runtime release 1.21.0. The runtime your environment actually runs depends on the runtime layer or image used by its deployment.
+Ymir runs your PHP code on AWS Lambda with the open source [Ymir PHP runtime][1]. This page covers what the runtime provides and where its boundaries are. The runtime your environment actually runs depends on the runtime layer or image used by its deployment.
 
 To check the PHP version of an environment, use the [`php:version`][3] command. The [`php:info`][2] command shows the full PHP configuration, including loaded extensions. Both commands run PHP's command-line interface in the environment's `console` function. They don't show the runtime release, and the `website` function's PHP-FPM settings can differ.
 
@@ -55,11 +55,11 @@ If you set the [`layers`][9] option to a non-empty list, Ymir uses only the laye
 
 The runtime is available for the `x86_64` and `arm64` [architectures][10], with a separate runtime layer and image for each one. Anything native that you add to your functions must be built for the environment's architecture. This includes Lambda layers, PHP extensions, executables and native binaries installed by Composer or npm. Switching an environment's architecture can break these even if your PHP code works on both.
 
-Runtime release 1.21.0 is built on the Amazon Linux 2023 Lambda base images for both architectures. Native code built for other Linux distributions or versions can fail to load because of missing or incompatible shared libraries.
+The Ymir PHP runtime is built on the Amazon Linux 2023 Lambda base images for both architectures. Native code built for other Linux distributions or versions can fail to load because of missing or incompatible shared libraries.
 
 ## PHP extensions [#runtime-extensions]
 
-According to its build files, runtime release 1.21.0 includes the following extensions on every PHP version and architecture:
+The runtime includes the following extensions on every PHP version and architecture:
 
  * **Compiled into PHP:** `bcmath`, `curl`, `exif`, `ftp`, `gettext`, `mbstring`, `mysqli`, `mysqlnd`, `openssl`, `pcntl`, `readline`, `soap`, `sockets`, `sodium`, `xsl`, `zip` and `zlib`, along with the extensions PHP enables by default, such as `ctype`, `dom`, `fileinfo`, `pdo_sqlite`, `session`, `simplexml`, `tokenizer` and `xml`.
  * **Loaded as shared extensions:** `apcu`, `igbinary`, `imagick`, `intl`, `pdo_mysql`, `pdo_pgsql`, `pgsql` and `zstd`.
@@ -100,7 +100,7 @@ See the [Lambda quotas][18] for the AWS limits that apply to every Lambda functi
 
 ## WordPress uploads [#wordpress-uploads]
 
-This section applies to WordPress, Bedrock and Radicle projects. It describes how the Ymir WordPress plugin, as of plugin release 1.28.2, handles files uploaded with the WordPress media uploader. Other ways of adding files work differently. For example, the [`media:import`][22] command only copies files to S3 storage. It doesn't create attachments or their metadata.
+This section applies to WordPress, Bedrock and Radicle projects. It describes how the Ymir WordPress plugin handles files uploaded with the WordPress media uploader. Other ways of adding files work differently. For example, the [`media:import`][22] command only copies files to S3 storage. It doesn't create attachments or their metadata.
 
 The plugin replaces WordPress's browser uploader, so an upload happens in three steps:
 

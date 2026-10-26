@@ -18,9 +18,9 @@ This guide doesn't currently include a verified recipe for adding the GD extensi
 
 ## Configuring your Ymir project to install the GD extension
 
-Earlier versions of this guide had a `Dockerfile` that installed GD from an Enterprise Linux 7 package repository. That recipe doesn't match the current runtime, so it was removed. A PHP extension only loads if it was built for the same PHP version, thread safety mode, architecture and system libraries as the PHP binary loading it. The Ymir runtime compiles its own PHP binaries on Amazon Linux 2023, so GD packages built for other PHP installations don't match it. The runtime images also don't include the PHP headers and `phpize` tool needed to compile an extension yourself. See [PHP extensions][4] in the PHP runtime reference for details.
+A PHP extension only loads if it was built for the same PHP version, thread safety mode, architecture and system libraries as the PHP binary loading it. The Ymir runtime compiles its own PHP binaries on Amazon Linux 2023, so GD packages built for other PHP installations don't match it. The runtime images also don't include the PHP headers and `phpize` tool needed to compile an extension yourself. See [PHP extensions][4] in the PHP runtime reference for details.
 
-If your project still uses that `Dockerfile`, your builds can fail with current runtime images, and GD can fail to load even when the build succeeds. Check whether GD loads in your environment as shown [below](#gd-check-extensions) and remove those instructions from your `Dockerfile` if it doesn't.
+If your `Dockerfile` installs GD from an incompatible package repository, your builds can fail, and GD can fail to load even when the build succeeds. Check whether GD loads in your environment as shown [below](#gd-check-extensions) and remove those instructions from your `Dockerfile` if it doesn't.
 
 ## What to do when a plugin needs GD [#gd-alternatives]
 

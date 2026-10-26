@@ -68,7 +68,7 @@ Acorn needs a writable `storage` directory for its caches and compiled Blade vie
 
 When there's no `ACORN_STORAGE_PATH` environment variable, Acorn 4 uses the `ACORN_STORAGE_PATH` constant as its storage directory. It doesn't create that directory's subdirectories, and it fails to boot if its cache directory doesn't exist. The Ymir PHP runtime doesn't create them for Bedrock projects.
 
-Earlier versions of this guide used an `acorn/paths.storage` filter in a `bootstrap/app.php` file. That code wasn't verified with Acorn 4. Instead, add this code to your theme's `functions.php` file, before the `\Roots\bootloader()->boot();` line.
+Add this code to your theme's `functions.php` file, before the `\Roots\bootloader()->boot();` line.
 
 ```php
 if (getenv('YMIR_ENVIRONMENT')) {
@@ -93,7 +93,7 @@ if (getenv('YMIR_ENVIRONMENT')) {
 The code only runs on Ymir, where the `YMIR_ENVIRONMENT` environment variable exists, so your local environment keeps using its usual storage directory. It sets the storage directory to `/tmp/storage`, unless your code already defines an `ACORN_STORAGE_PATH` constant inside `/tmp`. It then creates the same directories that Acorn creates for its default storage directory. If the constant points outside `/tmp`, or a directory can't be created, it stops with an error that appears in your logs.
 
  * **Run it before Acorn boots:** WordPress loads your theme's `functions.php` file for web requests and for WP-CLI commands on the `console` function, so the code runs before Sage boots Acorn in both. This only works as long as nothing, such as a plugin, boots Acorn before your theme loads. If something does, this code needs to run before it.
- * **Replace other storage configuration:** Don't set an `ACORN_STORAGE_PATH` environment variable on Ymir. Acorn uses it instead of the constant, and this code wouldn't create its directories. Remove other code that changes Acorn's storage directory, such as an `acorn/paths.storage` filter from an earlier version of this guide.
+ * **Replace other storage configuration:** Don't set an `ACORN_STORAGE_PATH` environment variable on Ymir. Acorn uses it instead of the constant, and this code wouldn't create its directories. Remove other code that changes Acorn's storage directory, such as an `acorn/paths.storage` filter.
 
 <Callout type="warn" title="/tmp isn't permanent storage">
 

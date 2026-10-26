@@ -14,7 +14,7 @@ The `init` command creates your Ymir project, its `ymir.yml` file and, if you ac
 
 ### Matching your PHP version [#matching-your-php-version]
 
-The `init` command sets the environment's PHP version to `8.2` for Bedrock projects. That's the [`php`][9] option for zip archive deployment, or the runtime image tag, such as `php-82`, in the generated `Dockerfile` for container image deployment. That version might not satisfy your project's dependencies. For example, Bedrock 1.31.6 requires PHP 8.3 or later in its `composer.json` file.
+The `init` command sets the environment's PHP version to `8.2` for Bedrock projects. That's the [`php`][9] option for zip archive deployment, or the runtime image tag, such as `php-82`, in the generated `Dockerfile` for container image deployment. That version might not satisfy your project's dependencies.
 
 Before your first deployment, check the `php` requirement in your `composer.json` file and in your dependencies, and choose a PHP version that satisfies all of them. Then set it for each environment, either with the `php` option or the image tag in your `Dockerfile`. Don't downgrade your dependencies to fit the default. If the deployed PHP version is too old for your dependencies, Composer's platform check can stop every request with an error.
 

@@ -1927,6 +1927,12 @@ ymir environment:metrics [options] [<environment>]
 
 Get cost and usage metrics of the environment.
 
+For each available website, console and queue Lambda function, the output shows invocation count, total duration, average duration and error count over the selected period. Each queue's Lambda function appears separately under the queue's configured name.
+
+`Duration` is the total execution time in seconds. `Avg duration` is the invocation-weighted average in milliseconds: total duration divided by total invocations for the period. `Errors` counts invocation failures reported by AWS Lambda, not every HTTP error response your application returns.
+
+The costs shown are partial estimates, not your complete AWS bill.
+
 #### Arguments [#arguments-41]
 
 ##### `environment` [#environment-default-staging-4]

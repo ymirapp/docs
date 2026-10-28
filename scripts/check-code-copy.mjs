@@ -11,9 +11,9 @@ import { visit } from 'unist-util-visit';
 import { VFile } from 'vfile';
 import { rehypeCode, remarkHeading, remarkStructure } from 'fumadocs-core/mdx-plugins';
 import { remarkLLMs } from 'fumadocs-core/mdx-plugins/remark-llms';
-import config, { docs } from '../source.config.ts';
+import config from '../source.config.ts';
 
-const { rehypeCodeOptions, remarkStructureOptions } = config.mdxOptions;
+const { rehypeCodeOptions, remarkPlugins, remarkStructureOptions } = config.mdxOptions;
 
 // The `<pre>` properties Fumadocs passes to its CodeBlock, which reads `allowCopy` and `title`.
 const highlighter = unified().use(remarkParse).use(remarkRehype).use(rehypeCode, rehypeCodeOptions);
@@ -47,6 +47,9 @@ const flagged = [
   '```text title="~/.ssh/config" copy\nHost example\n```',
   '```text copy title="Copy this"\nHost example\n```',
   '<Callout title="Deploy">\n```bash copy\nymir deploy staging\n```\n</Callout>',
+  '<Callout type="warn" title="Before deploying">\nCheck **staging** first.\n</Callout>',
+  '<Callout type="error">\nStop the deployment.\n</Callout>',
+  '<Cards>\n  <Card title="Getting started" href="/getting-started">\n    Set up your project.\n  </Card>\n</Cards>',
   '```json title="Policy"\n{}\n```',
   '```\nplain\n```',
 ].join('\n\n');
@@ -55,13 +58,13 @@ assert.equal(flagged.split(' copy').length - 1, 4, 'fixture has its copy flags')
 
 const markdown = async (source) => {
   const file = new VFile(source);
-  const processor = unified().use(remarkParse).use(remarkMdx).use(remarkLLMs, { ...docs.docs.postprocess.includeProcessedMarkdown, _data: true });
+  const processor = unified().use(remarkParse).use(remarkMdx).use(remarkPlugins).use(remarkLLMs, { _data: true });
   await processor.run(processor.parse(source), file);
   return file.data.markdown;
 };
 const structure = async (source) => {
   const file = new VFile(source);
-  const processor = unified().use(remarkParse).use(remarkMdx).use(remarkHeading).use(remarkStructure, remarkStructureOptions);
+  const processor = unified().use(remarkParse).use(remarkMdx).use(remarkHeading).use(remarkPlugins).use(remarkStructure, remarkStructureOptions);
   await processor.run(processor.parse(source), file);
   return file.data.structuredData;
 };
@@ -72,6 +75,14 @@ assert.ok(!/```\w* copy\b| copy\n/.test(output), 'Markdown has no copy flag');
 for (const fence of ['```bash\nymir login', '```text title="~/.ssh/config"\n', '```text title="Copy this"\n', '> ```bash\n> ymir deploy staging', '```json title="Policy"\n']) {
   assert.ok(output.includes(fence), `Markdown keeps ${JSON.stringify(fence)}`);
 }
-assert.deepEqual(await structure(flagged), await structure(unflagged), 'search index without the copy flag');
+for (const text of ['> [!NOTE]\n> **Deploy**', '> [!WARNING]\n> **Before deploying**\n>\n> Check **staging** first.', '> [!CAUTION]\n> Stop the deployment.', '- [Getting started](/getting-started): Set up your project.']) {
+  assert.ok(output.includes(text), `Markdown keeps component content ${JSON.stringify(text)}`);
+}
+assert.doesNotMatch(output, /<\/?(?:Callout|Cards?)\b/, 'Markdown has no site component tags');
+const search = await structure(flagged);
+assert.deepEqual(search, await structure(unflagged), 'search index without the copy flag');
+for (const value of ['ymir login', 'Host example', 'ymir deploy staging']) {
+  assert.ok(search.contents.some((item) => item.content === value), `search indexes code content ${JSON.stringify(value)}`);
+}
 
 console.log('Code block copy policy OK');

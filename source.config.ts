@@ -1,8 +1,12 @@
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 import { z } from 'zod';
-import type { LLMsOptions } from 'fumadocs-core/mdx-plugins/remark-llms';
+import { replaceSource } from 'fumadocs-core/mdx-plugins/stringifier';
+import type { Root } from 'mdast';
 import type { MdxJsxFlowElement } from 'mdast-util-mdx-jsx';
+import { toMarkdown } from 'mdast-util-to-markdown';
+import type { Plugin } from 'unified';
+import { visit } from 'unist-util-visit';
 import {
   parseCodeBlockAttributes,
   rehypeCodeDefaultOptions,
@@ -44,36 +48,41 @@ function parseCopyFlag(meta: string): { copy: boolean; rest: string } {
  * Renders the MDX components used in content as plain Markdown so the Markdown pages,
  * llms-full.txt and MCP get the same information as the HTML page.
  */
-const llmsOptions: LLMsOptions = {
-  stringify(node, parent, state, info) {
-    // `copy` is a site UI flag, so the Markdown keeps the fence as the author wrote it without it.
-    if (node.type === 'code' && node.meta) {
-      const { copy, rest } = parseCopyFlag(node.meta);
-      if (!copy) return;
+const remarkDocumentationMarkdown: Plugin<[], Root> = () => (tree, file) => {
+  visit(tree, (node) => {
+    if (node.type === 'code') {
+      const { copy, rest } = parseCopyFlag(node.meta ?? '');
 
-      return state.handle({ ...node, meta: rest.trim() || null }, parent, state, info);
+      // `copy` is a site UI flag, not part of the exported Markdown.
+      if (copy) replaceSource(file, node, toMarkdown({ ...node, meta: rest.trim() || null }).trimEnd());
+      replaceSource(file, node, node.value, 'search');
+      return;
     }
 
     if (node.type !== 'mdxJsxFlowElement') return;
 
     if (node.name === 'Callout') {
-      const title = attribute(node, 'title');
-      const body = state.containerFlow(node, info);
-      const alert = alertTypes[attribute(node, 'type') ?? 'info'] ?? 'NOTE';
+      replaceSource(file, node, (s) => {
+        const title = attribute(node, 'title');
+        const body = s.inner(node);
+        const alert = alertTypes[attribute(node, 'type') ?? 'info'] ?? 'NOTE';
 
-      return [`[!${alert}]`, ...(title ? [`**${title}**`, ''] : []), ...body.split('\n')]
-        .map((line) => (line ? `> ${line}` : '>'))
-        .join('\n');
+        return [`[!${alert}]`, ...(title ? [`**${title}**`, ''] : []), ...body.split('\n')]
+          .map((line) => (line ? `> ${line}` : '>'))
+          .join('\n');
+      });
     }
 
-    if (node.name === 'Cards') return state.containerFlow(node, info);
+    if (node.name === 'Cards') replaceSource(file, node, (s) => s.inner(node));
 
     if (node.name === 'Card') {
-      const text = state.containerFlow(node, info).replace(/\s+/g, ' ').trim();
+      replaceSource(file, node, (s) => {
+        const text = s.inner(node).replace(/\s+/g, ' ').trim();
 
-      return `- [${attribute(node, 'title')}](${attribute(node, 'href')})${text ? `: ${text}` : ''}`;
+        return `- [${attribute(node, 'title')}](${attribute(node, 'href')})${text ? `: ${text}` : ''}`;
+      });
     }
-  },
+  });
 };
 
 export const docs = defineDocs({
@@ -86,7 +95,7 @@ export const docs = defineDocs({
       tocDepth: z.number().int().min(2).max(6).default(4),
     }),
     postprocess: {
-      includeProcessedMarkdown: llmsOptions,
+      includeProcessedMarkdown: true,
     },
   },
   meta: {
@@ -96,13 +105,11 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
+    remarkPlugins: [remarkDocumentationMarkdown],
     // Index code blocks too, so commands, options and configuration keys that only appear in
     // examples are searchable.
     remarkStructureOptions: {
       types: [...remarkStructureDefaultOptions.types, 'code'],
-      stringify: {
-        stringify: (node) => (node.type === 'code' ? node.value : undefined),
-      },
     },
     // Code blocks use the marketing CLI colors: bone on ink, signal for keys, strings, keywords and
     // functions, and inverse copy for comments and punctuation. Unquoted values and arguments stay

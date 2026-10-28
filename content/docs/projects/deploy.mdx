@@ -17,6 +17,8 @@ If you don't specify an environment, the `deploy` command asks you to choose the
 
 The `deploy` command validates your `ymir.yml` file with Ymir, builds the project for the environment, uploads the build to your AWS infrastructure and then starts the deployment. When the environment uses [container image deployment][3], uploading the build means pushing the container image to your project's Amazon ECR repository.
 
+The CLI can also print a non-blocking [warning about an end-of-life PHP version][11].
+
 ## Build process
 
 Deploying a project to an environment starts with the build process. This is where Ymir CLI creates a build artifact for AWS Lambda and also separates your project assets to upload them to S3 if needed. The whole process happens in the `.ymir` temporary directory where the Ymir CLI will create a copy of your project. You can also test the build process using the `build` command.
@@ -214,3 +216,4 @@ While the build is paused, inspect `.ymir/build` from another terminal. The paus
 [8]: #inspecting-a-build
 [9]: /reference/ymir-cli#environment-logs-query
 [10]: #rolling-back-a-deployment
+[11]: /reference/php-runtime#eol-warnings

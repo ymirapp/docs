@@ -32,11 +32,24 @@ The `php` option only selects the runtime for zip archive deployments whose [`la
 
 <Callout type="warn" title="Default PHP version">
 
-If a zip archive deployment environment without custom layers doesn't set the `php` option, Ymir uses PHP `7.4`, which no longer receives security fixes. This default exists for backwards compatibility. The `ymir init` command writes a newer `php` value to the environments it creates: `8.2` for WordPress, Bedrock and Radicle projects and `8.3` for Laravel projects. If you configure the environment for container image deployment, it removes the `php` value instead. Set the `php` option explicitly on zip archive deployment environments.
+If a zip archive deployment environment without custom layers doesn't set the `php` option, Ymir uses PHP `7.4`, which no longer receives security fixes from the PHP project. This default exists for backwards compatibility. The `ymir init` command writes a newer `php` value to the environments it creates: `8.2` for WordPress, Bedrock and Radicle projects and `8.3` for Laravel projects. If you configure the environment for container image deployment, it removes the `php` value instead. Set the `php` option explicitly on zip archive deployment environments.
 
 </Callout>
 
 Before changing an environment's PHP version, check that your application and its dependencies support the new version and test it on a staging environment. Ymir builds your project on the computer running the `build` or `deploy` command. For example, the default build commands of Bedrock, Laravel and Radicle projects run `composer install`, which installs the package versions from your `composer.lock` file. Make sure that file contains versions that support the environment's PHP version. Composer's [`platform`][6] setting changes the PHP version that Composer resolves dependencies for when it updates the lock file. It doesn't change the PHP version that runs your code or any native binaries in your dependencies, and it doesn't prove that your dependencies work with that version.
+
+### End-of-life deployment warnings [#eol-warnings]
+
+The Ymir CLI warns when `deploy`, `redeploy` or `rollback` identifies a PHP version whose security support from the PHP project has ended. The warning doesn't block the command, ask for confirmation or change your PHP version. A version that still receives upstream security fixes doesn't trigger it, even if active support has ended.
+
+Security backports from Ymir or other vendors don't restore upstream support. The warning doesn't mean that your runtime lacks those fixes. Test your project on a version [still supported by the PHP project][5] and plan an upgrade.
+
+Detection is best-effort:
+
+ * **Zip archive deployments:** The CLI reads the deployment's configuration, including recognized `ymir:php-X.Y` aliases when custom layers are set. For redeploys and rollbacks, it uses the saved deployment configuration, not your local `ymir.yml` file.
+ * **New container image deployments:** The CLI reads the built project's Dockerfile and recognizes a single literal Ymir runtime base, such as `ymirapp/php-runtime:php-74`. It skips custom images, multi-stage builds, variable or digest references and other unrecognized formats. Image redeploys and rollbacks aren't inspected.
+
+The absence of a warning doesn't prove that your runtime is still supported upstream. Check the [support dates](#php-versions) and the runtime your deployment actually uses.
 
 ## How Ymir selects the runtime [#runtime-selection]
 

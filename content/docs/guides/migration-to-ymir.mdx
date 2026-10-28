@@ -98,7 +98,9 @@ Your database copy contains live credentials and data. An environment running wi
 
 ### Planning how to pause the Ymir site [#planning-how-to-pause-the-ymir-site]
 
-During the cutover, the Ymir environment is deployed and reachable while you copy and check the final data. Ymir doesn't have a maintenance mode or a command that pauses an environment, so you need your own way to keep it from changing data or acting on live credentials. Design it for your site and test it during the rehearsal. It has to cover each of these paths, and you need to check each one separately:
+During the cutover, the Ymir environment is deployed and reachable while you copy and check the final data. Ymir's [maintenance mode][35] returns a `503` response to HTTP requests that reach the PHP runtime, but it doesn't pause cron jobs, queues or integrations running outside web requests. The content delivery network can still serve cached responses and assets.
+
+There's no command that pauses the whole environment. You still need your own way to keep it from changing data or acting on live credentials. Design it for your site and test it during the rehearsal. It has to cover each of these paths, and you need to check each one separately:
 
 * **Visitors:** Requests to the vanity domain, and to your domain once it points to Ymir, must not reach the site's normal pages, logins, forms or checkout. For example, a must-use plugin deployed with your code could answer web requests with a maintenance page. That only covers web requests.
 * **Scheduled tasks:** Cron jobs and scheduled actions must not run with your final data until you're ready. When the `cron` option is enabled, Ymir runs scheduled tasks with WP-CLI on the `console` function, not through web requests, so a maintenance page doesn't stop them.
@@ -239,3 +241,4 @@ On Ymir, set up and test your own backups. See [backing up and recovering databa
 [32]: /applications/laravel#configuration-values-ymir-sets
 [33]: /reference/configuration#caching
 [34]: /applications/laravel#files-and-storage
+[35]: /projects/environments#maintenance-mode

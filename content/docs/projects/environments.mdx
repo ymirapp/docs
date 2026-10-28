@@ -30,6 +30,8 @@ Putting environments in separate projects doesn't change this. A separate team o
 
 Whenever you initialize a project with the [`init`][6] command, Ymir will create two environments: `staging` and `production`. The `init` command also applies the choices you make during the command, such as the database server, cache cluster and container image deployment, to both environments.
 
+By default, both `init` and `environment:create` enable [deployment health checks][41] by setting `deployment.healthcheck: true` in the configuration they generate. This doesn't enable checks in existing environments whose configuration omits the option.
+
 The `staging` environment's configuration disables `cron` and `warmup`. You're going to need a production environment, and having a staging environment to preview changes for your client or for testing is always beneficial.
 
 ## Creating new environments
@@ -341,3 +343,4 @@ Looking for more detailed walkthrough on how to map a domain to your project env
 [38]: /reference/configuration#caching
 [39]: /reference/ymir-cli#environment-down
 [40]: /reference/ymir-cli#environment-up
+[41]: /reference/configuration#healthcheck

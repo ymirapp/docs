@@ -475,6 +475,8 @@ The list of commands to run on the project environment during the project deploy
 
 The path of a readiness endpoint that Ymir checks when you deploy or redeploy. After running the deployment [`commands`](#commands-2), Ymir invokes the new version of the environment's website function with an HTTPS `GET` request for this path using the environment's primary domain name. For normal HTTP handling, the check requires a `200` status code. Redirects, other status codes, PHP errors and request timeouts fail the check. Setting this option to `false` or removing it disables the health check. Rollbacks don't run this check.
 
+By default, the `init` and `environment:create` commands write `deployment.healthcheck: true` in the configuration they generate for new environments. This checks the project's `/ymir/health` endpoint. They don't enable checks in existing environments. When this option is omitted, its default is still `false`.
+
 If the `YMIR_MAINTENANCE_MODE` environment variable of the new website function version is exactly `true` or `1`, the Ymir runtime answers every HTTP request with a `503` maintenance response. Ymir still sends the health check request, but the deployment then fails unless the response is a `503`. That only checks the maintenance response, not that your application is ready. Any other value or no value requires a `200` again, so the first deployment after you exit maintenance mode checks your endpoint as usual. Ymir's maintenance mode only affects HTTP requests to the website function. Cron jobs and queue workers keep running.
 
 The path must start with a single `/` and can't contain a query string, fragment, whitespace or control characters.

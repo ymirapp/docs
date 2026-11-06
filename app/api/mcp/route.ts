@@ -1,6 +1,7 @@
-import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
+import { createMcpHandler, McpServer, originValidationResponse } from '@modelcontextprotocol/server';
 import { registerSearchTool, registerSourceTools } from 'fumadocs-core/mcp';
 import { docsLlms, searchServer, source } from '@/lib/source';
+import { siteUrl } from '@/lib/shared';
 
 // Search results cite heading URLs (`/page#heading`), so get_page drops the fragment and returns the whole page.
 const mcpSource: typeof source = {
@@ -21,14 +22,9 @@ const handler = createMcpHandler(() => {
   return mcp;
 });
 
-export async function GET(request: Request) {
-  return handler.fetch(request);
+async function handleRequest(request: Request) {
+  const rejected = originValidationResponse(request, [new URL(siteUrl).hostname]);
+  return rejected ?? handler.fetch(request);
 }
 
-export async function POST(request: Request) {
-  return handler.fetch(request);
-}
-
-export async function DELETE(request: Request) {
-  return handler.fetch(request);
-}
+export { handleRequest as GET, handleRequest as POST, handleRequest as DELETE };

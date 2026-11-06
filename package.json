@@ -13,7 +13,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/check-mcp-origin.mjs",
     "start": "next start",
     "types:check": "next typegen && tsc --noEmit",
     "lint": "eslint"

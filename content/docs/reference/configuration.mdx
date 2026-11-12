@@ -292,13 +292,44 @@ You can't list more than 10 headers with this option.
 
 **type**: `array`
 
-The list of CloudFront functions to associate with CloudFront origin used for assets and uploads. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+The list of CloudFront functions that Ymir associates with the cache behaviors for assets and uploads, including [`excluded_paths`](#excluded-paths) that start with `/uploads/`. Each entry has a `name` and a `type`:
+
+- `name`: the name of a CloudFront function in your AWS account. The function must be published to its `LIVE` stage.
+- `type`: either `viewer-request` or `viewer-response`. Each type can only appear once in the list.
+
+Ymir manages the CloudFront functions on these cache behaviors. It removes any function you associate with them outside this option on your next deployment. CloudFront doesn't run `viewer-response` functions when the response has a status code of 400 or higher.
 
 #### functions_content [#functions-content]
 
 **type**: `array`
 
-The list of CloudFront functions to associate with CloudFront origin used for the PHP application content. Each array entry must have a `name` and a `type`. The `name` is the name of the CloudFront function on AWS. Meanwhile, `type` can be either `viewer-request` or `viewer-response`.
+The list of CloudFront functions that Ymir associates with the cache behaviors for your PHP application content, including the [`excluded_paths`](#excluded-paths) that don't start with `/uploads/`. Each entry has a `name` and a `type`:
+
+- `name`: the name of a CloudFront function in your AWS account. The function must be published to its `LIVE` stage.
+- `type`: either `viewer-request` or `viewer-response`. Each type can only appear once in the list.
+
+```yaml
+cdn:
+  functions_content:
+    - name: my-request-function
+      type: viewer-request
+    - name: my-response-function
+      type: viewer-response
+```
+
+Ymir manages the CloudFront functions on these cache behaviors. It removes any function you associate with them outside this option on your next deployment.
+
+<Callout type="warn" title="Replaces the built-in X-Forwarded-Host function">
+
+When the environment has a [`domain`](#domain), Ymir associates its own `ymir-x-forwarded-host` function with the `viewer-request` event. This function copies the `Host` header into the `X-Forwarded-Host` header so that your PHP application knows which domain the request is for. A `viewer-request` function in this list replaces it, so your function must set the `X-Forwarded-Host` header itself. Ymir shows a warning when you validate or deploy this configuration.
+
+</Callout>
+
+<Callout type="info" title="No viewer-response functions on errors">
+
+CloudFront doesn't run `viewer-response` functions when your PHP application returns a status code of 400 or higher. You can't use them to change headers on error responses, such as a `401` response.
+
+</Callout>
 
 #### invalidate_paths [#invalidate-paths]
 

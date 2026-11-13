@@ -33,6 +33,16 @@ How you choose the PHP version depends on your environment's [deployment type][6
 
 Your build commands, such as `composer install`, run with the PHP installed on the machine running the build, not the environment's PHP version. Make sure your local PHP version can install dependencies that work on the environment's PHP version.
 
+### Host and proxy trust [#host-and-proxy-trust]
+
+The runtime [validates forwarded hostnames against your environment's mapped domains][23] before Laravel receives the request. The bridge doesn't automatically trust every proxy address. Without application-configured proxy trust, Laravel ignores forwarded prefixes such as `X-Forwarded-Prefix` when generating URLs. The runtime still supplies the HTTPS status and mapped hostname, so ordinary Ymir custom-domain and CDN requests don't need blanket proxy trust.
+
+Without explicit proxy trust, Laravel also ignores `X-Forwarded-For` for client IPs. Behind a CDN, the runtime's source IP can be the proxy's address instead of the visitor's. Test rate limits, IP-based access rules and audit logs when changing your proxy settings.
+
+Your application's explicit trusted-proxy settings are left unchanged. Only trust headers that a proxy you control overwrites or removes, and only trust proxy addresses whose requests can't be impersonated through a public origin. Broad proxy trust can still let client-supplied `X-Forwarded-Prefix` or RFC `Forwarded` headers affect generated URLs. The mapped-host check doesn't make the origin private or enforce tenant ownership within your application.
+
+Ymir doesn't force generated URLs to `APP_URL`, so alternate mapped domains and supported wildcard subdomains keep working. Setting `APP_URL` alone doesn't protect URLs generated from an HTTP request. Host validation and proxy handling are separate protections, so keep both the runtime and bridge up to date. Before production, test them together on staging, including the CDN, direct custom-domain access and public API Gateway or Function URL endpoints that your environment uses.
+
 ### Health endpoint [#health-endpoint]
 
 The Laravel bridge provides a `GET /ymir/health` endpoint.
@@ -203,3 +213,4 @@ Laravel projects created with the `init` command have a `default` queue. See the
 [20]: /team-resources/email#getting-your-aws-account-approved-for-sending-email
 [21]: /reference/configuration#healthcheck
 [22]: https://www.php.net/manual/en/filter.constants.php
+[23]: /reference/php-runtime#forwarded-hosts

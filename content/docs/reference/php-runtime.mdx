@@ -64,6 +64,16 @@ If you set the [`layers`][9] option to a non-empty list, Ymir uses only the laye
 
 </Callout>
 
+## Forwarded hosts [#forwarded-hosts]
+
+Ymir's CDN sends the original hostname in `X-Forwarded-Host`. The runtime uses it for PHP's `HTTP_HOST` and `SERVER_NAME` only when it contains one hostname matching the environment's mapped domain names or vanity domain. Ymir supplies these names in `YMIR_DOMAIN_NAMES`. A wildcard such as `*.example.com` accepts `shop.example.com`, but not `example.com` or `a.b.example.com`.
+
+Matching ignores case and accepts an optional `:443`, which is removed. Other ports, malformed values and multiple forwarded hosts are ignored. If the hostname doesn't match or the mapped-domain list is missing, the runtime keeps the ordinary `Host` and removes `X-Forwarded-Host` from the PHP request. A custom viewer-request function that sets this header must use a mapped hostname. The runtime doesn't replace your function or force every request onto the primary domain.
+
+This validation doesn't authenticate the CDN, make public origins private or isolate tenants within a multi-domain application. Direct origin access remains available. Your application still owns any stricter host allowlist, tenant policy and explicit proxy trust. Outside the Ymir platform, configure the comma-separated `YMIR_DOMAIN_NAMES` list yourself if your proxy needs to forward a hostname; don't derive it from request headers.
+
+Laravel applications also rely on the [bridge's proxy policy][26] to keep untrusted forwarded prefixes from affecting generated URLs. Keep both the runtime and bridge up to date; updating one doesn't update the other.
+
 ## Architecture [#runtime-architecture]
 
 The runtime is available for the `x86_64` and `arm64` [architectures][10], with a separate runtime layer and image for each one. Anything native that you add to your functions must be built for the environment's architecture. This includes Lambda layers, PHP extensions, executables and native binaries installed by Composer or npm. Switching an environment's architecture can break these even if your PHP code works on both.
@@ -196,3 +206,4 @@ The runtime, PHP-FPM and PHP send their output and errors to `stdout` and `stder
 [23]: /reference/configuration#memory-3
 [24]: /reference/configuration#tmp-storage-3
 [25]: /reference/configuration#timeout-2
+[26]: /applications/laravel#host-and-proxy-trust

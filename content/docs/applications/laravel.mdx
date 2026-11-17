@@ -152,7 +152,7 @@ The [values Ymir sets](#configuration-values-ymir-sets) give your application th
 
  * **Cache:** By default, your cache uses a DynamoDB table that Ymir creates for the environment. If you add a [cache cluster][10], it uses Redis with the Relay client instead. Both stores are shared by all your environment's functions.
  * **Sessions:** By default, sessions are stored in encrypted cookies, since a `file` session isn't shared between function instances.
- * **Logs:** By default, logs go to `stderr`, which sends them to CloudWatch. You can read them with the [`environment:logs:query`][14] command. To add the request ID of each request to your logs, set the `YMIR_LOG_REQUEST_CONTEXT` environment variable to `true`.
+ * **Logs:** By default, logs go to `stderr`, which sends them to CloudWatch. You can read them with the [`environment:logs:query`][14] command. Each log line starts with the Lambda request ID of the invocation that wrote it, in the [format the runtime uses][24]. If you have metric filters or log parsers that rely on lines starting with the log level, keep that format by adding `"ymirapp/monolog-bridge": "^1.0"` to your `composer.json`. To also add the request ID to the context of each log entry as `requestId`, set the `YMIR_LOG_REQUEST_CONTEXT` environment variable to `true`.
  * **Mail:** By default, mail is sent with Amazon SES. You need a verified [email identity][15] for the address you send from, and your AWS account needs [SES production access][20] in your project region before you can send to unverified addresses or beyond the sandbox sending limits.
 
 ### Scheduler [#scheduler]
@@ -214,3 +214,4 @@ Laravel projects created with the `init` command have a `default` queue. See the
 [21]: /reference/configuration#healthcheck
 [22]: https://www.php.net/manual/en/filter.constants.php
 [23]: /reference/php-runtime#forwarded-hosts
+[24]: /reference/php-runtime#runtime-logs

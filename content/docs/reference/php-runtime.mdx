@@ -182,6 +182,14 @@ Lambda extensions and other code you add to your functions also run with your en
 
 The runtime, PHP-FPM and PHP send their output and errors to `stdout` and `stderr`. When logging is enabled for a function, Lambda sends this output to the function's CloudWatch log group, which Ymir configures with the [`logging`][20] option. The [logging guide][21] explains how to read these logs and send them to another logging service.
 
+The runtime's own log lines, and the lines your Laravel application logs through the Ymir Laravel bridge's `stderr` channel, have this format:
+
+```text
+8f507cfc-8b35-4e7e-9f26-f2a3a6e7e1a2	ERROR	Something failed	{"message":"Something failed","level":"ERROR"}
+```
+
+Tabs separate the fields: the Lambda request ID of the invocation that wrote the line, the log level, the message and the whole log record as JSON. It's the same request ID as in Lambda's `START`, `END` and `REPORT` lines, so you can find every line of an invocation, including lines from console commands and queue jobs. Lines logged outside an invocation, such as when the function starts, have no request ID and start with the log level.
+
 [1]: https://github.com/ymirapp/php-runtime
 [2]: /reference/ymir-cli#php-info
 [3]: /reference/ymir-cli#php-version

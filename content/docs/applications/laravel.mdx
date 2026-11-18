@@ -155,26 +155,29 @@ The [values Ymir sets](#configuration-values-ymir-sets) give your application th
  * **Logs:** By default, logs go to `stderr`, which sends them to CloudWatch. You can read them with the [`environment:logs:query`][14] command. Each log line starts with the Lambda request ID of the invocation that wrote it, in the [format the runtime uses][24]. If you have metric filters or log parsers that rely on lines starting with the log level, keep that format by adding `"ymirapp/monolog-bridge": "^1.0"` to your `composer.json`. To also add the request ID to the context of each log entry as `requestId`, set the `YMIR_LOG_REQUEST_CONTEXT` environment variable to `true`.
  * **Mail:** By default, mail is sent with Amazon SES. You need a verified [email identity][15] for the address you send from, and your AWS account needs [SES production access][20] in your project region before you can send to unverified addresses or beyond the sandbox sending limits.
 
-### Request timeouts [#request-timeouts]
+### Runtime errors [#runtime-errors]
 
-When a request to your `website` function runs out of time, the runtime stops it about one second before the function's [`timeout`][25], restarts PHP-FPM and responds with a `504` status code. Laravel never finishes the request, so its exception handler doesn't run, and an error tracker such as Sentry, Flare or Bugsnag doesn't see the timeout. PHP's `max_execution_time` doesn't stop these requests either: on Linux, it only counts the time PHP spends running code, not the time it waits for a database query or an HTTP request.
+Some requests fail in the Ymir runtime instead of in your application. Laravel never finishes these requests, so its exception handler doesn't run, and an error tracker such as Sentry, Flare or Bugsnag doesn't see them. The runtime handles two of these errors:
 
-The runtime records the timeout in the function instance's `/tmp` directory. Once Laravel boots for the next HTTP request that the same function instance handles, the bridge reports the timeout to your application's exception handler as a `Ymir\Bridge\Laravel\Exception\RequestTimeoutException`. Your error tracker receives it like any other reported exception. Its message has the method and path of the request that timed out, without the query string:
+ * **Timeouts:** When a request to your `website` function runs out of time, the runtime stops it about one second before the function's [`timeout`][25], restarts PHP-FPM and responds with a `504` status code. PHP's `max_execution_time` doesn't stop these requests either: on Linux, it only counts the time PHP spends running code, not the time it waits for a database query or an HTTP request.
+ * **Crashes:** When the PHP-FPM worker handling a request is killed or exits before sending a response, the runtime responds with a `502` status code and restarts.
+
+The runtime records these errors in the function instance's `/tmp` directory, which is kept when the runtime restarts. Once Laravel boots for the next HTTP request that the same function instance handles, the bridge reports each error to your application's exception handler. A timeout is a `Ymir\Bridge\Laravel\Exception\RequestTimeoutException`, and a crash is a `Ymir\Bridge\Laravel\Exception\PhpFpmCrashException`. Your error tracker receives them like any other reported exception. Their message has the method and path of the request that failed, without the query string:
 
 ```text
 PHP-FPM request timed out after 29000ms while handling "GET /export"
 ```
 
-The exception's context has the Lambda request ID of the invocation that timed out as `requestId`, and the time it timed out as `timedOutAt`. Use the request ID to find that invocation's [log lines][24].
+The exception's context has the Lambda request ID of the invocation that failed as `requestId`, and the time it failed as `occurredAt`. Use the request ID to find that invocation's [log lines][24].
 
-Keep these limits in mind:
+Keep these limitations in mind:
 
- * The timeout is reported during a later request. The URL, user and time that your error tracker attaches to the event come from that later request, so rely on the exception's message and context for the request that timed out.
- * If Lambda shuts down the function instance before it handles another request, the timeout isn't reported. The runtime still logs it in your function logs.
+ * The error is reported during a later request. The URL, user and time that your error tracker attaches to the event come from that later request, so rely on the exception's message and context for the request that failed.
+ * If Lambda shuts down the function instance before it handles another request, the error isn't reported. The runtime still logs it in your function logs.
  * Only requests to the `website` function are reported. Console commands and [queued jobs][12] aren't.
- * With Laravel's default exception handling, the timeout also appears twice in your logs: once when the runtime stops the request, and once when the bridge reports it.
+ * With Laravel's default exception handling, the error also appears twice in your logs: once when the runtime handles it, and once when the bridge reports it.
 
-To stop reporting these timeouts, tell your exception handler not to report the exception. On Laravel 11 and newer, do this in your `bootstrap/app.php` file:
+To stop reporting one kind of error, tell your exception handler not to report its exception. Both exceptions extend `Ymir\Bridge\Laravel\Exception\RuntimeErrorException`, so you can also stop reporting both at once. On Laravel 11 and newer, do this in your `bootstrap/app.php` file:
 
 ```php
 use Illuminate\Foundation\Configuration\Exceptions;

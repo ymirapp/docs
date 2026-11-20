@@ -34,7 +34,7 @@ environments:
         - name: function-name
           type: viewer-request
       invalidate_paths: []
-      image_processing_memory: 256
+      image_processing_memory: 1792
       logging:
         format: w3c
         retention: 7
@@ -339,9 +339,11 @@ The list of paths cleared from the CloudFront distribution cache during the proj
 
 #### image_processing_memory [#image-processing-memory]
 
-**type**: `int` **default**: `256` **max**: `3008`
+**type**: `int` **default**: `1792` **max**: `3008`
 
 The amount of memory (in MB) used by the Lambda@Edge image processing function. Must be between 128 MB and 3,008 MB in 64 MB increments.
+
+AWS Lambda allocates CPU in proportion to memory, and the default of 1,792 MB gives the function a full vCPU. The function processes each image on a single thread, so memory above the default costs more without making it faster. A lower value makes image processing slower on cache misses but doesn't lower its cost much, since the function then runs for longer.
 
 #### logging
 

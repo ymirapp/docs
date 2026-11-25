@@ -74,6 +74,10 @@ This validation doesn't authenticate the CDN, make public origins private or iso
 
 Laravel applications also rely on the [bridge's proxy policy][26] to keep untrusted forwarded prefixes from affecting generated URLs. Keep both the runtime and bridge up to date; updating one doesn't update the other.
 
+## Request headers [#request-headers]
+
+The runtime drops request headers whose names contain an underscore, as nginx and Apache do by default. PHP turns both `x-forwarded-for` and `x_forwarded_for` into the same `HTTP_X_FORWARDED_FOR` variable, so a client could otherwise replace a header set by the CDN or API gateway. If your application reads a header like `api_key`, have clients send `api-key` instead and read it as `HTTP_API_KEY`.
+
 ## Architecture [#runtime-architecture]
 
 The runtime is available for the `x86_64` and `arm64` [architectures][10], with a separate runtime layer and image for each one. Anything native that you add to your functions must be built for the environment's architecture. This includes Lambda layers, PHP extensions, executables and native binaries installed by Composer or npm. Switching an environment's architecture can break these even if your PHP code works on both.

@@ -992,7 +992,7 @@ The `console` function's memory affects its cost and speed the same way as the `
 
 **type**: `int` **default**: `60`
 
-The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 900 seconds (15 minutes), making it suitable for longer-running console commands and background tasks.
+The maximum amount of time (in seconds) that the `console` Lambda function can run before Lambda terminates it. The `console` function can have a maximum timeout of 1800 seconds (30 minutes), making it suitable for longer-running console commands and background tasks.
 
 #### tmp_storage [#tmp-storage-3]
 
@@ -1092,7 +1092,7 @@ If a function goes over the memory limit during its execution, it gets terminate
 
 **type**: `int` **default**: `600`
 
-The maximum amount of time (in seconds) that the queue Lambda function can run before Lambda terminates it. Queue functions can have a maximum timeout of 900 seconds (15 minutes), making them suitable for longer-running background tasks.
+The maximum amount of time (in seconds) that the queue Lambda function can run before Lambda terminates it. Queue functions can have a maximum timeout of 1800 seconds (30 minutes), making them suitable for longer-running background tasks.
 
 <Callout type="info" title="Longer processing time">
 

@@ -55,7 +55,7 @@ Jobs without a queue go to the `default` queue. If the environment doesn't have 
 
 Each queue has its own [`timeout`][3], [`memory`][4] and [`concurrency`][5] settings:
 
- * **Timeout:** A queue function can run for up to 900 seconds, and 600 seconds by default. A job can use the time the function has left, minus one second. If your job sets its own `$timeout`, keep it below the queue's `timeout`.
+ * **Timeout:** A queue function can run for up to 1800 seconds, and 600 seconds by default. A job can use the time the function has left, minus one second. If your job sets its own `$timeout`, keep it below the queue's `timeout`.
  * **Memory:** Each job runs in its own PHP process within the queue function's memory. If the function runs out of memory, AWS stops it.
  * **Concurrency:** The queue's `concurrency` limits how many jobs from that queue run at the same time. Other jobs wait in the queue. Higher concurrency also means more connections to your database server.
 

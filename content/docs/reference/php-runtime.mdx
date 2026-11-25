@@ -100,6 +100,7 @@ The runtime's `php.ini` file also sets the following:
 
  * Errors aren't displayed. PHP logs them to `stderr`, which goes to [CloudWatch logs](#runtime-logs) when logging is enabled.
  * `memory_limit` is `10240M`. See [memory](#runtime-limits) for what this means.
+ * `max_execution_time` is `0`, so PHP-FPM has no CPU time limit. The runtime still stops `website` requests about one second before the function's timeout. You can set a limit with an `.ini` file in your project's `php/conf.d` directory or with `set_time_limit()`.
  * OPcache is enabled and doesn't check files for changes. It caches compiled files in `/tmp`.
  * The `fastcgi_finish_request` function is disabled. The runtime doesn't support using it to keep working after sending the response.
  * `session.upload_progress.enabled` is off. Lambda passes the whole request body to PHP at once, so PHP can't report upload progress, and PHP recommends disabling the feature for security. Sessions and file uploads still work. You can turn it back on with an `.ini` file in your project's `php/conf.d` directory.

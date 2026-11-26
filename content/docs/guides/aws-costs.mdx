@@ -158,7 +158,7 @@ Lambda charges less per second for `arm64` functions. Before you switch the [`ar
 ### Warm-up, logs and stored data [#warmup-logs-and-stored-data]
 
 * **Warm-up:** [`warmup`][23] invocations are billed like other invocations. They're not provisioned concurrency, and they don't guarantee that there won't be cold starts.
-* **Logs:** CloudWatch charges for the logs that it ingests and stores. Reduce what your application logs and set the [`logging`][24] retention to what you need. See the [logging guide][25] before you disable logging.
+* **Logs:** CloudWatch charges for the logs that it ingests and stores. Reduce what your application logs and set the [`logging`][24] retention to what you need. See the [logs page][25] before you disable logging.
 * **Stored data:** S3 uploads, container images, log groups, database backups and snapshots all cost money to store. Keep the container images and deployment artifacts that your current deployments, redeployments and rollbacks need, and only remove others with a reviewed retention plan. The [`docker:delete-images`][39] command only deletes images on your computer, so it doesn't reduce your container image storage costs in AWS.
 
 ### CloudFront, API gateway and firewall [#cloudfront-gateway-and-firewall]
@@ -228,7 +228,7 @@ Deleting resources is often permanent. Follow these steps:
 [22]: /reference/configuration#architecture
 [23]: /reference/configuration#warmup
 [24]: /reference/configuration#logging-2
-[25]: /guides/logging-service
+[25]: /projects/logs
 [26]: /reference/configuration#caching
 [27]: /reference/configuration#origin-shield
 [28]: /guides/firewall

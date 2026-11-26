@@ -1,1 +1,1 @@
-{ "pages": ["queues", "container-image-deployment", "domain-mapping", "scaling", "automated-deployment", "firewall", "object-cache", "cloudflare", "logging-service", "new-relic", "gd-extension", "migration-to-ymir", "aws-costs"] }
+{ "pages": ["queues", "container-image-deployment", "domain-mapping", "scaling", "automated-deployment", "firewall", "object-cache", "cloudflare", "new-relic", "gd-extension", "migration-to-ymir", "aws-costs"] }

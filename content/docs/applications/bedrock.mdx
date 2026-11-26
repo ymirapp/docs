@@ -127,7 +127,7 @@ Your project files are read-only on AWS Lambda, and the `/tmp` directory is the 
 
  * **Uploads:** The Ymir plugin stores your uploads in your environment's S3 storage, not in `web/app/uploads`. See [WordPress uploads][28] for the upload size limit and how attachments get processed.
  * **Email:** The Ymir plugin sends email with Amazon SES. See [email][23].
- * **Logs:** When logging is enabled, PHP errors and anything your code writes to `stderr` go to CloudWatch. See the [logging guide][24].
+ * **Logs:** When logging is enabled, PHP errors and anything your code writes to `stderr` go to CloudWatch. See the [logs page][24].
  * **Queues:** The PHP runtime doesn't process queued jobs for Bedrock projects, even if they use Acorn. The [queues guide][25] covers Laravel applications.
  * **Acorn and Sage:** The PHP runtime doesn't prepare Acorn's storage directories for Bedrock projects. If your theme uses Sage 10, see the [Sage 10 guide][26].
 
@@ -156,7 +156,7 @@ Deploy to your `staging` environment first and check your site before you deploy
 [21]: /projects/environments#secrets
 [22]: /reference/php-runtime#runtime-filesystem
 [23]: /team-resources/email
-[24]: /guides/logging-service
+[24]: /projects/logs
 [25]: /guides/queues
 [26]: /compatibility/sage-10
 [27]: /applications/radicle

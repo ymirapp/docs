@@ -1,1 +1,1 @@
-{ "pages": ["manage", "environments", "deploy"] }
+{ "pages": ["manage", "environments", "deploy", "logs"] }

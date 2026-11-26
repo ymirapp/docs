@@ -114,7 +114,7 @@ ymir redeploy staging
 
 Acorn logs everything from the `debug` level up by default. To log less, set the `LOG_LEVEL` environment variable, such as to `warning`. If your theme has its own `config/logging.php` file, check that it uses these environment variables.
 
-Your logs can contain sensitive data, so don't log secrets or personal data. Don't use the [`php:info`][11] command to debug configuration, since its output includes your secrets. The [logging guide][12] explains how to read your logs and send them to a logging service.
+Your logs can contain sensitive data, so don't log secrets or personal data. Don't use the [`php:info`][11] command to debug configuration, since its output includes your secrets. The [logs page][12] explains how to read your logs and send them to a logging service.
 
 [1]: https://roots.io/sage/
 [2]: https://roots.io
@@ -126,5 +126,5 @@ Your logs can contain sensitive data, so don't log secrets or personal data. Don
 [9]: /reference/configuration#tmp-storage
 [10]: /projects/environments#environment-variables
 [11]: /reference/ymir-cli#php-info
-[12]: /guides/logging-service
+[12]: /projects/logs
 [13]: /reference/configuration#logging-2

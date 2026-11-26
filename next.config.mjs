@@ -16,6 +16,8 @@ const config = {
       { source: '/guides/laravel.md', destination: '/applications/laravel.md', permanent: true },
       { source: '/guides/wordpress-health-endpoint', destination: '/applications/wordpress', permanent: true },
       { source: '/guides/wordpress-health-endpoint.md', destination: '/applications/wordpress.md', permanent: true },
+      { source: '/guides/logging-service', destination: '/projects/logs', permanent: true },
+      { source: '/guides/logging-service.md', destination: '/projects/logs.md', permanent: true },
     ];
   },
 };

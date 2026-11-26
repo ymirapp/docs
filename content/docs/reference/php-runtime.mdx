@@ -175,7 +175,7 @@ When an upload fails, check the [logs](#runtime-logs) of the function involved:
  * **Error after the upload:** Check the `website` function's logs, and the `console` function's logs if the metadata generation failed.
  * **Missing thumbnails or image sizes:** Check the `console` function's logs.
 
-The [logging guide][21] explains how to read these logs. They can contain file names, paths and personal data. Remove sensitive values before you share them, including with support.
+The [logs page][21] explains how to read these logs. They can contain file names, paths and personal data. Remove sensitive values before you share them, including with support.
 
 ## Secrets [#runtime-secrets]
 
@@ -185,7 +185,7 @@ Lambda extensions and other code you add to your functions also run with your en
 
 ## Logs [#runtime-logs]
 
-The runtime, PHP-FPM and PHP send their output and errors to `stdout` and `stderr`. When logging is enabled for a function, Lambda sends this output to the function's CloudWatch log group, which Ymir configures with the [`logging`][20] option. The [logging guide][21] explains how to read these logs and send them to another logging service.
+The runtime, PHP-FPM and PHP send their output and errors to `stdout` and `stderr`. When logging is enabled for a function, Lambda sends this output to the function's CloudWatch log group, which Ymir configures with the [`logging`][20] option. The [logs page][21] explains how to read these logs and send them to another logging service.
 
 The runtime's own log lines, and the lines your Laravel application logs through the Ymir Laravel bridge's `stderr` channel, have this format:
 
@@ -215,7 +215,7 @@ Tabs separate the fields: the Lambda request ID of the invocation that wrote the
 [18]: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
 [19]: /projects/environments#environment-variables
 [20]: /reference/configuration#logging-2
-[21]: /guides/logging-service
+[21]: /projects/logs
 [22]: /reference/ymir-cli#media-import
 [23]: /reference/configuration#memory-3
 [24]: /reference/configuration#tmp-storage-3

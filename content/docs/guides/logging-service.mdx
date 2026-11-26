@@ -1,7 +1,7 @@
 ---
-title: "How to send logs to a logging service"
-navTitle: "Logging service"
-description: "How Ymir stores your Lambda function logs in CloudWatch, and how to send them to a logging service such as Axiom."
+title: "How to read and manage your logs"
+navTitle: "Logs"
+description: "How Ymir stores your Lambda function logs in CloudWatch, how to read them and control their retention, and how to send them to a logging service such as Axiom."
 ---
 
 ## How Ymir handles logs [#how-ymir-handles-logs]
@@ -22,6 +22,8 @@ ymir environment:logs:watch staging console
 # Get cost and usage metrics for the "production" environment over the last week
 ymir environment:metrics production --period=7d
 ```
+
+If your application logs with [Monolog][14], you can write its log lines in the same [format as the runtime's own logs][2] using the `CloudWatchFormatter` from the [Ymir Monolog Bridge][15]. It puts each log entry on a single line with its level, message and the whole record as JSON. The Ymir Laravel bridge already uses it for Laravel's `stderr` log channel, so Laravel applications don't need to add it. For other applications, the bridge's README shows how to install it and add the formatter to a Monolog handler that writes to `stderr`.
 
 <Callout type="warn" title="Logs can contain sensitive data">
 
@@ -115,3 +117,5 @@ This guide doesn't currently include a verified recipe for the extension. Accord
 [11]: https://axiom.co/
 [12]: https://axiom.co/docs/send-data/cloudwatch
 [13]: https://axiom.co/docs/send-data/aws-lambda
+[14]: https://github.com/Seldaek/monolog
+[15]: https://github.com/ymirapp/monolog-bridge

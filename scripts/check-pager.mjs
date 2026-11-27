@@ -35,6 +35,7 @@ const order = [
   '/guides/firewall',
   '/guides/object-cache',
   '/guides/cloudflare',
+  '/guides/image-processing',
   '/guides/new-relic',
   '/guides/gd-extension',
   '/guides/migration-to-ymir',

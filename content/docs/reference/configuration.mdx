@@ -387,6 +387,8 @@ Origin Shield isn't free. There's an additional cost for every 10,000 request th
 
 Flag whether the CloudFront distribution will be configured with the Lambda@Edge image processing function.
 
+The function resizes and converts images under the `/assets/*` and `/uploads/*` paths, and requires `caching` to be `enabled` or `assets`. See the [image processing guide][38] for how to use it.
+
 ### concurrency
 
 **type**: `int | false` **default**: `10`
@@ -1172,3 +1174,4 @@ A rollback doesn't restore deleted messages. Rolling back reapplies the queue `t
 [35]: /applications/laravel#health-endpoint
 [36]: /applications/wordpress#health-endpoint
 [37]: /applications/radicle#health-endpoint
+[38]: /guides/image-processing

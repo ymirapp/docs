@@ -1,0 +1,137 @@
+---
+title: "How to resize and convert images with CloudFront"
+navTitle: "Image processing"
+description: "Use the image processing function of an environment's CloudFront distribution to resize images, serve WebP and control quality, with WordPress or with your own image URLs."
+---
+
+## How image processing works [#how-image-processing-works]
+
+When you enable image processing, Ymir adds a [Lambda@Edge][1] function to your environment's CloudFront distribution. The function runs on the `/assets/*` and `/uploads/*` paths, which CloudFront serves from your environment's public S3 bucket. When CloudFront doesn't have an image in its cache, it gets the image from S3 and the function then resizes or converts it before CloudFront caches it and sends it to the browser. Images that are already in the cache don't run the function again.
+
+You choose how to process an image with the query string of its URL, such as `?width=800`. The function never changes the file in S3. Each combination of query string and `Accept` header is a separate copy in the CloudFront cache.
+
+How you use it depends on your project type:
+
+ * **WordPress, Bedrock and Radicle:** The Ymir WordPress plugin adds the query strings to your uploaded images' URLs for you. See [WordPress image URLs](#wordpress).
+ * **Laravel:** Nothing adds query strings for you. Add them to the URLs of your images yourself. See [Query string parameters](#query-string-parameters).
+
+## Enabling image processing [#enabling-image-processing]
+
+Set the [`process_images`][2] option of the environment's `cdn` option to `true` and deploy:
+
+```yml
+id: 42
+name: image-project
+type: wordpress
+environments:
+  production:
+    cdn:
+      process_images: true
+```
+
+Image processing needs the `cdn` [`caching`][3] option to be `enabled`, its default, or `assets`. Project validation fails if `caching` is `disabled`, since your image URLs then point at your S3 bucket and bypass CloudFront.
+
+Ymir creates the function in the `us-east-1` region, as Lambda@Edge requires, and attaches it to the distribution during the deployment. CloudFront then takes some time to deploy the function to its edge locations. There's no fixed time for this to complete.
+
+Images that CloudFront cached before the function was attached stay in its cache unprocessed until they expire. Assets and uploads stay cached for 30 days by default. To process them sooner, invalidate them once the deployment finishes:
+
+```bash
+ymir environment:invalidate-cache production --path="/uploads/*"
+```
+
+To turn image processing off, set `process_images` to `false` and deploy. Ymir removes the function from the distribution and the WordPress plugin stops changing your image URLs. The function itself stays in your AWS account until you delete the environment. Processed copies stay in the CloudFront cache until they expire or you invalidate them.
+
+## WordPress image URLs [#wordpress]
+
+On deployment, Ymir sets the `YMIR_CDN_IMAGE_PROCESSING_ENABLED` environment variable, and the Ymir WordPress plugin then rewrites the URLs of your uploaded images to use the function. It changes the URLs of images in post content, galleries, `srcset` attributes and the images that themes and plugins get from WordPress for a registered image size.
+
+The plugin replaces the URL of an image size file, such as `photo-300x200.jpg`, with the URL of the original upload and the size as query string parameters, such as `photo.jpg?height=200&width=300&cropped`. It uses the registered image size, the image's `width` and `height` attributes or the size in its file name, and limits the width to your theme's `$content_width` if it sets one. Responsive images keep working, since every `srcset` entry gets its own size.
+
+The plugin also makes these changes while image processing is enabled:
+
+ * It removes the `width` and `height` attributes of the images that it rewrites, and stops WordPress from adding them to those images.
+ * It turns off WordPress's scaling of uploads larger than 2,560 pixels. WordPress keeps the original upload, and the function resizes it.
+ * It turns off WooCommerce's own image resizing.
+
+The plugin only rewrites the URLs of uploads with a `.gif`, `.jpg`, `.jpeg`, `.png` or `.webp` extension, from your site's uploads URL. Images from other sites, theme files and other file types keep their URLs.
+
+The plugin doesn't add the `format` or `quality` parameters. Browsers that accept WebP still get WebP images, as described in [Formats and WebP](#formats-and-webp).
+
+## Query string parameters [#query-string-parameters]
+
+Any image URL under `/assets/` or `/uploads/` on your environment's CloudFront distribution can use these parameters. With `caching` set to `enabled`, that's your primary domain. With `assets`, it's the distribution's `cloudfront.net` domain. For a Laravel project, the `ASSET_URL` [environment variable][4] points at the environment's assets, so the URLs that Laravel's `asset()` helper generates for files in your `public` directory work with these parameters:
+
+```php
+<img src="{{ asset('images/hero.jpg') }}?width=1200" alt="">
+```
+
+URLs that point directly at your S3 bucket, such as the default URLs of Laravel's `s3` disk, don't go through CloudFront and aren't processed. This page doesn't currently include a verified recipe for serving files from Laravel's `s3` disk through the distribution.
+
+| Parameter | Value | Effect |
+| --- | --- | --- |
+| `width` | Number of pixels | The maximum width of the image. |
+| `height` | Number of pixels | The maximum height of the image. |
+| `cropped` | No value | Crops the image to exactly `width` by `height`, keeping its centre. |
+| `format` | `webp`, `png`, `jpeg`, `jpg` or `original` | Converts the image to this format, or keeps its original format with `original`. |
+| `quality` | Number from `1` to `100` | The quality of a JPEG or WebP image. |
+
+Without `cropped`, the function keeps the image's aspect ratio and fits it inside `width` and `height`, so you can set only one of them. It never enlarges an image: asking for a width larger than the original returns the original's size. `cropped` only has an effect when you set both `width` and `height`.
+
+```text
+/uploads/2026/11/photo.jpg?width=800
+/uploads/2026/11/photo.jpg?width=400&height=400&cropped
+/uploads/2026/11/photo.jpg?width=800&format=jpeg&quality=70
+```
+
+The function ignores a `format` value that it doesn't recognize. It limits `quality` to between `1` and `100`, When `quality` is missing, `0` or not a number, WebP images that the function picks for the browser use a quality of 82, and other images use the encoder's default quality. `quality` doesn't change PNG images.
+
+Each different query string is a separate copy in the CloudFront cache, which the function has to create on a cache miss. Use a small set of sizes instead of an exact size for every layout, so that more requests are served from the cache.
+
+## Formats and WebP [#formats-and-webp]
+
+Without the `format` parameter, the function picks the format from the browser's `Accept` header:
+
+ * If the browser accepts WebP, it converts the image to WebP. WebP images use a quality of 82, unless you set `quality`.
+ * Otherwise, it converts GIF images to PNG and keeps JPEG, PNG and WebP images in their original format.
+
+With `format=original`, the image keeps its original format, whatever the browser accepts. A specific format, such as `format=jpeg`, always gets used, even for browsers that don't accept it. So only request `format=webp` for browsers that support WebP.
+
+When you don't set `format` or `quality`, and the image keeps its size, the function only serves the converted image if it's smaller than the original. Otherwise, CloudFront serves the original file. A converted image can be larger than its original, for example when the original is already well compressed.
+
+## What the function doesn't process [#limits]
+
+The function returns the original file unchanged when:
+
+ * The file isn't a GIF, JPEG, PNG or WebP image, according to both the response's and the S3 object's content type. For example, it doesn't process SVG, AVIF or HEIC files.
+ * The image is animated, such as an animated GIF or WebP image.
+ * The URL has `format=original` and the image is a GIF.
+ * The response from S3 isn't a `200` response, such as when the file doesn't exist.
+ * The processed image is larger than about 1 MB. Lambda@Edge limits the size of the responses that the function can create. Request a smaller size, a lower quality or another format.
+ * The function fails, such as when it runs out of memory or the image is corrupted.
+
+The function applies the orientation stored in a JPEG's EXIF data, so photos taken with a rotated camera display upright.
+
+## Costs [#costs]
+
+The function runs in your AWS account, and AWS charges you for it. Lambda@Edge charges for each request and for the function's duration and memory. See the [AWS Lambda pricing page][5] for current prices. The function only runs on cache misses, and each cache miss also reads the original image from S3 twice: once for CloudFront and once for the function.
+
+So the cost depends mostly on how many different processed copies your site needs and how often they leave the CloudFront cache. The default [`image_processing_memory`][6] of 1,792 MB gives the function a full vCPU. Lowering it makes cache misses slower without lowering costs much.
+
+## Troubleshooting [#troubleshooting]
+
+If an image isn't processed:
+
+ * **Check the URL:** Only URLs under `/assets/` or `/uploads/` on the environment's CloudFront distribution are processed. Open the image URL in your browser and check its domain and path.
+ * **Check the cache:** CloudFront may still serve a copy that it cached before you enabled image processing. Invalidate the path or wait for it to expire.
+ * **Check the response:** Compare the `Content-Type` and size of the response with the original file. If they're the same, the function returned the original for one of the reasons in [What the function doesn't process](#limits).
+ * **Check the logs:** Lambda@Edge writes logs in the region where it ran, which is usually the AWS region closest to the visitor, not `us-east-1`. Look in the CloudWatch log group named `/aws/lambda/us-east-1.` followed by the function name in the region closest to you. The function name is the environment's full name followed by `-image-processing`. Ymir sets these log groups' retention from the environment's [`logging`][7] option.
+
+For WordPress sites, also check that the image is an upload with a supported extension and that its URL starts with your site's uploads URL.
+
+[1]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-at-the-edge.html
+[2]: /reference/configuration#process-images
+[3]: /reference/configuration#caching
+[4]: /applications/laravel#configuration-values-ymir-sets
+[5]: https://aws.amazon.com/lambda/pricing/
+[6]: /reference/configuration#image-processing-memory
+[7]: /reference/configuration#logging-2

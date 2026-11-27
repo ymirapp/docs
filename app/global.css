@@ -375,7 +375,7 @@ figure.shiki {
 }
 
 /* Code blocks show their full height and only scroll sideways. Fumadocs caps the viewport at 600px. */
-figure.shiki > [role='region'] {
+figure.shiki > .fd-scroll-container {
   max-height: none;
 }
 
@@ -403,7 +403,7 @@ figure.shiki > div:has(> figcaption) {
 
 /* Untitled blocks put their actions on a row above the code, as in the redesign, instead of over
    the start of long lines. An empty row (`allowCopy={false}`) stays hidden. */
-figure.shiki > div:not([role='region'], :has(> figcaption)) {
+figure.shiki > div:not(.fd-scroll-container, :has(> figcaption)) {
   position: static;
   padding: 4px 8px 0;
   border-radius: 0;
@@ -411,7 +411,7 @@ figure.shiki > div:not([role='region'], :has(> figcaption)) {
   backdrop-filter: none;
 }
 
-figure.shiki > div:not([role='region'], :has(> figcaption), :empty) + [role='region'] {
+figure.shiki > div:not(.fd-scroll-container, :has(> figcaption), :empty) + .fd-scroll-container {
   padding-top: 0;
 }
 
